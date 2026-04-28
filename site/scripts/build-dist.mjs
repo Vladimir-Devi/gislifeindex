@@ -75,6 +75,18 @@ function splitMap3dScript() {
 })();
 `;
   writeFileSync(sourcePath, loader, "utf8");
+
+  const inlineLoader = `<script>\n${loader.replaceAll("</script", "<\\/script")}</script>`;
+  for (const fileName of ["index.html", "3d.html"]) {
+    const filePath = path.join(distDir, fileName);
+    const html = readFileSync(filePath, "utf8");
+    const updated = html.replace(
+      /<script defer src="src\/map3d\.js\?v=[^"]+"><\/script>/,
+      inlineLoader
+    );
+    if (updated === html) throw new Error(`Unable to replace map3d.js tag in ${fileName}`);
+    writeFileSync(filePath, updated, "utf8");
+  }
 }
 
 assertDistPath(distDir);
