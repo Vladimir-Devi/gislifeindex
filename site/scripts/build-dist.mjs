@@ -41,34 +41,40 @@ function copyDir(source, target, shouldSkip = () => false) {
   }
 }
 
-function inlineMap3dScript() {
+function splitMap3dScript() {
   const sourcePath = path.join(distDir, "src", "map3d.js");
   const source = readFileSync(sourcePath, "utf8");
+  const parts = source.split(/^\/\/ @dist-split\r?\n/gm);
   const version = source.match(/const DATA_VERSION = "([^"]+)"/)?.[1] ?? Date.now().toString();
-  const inlineScript = `<script>\n${source.replaceAll("</script", "<\\/script")}\n</script>`;
-
-  const refreshLoader = `(() => {
-  const version = "${version}";
-  const key = "map3d-inline-refresh-" + version;
-  if (!sessionStorage.getItem(key)) {
-    sessionStorage.setItem(key, "1");
-    const separator = location.search ? "&" : "?";
-    location.replace(location.pathname + location.search + separator + "siteVersion=" + version + location.hash);
+  if (parts.length < 2) {
+    throw new Error("map3d.js does not contain dist split markers");
   }
+
+  parts.forEach((part, index) => {
+    writeFileSync(path.join(distDir, "src", `map3d.part${index + 1}.js`), part, "utf8");
+  });
+
+  const loader = `(() => {
+  const version = "${version}";
+  const parts = [${parts.map((_, index) => `"src/map3d.part${index + 1}.js?v=${version}"`).join(", ")}];
+  const loadPart = (index, attempt = 0) => {
+    if (index >= parts.length) return;
+    const script = document.createElement("script");
+    script.src = parts[index] + (attempt ? "&retry=" + attempt + "-" + Date.now() : "");
+    script.onload = () => loadPart(index + 1);
+    script.onerror = () => {
+      if (attempt < 3) {
+        setTimeout(() => loadPart(index, attempt + 1), 300 * (attempt + 1));
+        return;
+      }
+      console.error("Не удалось загрузить", parts[index]);
+    };
+    document.head.appendChild(script);
+  };
+  loadPart(0);
 })();
 `;
-  writeFileSync(sourcePath, refreshLoader, "utf8");
-
-  for (const fileName of ["index.html", "3d.html"]) {
-    const filePath = path.join(distDir, fileName);
-    const html = readFileSync(filePath, "utf8");
-    const updated = html.replace(
-      /<script defer src="src\/map3d\.js\?v=[^"]+"><\/script>/,
-      inlineScript
-    );
-    if (updated === html) throw new Error(`Unable to replace map3d.js tag in ${fileName}`);
-    writeFileSync(filePath, updated, "utf8");
-  }
+  writeFileSync(sourcePath, loader, "utf8");
 }
 
 assertDistPath(distDir);
@@ -80,7 +86,7 @@ cpSync(path.join(siteDir, "2d.html"), path.join(distDir, "2d.html"));
 cpSync(path.join(siteDir, "3d.html"), path.join(distDir, "3d.html"));
 cpSync(path.join(siteDir, "_headers"), path.join(distDir, "_headers"));
 copyDir(path.join(siteDir, "src"), path.join(distDir, "src"));
-inlineMap3dScript();
+splitMap3dScript();
 copyDir(path.join(siteDir, "public"), path.join(distDir, "public"));
 copyDir(path.join(siteDir, "data"), path.join(distDir, "data"), (sourcePath) => {
   return path.resolve(sourcePath) === rawDataDir;
