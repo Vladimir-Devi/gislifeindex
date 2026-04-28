@@ -71,12 +71,13 @@ const GROUP_HELP = {
   "Коммерция": BLOCKS.find((block) => block.key === "commerce").help
 };
 
-const DETAIL_FACTOR = 3.8;
+const DETAIL_FACTOR = 4.75;
 const ROAD_DETAIL_FACTOR = 4.2;
+const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 2.25;
 const NON_MKD_HEIGHT_FACTOR = 0.32;
-const DATA_VERSION = "20260428-1145";
+const DATA_VERSION = "20260429-0100";
 
 const state = {
   manifest: null,
@@ -110,6 +111,9 @@ const state = {
   requestedTiles: new Set(),
   panelValues: null,
   sheetDrag: null,
+  activePointers: new Map(),
+  pinchGesture: null,
+  suppressHandleClickUntil: 0,
   renderToken: 0
 };
 
@@ -118,12 +122,17 @@ const overlayCanvas = document.getElementById("overlayCanvas");
 const glCanvas = document.getElementById("glCanvas");
 const baseCtx = baseCanvas.getContext("2d");
 const overlayCtx = overlayCanvas.getContext("2d");
-const gl = glCanvas.getContext("webgl", {
-  alpha: true,
-  antialias: true,
-  preserveDrawingBuffer: true,
-  premultipliedAlpha: false
-});
+let gl = null;
+try {
+  gl = glCanvas.getContext("webgl", {
+    alpha: true,
+    antialias: true,
+    preserveDrawingBuffer: true,
+    premultipliedAlpha: false
+  });
+} catch (error) {
+  console.error(error);
+}
 
 const els = {
   title: document.getElementById("pageTitle"),
@@ -139,7 +148,15 @@ const els = {
   accidentPopup: document.getElementById("accidentPopup")
 };
 
-const glState = gl ? initGl(gl) : null;
+let glState = null;
+if (gl) {
+  try {
+    glState = initGl(gl);
+  } catch (error) {
+    console.error(error);
+    gl = null;
+  }
+}
 
 init();
 
@@ -399,10 +416,21 @@ function attachEvents() {
   els.infoPanel.addEventListener("pointermove", moveSheetDrag);
   els.infoPanel.addEventListener("pointerup", endSheetDrag);
   els.infoPanel.addEventListener("pointercancel", endSheetDrag);
+  els.infoPanel.addEventListener("click", (event) => {
+    if (!isMobileLayout() || !event.target.closest(".sheetHandle")) return;
+    if (performance.now() < state.suppressHandleClickUntil) return;
+    els.infoPanel.classList.toggle("sheetExpanded");
+  });
 
   overlayCanvas.addEventListener("pointerdown", (event) => {
     if (!state.data) return;
-    overlayCanvas.setPointerCapture(event.pointerId);
+    rememberPointer(event);
+    if (overlayCanvas.setPointerCapture) overlayCanvas.setPointerCapture(event.pointerId);
+    if (event.pointerType === "touch" && state.activePointers.size >= 2) {
+      beginPinchGesture();
+      return;
+    }
+    if (state.pinchGesture) return;
     const mode = event.button === 2 || event.button === 1 || event.shiftKey ? "orbit" : "pan";
     overlayCanvas.classList.toggle("dragging", mode === "pan");
     overlayCanvas.classList.toggle("orbiting", mode === "orbit");
@@ -417,6 +445,11 @@ function attachEvents() {
   });
 
   overlayCanvas.addEventListener("pointermove", (event) => {
+    if (state.activePointers.has(event.pointerId)) rememberPointer(event);
+    if (state.pinchGesture) {
+      updatePinchGesture();
+      return;
+    }
     if (!state.dragging) return;
     if (state.dragging.mode === "orbit") {
       const dx = event.clientX - state.dragging.x;
@@ -433,7 +466,16 @@ function attachEvents() {
   });
 
   overlayCanvas.addEventListener("pointerup", (event) => {
-    overlayCanvas.releasePointerCapture(event.pointerId);
+    if (overlayCanvas.hasPointerCapture && overlayCanvas.hasPointerCapture(event.pointerId)) overlayCanvas.releasePointerCapture(event.pointerId);
+    const wasPinching = Boolean(state.pinchGesture);
+    forgetPointer(event.pointerId);
+    if (wasPinching) {
+      if (state.activePointers.size < 2) state.pinchGesture = null;
+      overlayCanvas.classList.remove("dragging");
+      overlayCanvas.classList.remove("orbiting");
+      state.dragging = null;
+      return;
+    }
     overlayCanvas.classList.remove("dragging");
     overlayCanvas.classList.remove("orbiting");
     if (!state.dragging) return;
@@ -443,7 +485,9 @@ function attachEvents() {
     if (wasPan && !moved) pickFeature(event);
   });
 
-  overlayCanvas.addEventListener("pointercancel", () => {
+  overlayCanvas.addEventListener("pointercancel", (event) => {
+    forgetPointer(event.pointerId);
+    state.pinchGesture = null;
     overlayCanvas.classList.remove("dragging");
     overlayCanvas.classList.remove("orbiting");
     state.dragging = null;
@@ -468,6 +512,68 @@ function attachEvents() {
   );
 }
 
+function rememberPointer(event) {
+  state.activePointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY
+  });
+}
+
+function forgetPointer(pointerId) {
+  state.activePointers.delete(pointerId);
+}
+
+function pinchPointers() {
+  const pointers = [];
+  for (const pointer of state.activePointers.values()) {
+    pointers.push(pointer);
+    if (pointers.length === 2) break;
+  }
+  return pointers.length === 2 ? pointers : null;
+}
+
+function beginPinchGesture() {
+  const pointers = pinchPointers();
+  if (!pointers) return;
+  const midpoint = pinchMidpoint(pointers);
+  state.dragging = null;
+  overlayCanvas.classList.remove("dragging");
+  overlayCanvas.classList.remove("orbiting");
+  state.pinchGesture = {
+    startDistance: Math.max(1, pinchDistance(pointers)),
+    startScale: state.camera.scale,
+    startWorld: screenToWorld(midpoint[0], midpoint[1])
+  };
+}
+
+function updatePinchGesture() {
+  const pointers = pinchPointers();
+  if (!pointers || !state.pinchGesture) return;
+  const midpoint = pinchMidpoint(pointers);
+  const factor = pinchDistance(pointers) / state.pinchGesture.startDistance;
+  state.camera.scale = clamp(
+    state.pinchGesture.startScale * factor,
+    state.camera.fitScale * 0.58,
+    state.camera.fitScale * 16
+  );
+  const after = screenToWorld(midpoint[0], midpoint[1]);
+  state.camera.center[0] += state.pinchGesture.startWorld[0] - after[0];
+  state.camera.center[1] += state.pinchGesture.startWorld[1] - after[1];
+  draw();
+}
+
+function pinchDistance(pointers) {
+  return Math.hypot(pointers[0].x - pointers[1].x, pointers[0].y - pointers[1].y);
+}
+
+function pinchMidpoint(pointers) {
+  const rect = overlayCanvas.getBoundingClientRect();
+  return [
+    (pointers[0].x + pointers[1].x) / 2 - rect.left,
+    (pointers[0].y + pointers[1].y) / 2 - rect.top
+  ];
+}
+
 function isMobileLayout() {
   return window.matchMedia("(max-width: 860px)").matches;
 }
@@ -476,24 +582,26 @@ function startSheetDrag(event) {
   if (!isMobileLayout()) return;
   const expanded = els.infoPanel.classList.contains("sheetExpanded");
   const fromHandle = Boolean(event.target.closest(".sheetHandle"));
-  const fromTop = event.clientY - els.infoPanel.getBoundingClientRect().top < 74;
-  if (expanded && !fromHandle && !(fromTop && els.infoPanel.scrollTop <= 0)) return;
+  const fromTop = event.clientY - els.infoPanel.getBoundingClientRect().top < 112;
+  if (expanded && !fromHandle && !(fromTop && els.infoPanel.scrollTop <= 4)) return;
   if (fromHandle || !expanded) event.preventDefault();
   state.sheetDrag = {
     pointerId: event.pointerId,
     startY: event.clientY,
     expanded,
-    fromHandle
+    fromHandle,
+    moved: false
   };
-  els.infoPanel.setPointerCapture(event.pointerId);
+  if (els.infoPanel.setPointerCapture) els.infoPanel.setPointerCapture(event.pointerId);
 }
 
 function moveSheetDrag(event) {
   if (!state.sheetDrag || state.sheetDrag.pointerId !== event.pointerId) return;
   const dy = event.clientY - state.sheetDrag.startY;
-  if (Math.abs(dy) > 6 && (state.sheetDrag.fromHandle || !state.sheetDrag.expanded)) event.preventDefault();
-  if (dy < -34) els.infoPanel.classList.add("sheetExpanded");
-  if (dy > 34 && (state.sheetDrag.fromHandle || els.infoPanel.scrollTop <= 0)) {
+  if (Math.abs(dy) > 8) state.sheetDrag.moved = true;
+  if (Math.abs(dy) > 6 && (state.sheetDrag.fromHandle || !state.sheetDrag.expanded || els.infoPanel.scrollTop <= 4)) event.preventDefault();
+  if (dy < -28) els.infoPanel.classList.add("sheetExpanded");
+  if (dy > 24 && (state.sheetDrag.fromHandle || els.infoPanel.scrollTop <= 4)) {
     els.infoPanel.classList.remove("sheetExpanded");
   }
 }
@@ -501,13 +609,15 @@ function moveSheetDrag(event) {
 function endSheetDrag(event) {
   if (!state.sheetDrag || state.sheetDrag.pointerId !== event.pointerId) return;
   const dy = event.clientY - state.sheetDrag.startY;
-  if (dy < -24) els.infoPanel.classList.add("sheetExpanded");
-  else if (dy > 24 && (state.sheetDrag.fromHandle || els.infoPanel.scrollTop <= 0)) {
+  if (state.sheetDrag.moved) state.suppressHandleClickUntil = performance.now() + 420;
+  if (dy < -20) els.infoPanel.classList.add("sheetExpanded");
+  else if (dy > 18 && (state.sheetDrag.fromHandle || els.infoPanel.scrollTop <= 4)) {
     els.infoPanel.classList.remove("sheetExpanded");
   } else if (state.sheetDrag.fromHandle && Math.abs(dy) < 8) {
     els.infoPanel.classList.toggle("sheetExpanded");
+    state.suppressHandleClickUntil = performance.now() + 420;
   }
-  if (els.infoPanel.hasPointerCapture(event.pointerId)) els.infoPanel.releasePointerCapture(event.pointerId);
+  if (els.infoPanel.hasPointerCapture && els.infoPanel.hasPointerCapture(event.pointerId)) els.infoPanel.releasePointerCapture(event.pointerId);
   state.sheetDrag = null;
 }
 
@@ -752,19 +862,20 @@ function zoomProgress(fullAtRatio) {
 }
 
 function buildingAlphaFactor() {
-  return zoomFade(0.02, 1, DETAIL_FACTOR);
+  return zoomFade(0.015, 1, BUILDING_FADE_FACTOR);
 }
 
 function buildingLightenFactor() {
-  return 1 - zoomProgress(DETAIL_FACTOR);
+  return 1 - zoomProgress(BUILDING_FADE_FACTOR);
 }
 
 function drawBuildingFootprints(ctx) {
+  if (state.camera.scale >= state.camera.fitScale * DETAIL_FACTOR) return;
   const view = worldViewBbox();
   const features = currentBuildingFeatures();
-  const alpha = zoomFade(0.015, 0.07, DETAIL_FACTOR);
+  const alpha = zoomFade(0.01, 0.045, DETAIL_FACTOR);
   ctx.save();
-  ctx.lineWidth = state.camera.scale >= state.camera.fitScale * DETAIL_FACTOR ? 0.45 : 0.25;
+  ctx.lineWidth = 0.25;
   ctx.strokeStyle = `rgba(76, 76, 70, ${alpha})`;
   for (const feature of features) {
     if (!bboxIntersects(feature.bbox, view)) continue;
@@ -927,7 +1038,7 @@ function createBuildingMesh(features) {
         const b = outer[(i + 1) % outer.length];
         pushWall(vertices, a, b, height, colors, wallShade(a, b));
       }
-      const roofHeight = height + 0.18;
+      const roofHeight = height;
       for (const triangle of triangulateRoof(outer)) {
         pushTriangle(vertices, triangle[0], roofHeight, triangle[1], roofHeight, triangle[2], roofHeight, colors.roof);
       }
@@ -941,7 +1052,7 @@ function createBuildingMesh(features) {
 }
 
 function buildingColors(feature) {
-  if (feature.s === "mkd") {
+  if (isResidentialBuilding(feature)) {
     return {
       roof: [0.78, 0.78, 0.74, 1],
       sideTop: [0.75, 0.75, 0.71, 1],
@@ -949,10 +1060,14 @@ function buildingColors(feature) {
     };
   }
   return {
-    roof: [0.8, 0.8, 0.76, 1],
-    sideTop: [0.77, 0.77, 0.73, 1],
-    sideBottom: [0.71, 0.71, 0.67, 1]
+    roof: [0.64, 0.64, 0.61, 1],
+    sideTop: [0.61, 0.61, 0.58, 1],
+    sideBottom: [0.55, 0.55, 0.52, 1]
   };
+}
+
+function isResidentialBuilding(feature) {
+  return feature.r === 1 || feature.r === true || feature.s === "mkd";
 }
 
 function wallShade(a, b) {
@@ -978,7 +1093,9 @@ function triangulateRoof(ring) {
   if (points.length < 3) return [];
   const triangles = earClip(points);
   if (triangles.length > 0) return triangles;
-  return fallbackRoofFan(points);
+  const reversedTriangles = earClip([...points].reverse());
+  if (reversedTriangles.length > 0) return reversedTriangles;
+  return fallbackRoofTriangles(points);
 }
 
 function cleanRoofRing(ring) {
@@ -1004,7 +1121,7 @@ function removeCollinearPoints(points) {
     const current = points[i];
     const next = points[(i + 1) % points.length];
     const area = signedTriangleArea(prev, current, next);
-    if (Math.abs(area) > 0.01) result.push(current);
+    if (Math.abs(area) > 0.001) result.push(current);
   }
   return result.length >= 3 ? result : points;
 }
@@ -1041,7 +1158,7 @@ function earClip(points) {
 }
 
 function isConvexCorner(a, b, c, orientation) {
-  return signedTriangleArea(a, b, c) * orientation > 0.01;
+  return signedTriangleArea(a, b, c) * orientation > 0.001;
 }
 
 function containsRoofPoint(points, indexes, aIndex, bIndex, cIndex, a, b, c) {
@@ -1057,28 +1174,33 @@ function pointInTriangle(point, a, b, c) {
   const area1 = signedTriangleArea(point, a, b);
   const area2 = signedTriangleArea(point, b, c);
   const area3 = signedTriangleArea(point, c, a);
-  const hasNegative = area1 < -0.01 || area2 < -0.01 || area3 < -0.01;
-  const hasPositive = area1 > 0.01 || area2 > 0.01 || area3 > 0.01;
-  return !(hasNegative && hasPositive);
+  const epsilon = 0.001;
+  const hasNegative = area1 < -epsilon || area2 < -epsilon || area3 < -epsilon;
+  const hasPositive = area1 > epsilon || area2 > epsilon || area3 > epsilon;
+  if (hasNegative && hasPositive) return false;
+  return Math.abs(area1) > epsilon && Math.abs(area2) > epsilon && Math.abs(area3) > epsilon;
 }
 
-function fallbackRoofFan(points) {
-  const center = ringCentroid(points);
+function fallbackRoofTriangles(points) {
+  if (!isConvexPolygon(points)) return [];
   const triangles = [];
-  for (let i = 0; i < points.length; i += 1) {
-    triangles.push([center, points[i], points[(i + 1) % points.length]]);
+  const orientation = polygonArea(points) >= 0 ? 1 : -1;
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const triangle = [points[0], points[i], points[i + 1]];
+    triangles.push(orientation > 0 ? triangle : [triangle[2], triangle[1], triangle[0]]);
   }
   return triangles;
 }
 
-function ringCentroid(ring) {
-  let x = 0;
-  let y = 0;
-  for (const point of ring) {
-    x += point[0];
-    y += point[1];
+function isConvexPolygon(points) {
+  const orientation = polygonArea(points) >= 0 ? 1 : -1;
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[(i - 1 + points.length) % points.length];
+    const b = points[i];
+    const c = points[(i + 1) % points.length];
+    if (signedTriangleArea(a, b, c) * orientation < -0.001) return false;
   }
-  return [x / ring.length, y / ring.length];
+  return true;
 }
 
 function polygonArea(points) {
@@ -1501,7 +1623,7 @@ function animateNumberNode(node, startValue, targetValue, format) {
     return;
   }
   const startedAt = performance.now();
-  const duration = 1700;
+  const duration = 1150;
   const from = startValue;
   const delta = targetValue - startValue;
   const tick = (now) => {

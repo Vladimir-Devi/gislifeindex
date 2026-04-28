@@ -185,13 +185,15 @@ function prepareBuilding(feature, index, projection) {
   const props = feature.properties ?? {};
   const height = Math.max(2.5, Math.min(80, Number(props.height) || 8));
   const area = Number(props.area) || 0;
+  const isResidential = props.source === "mkd" || Number(props.pop) > 0 || Number(props.floors) > 0;
   return {
     id: String(props.id ?? feature.id ?? index + 1),
     bbox: bboxFromPolygons(polygons),
     polygons,
     h: round(height, 1),
     a: round(area, 1),
-    s: props.source === "mkd" ? "mkd" : "area"
+    s: props.source === "mkd" ? "mkd" : "area",
+    r: isResidential ? 1 : 0
   };
 }
 

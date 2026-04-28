@@ -18,6 +18,7 @@
 #overlayCanvas {
   z-index: 2;
   cursor: grab;
+  touch-action: none;
 }
 
 #overlayCanvas.dragging {
@@ -148,9 +149,19 @@
     display: grid;
     right: auto;
     left: 10px;
-    bottom: calc(var(--sheet-peek) + 12px);
-    width: min(210px, calc(100vw - 20px));
-    padding: 10px;
+    bottom: calc(var(--sheet-peek) + 8px);
+    width: min(168px, calc(100vw - 20px));
+    gap: 4px;
+    padding: 7px 8px;
+    font-size: 10px;
+  }
+
+  .mapShell3d .legend .legendGradient {
+    height: 7px;
+  }
+
+  .mapShell3d .legend .legendScale {
+    font-size: 9px;
   }
 
   .mapShell3d .symbolLegend {
@@ -163,6 +174,6 @@
   }
 
   .mapShell3d .symbolLegend.legendOffset {
-    bottom: calc(var(--sheet-peek) + 108px);
+    bottom: calc(var(--sheet-peek) + 86px);
   }
 }
