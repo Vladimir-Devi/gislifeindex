@@ -77,7 +77,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 2.25;
 const NON_MKD_HEIGHT_FACTOR = 0.32;
-const DATA_VERSION = "20260429-0100";
+const DATA_VERSION = "20260429-0200";
 
 const state = {
   manifest: null,
@@ -149,16 +149,6 @@ const els = {
 };
 
 let glState = null;
-if (gl) {
-  try {
-    glState = initGl(gl);
-  } catch (error) {
-    console.error(error);
-    gl = null;
-  }
-}
-
-init();
 
 async function init() {
   state.manifest = fallbackManifest();
@@ -407,6 +397,7 @@ function renderSymbolLegend() {
   els.symbolLegend.innerHTML = items.join("");
 }
 
+// @dist-split
 function attachEvents() {
   window.addEventListener("resize", resizeCanvases);
   overlayCanvas.addEventListener("contextmenu", (event) => event.preventDefault());
@@ -820,6 +811,7 @@ function drawGrid(ctx, rect) {
   ctx.restore();
 }
 
+// @dist-split
 function drawQuartals(ctx) {
   const view = worldViewBbox();
   for (const feature of state.data.quartals) {
@@ -1257,6 +1249,7 @@ function drawMesh(mesh) {
   gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
 }
 
+// @dist-split
 function initGl(glContext) {
   const vertexSource = `
     attribute vec3 a_pos;
@@ -1542,6 +1535,7 @@ function hideAccidentPopup() {
   els.accidentPopup.innerHTML = "";
 }
 
+// @dist-split
 function updatePanel() {
   if (!state.activeCity || !state.data) return;
   const cityScore = cityScenarioScore();
@@ -1871,3 +1865,14 @@ function escapeAttr(value) {
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
+
+if (gl) {
+  try {
+    glState = initGl(gl);
+  } catch (error) {
+    console.error(error);
+    gl = null;
+  }
+}
+
+init();
