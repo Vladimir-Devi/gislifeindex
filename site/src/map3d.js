@@ -77,7 +77,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 2.25;
 const NON_MKD_HEIGHT_FACTOR = 0.32;
-const DATA_VERSION = "20260429-0400";
+const DATA_VERSION = "20260429-0500";
 
 const state = {
   manifest: null,
@@ -150,6 +150,7 @@ const els = {
 
 let glState = null;
 
+// @dist-split
 async function init() {
   state.manifest = fallbackManifest();
   renderCityMenu();
@@ -312,6 +313,7 @@ function updateCityCardTilt(event) {
   card.style.transform = `perspective(700px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
 }
 
+// @dist-split
 function resetCityCardTilt(event) {
   const card = event.currentTarget;
   card.style.setProperty("--mx", "0.5");
@@ -503,6 +505,7 @@ function attachEvents() {
   );
 }
 
+// @dist-split
 function rememberPointer(event) {
   state.activePointers.set(event.pointerId, {
     x: event.clientX,
@@ -661,6 +664,7 @@ async function loadCity(slug) {
   draw();
 }
 
+// @dist-split
 function showCityMenu() {
   stopPulse();
   clearMeshes();
@@ -826,6 +830,7 @@ function drawQuartals(ctx) {
   }
 }
 
+// @dist-split
 function drawRoads(ctx) {
   const mainAlpha = zoomFade(0.13, 0.46, 2.7);
   const detailAlpha = zoomFade(0.05, 0.22, 4.4);
@@ -1011,11 +1016,13 @@ function drawAccidents() {
   overlayCtx.restore();
 }
 
+// @dist-split
 function accidentRadius(item) {
   const severity = item.properties.severity != null ? item.properties.severity : item.properties.injured != null ? item.properties.injured : 1;
   return clamp(2.8 + Math.sqrt(Math.max(severity, 1)) * 2.2, 3.5, 13);
 }
 
+// @dist-split
 function createBuildingMesh(features) {
   if (!gl || !features || !features.length) return null;
   const vertices = [];
@@ -1162,6 +1169,7 @@ function containsRoofPoint(points, indexes, aIndex, bIndex, cIndex, a, b, c) {
   return false;
 }
 
+// @dist-split
 function pointInTriangle(point, a, b, c) {
   const area1 = signedTriangleArea(point, a, b);
   const area2 = signedTriangleArea(point, b, c);
@@ -1323,6 +1331,7 @@ function initGl(glContext) {
   };
 }
 
+// @dist-split
 function createProgram(glContext, vertexSource, fragmentSource) {
   const vertex = createShader(glContext, glContext.VERTEX_SHADER, vertexSource);
   const fragment = createShader(glContext, glContext.FRAGMENT_SHADER, fragmentSource);
@@ -1475,6 +1484,7 @@ function pickFeature(event) {
   draw();
 }
 
+// @dist-split
 function pickAccident(screenX, screenY) {
   if (!state.layers.dtp || !state.data || !state.data.points || !state.data.points.dtp || !state.data.points.dtp.length) return null;
   let best = null;
@@ -1632,6 +1642,7 @@ function animateNumberNode(node, startValue, targetValue, format) {
   requestAnimationFrame(tick);
 }
 
+// @dist-split
 function formatAnimatedValue(value, format = {}) {
   if (format.type === "int") return formatInt(Math.round(value));
   return formatNumber(value, format.digits != null ? format.digits : 0);
@@ -1766,6 +1777,7 @@ function polygonContainsPoint(polygon, x, y) {
   return true;
 }
 
+// @dist-split
 function ringContainsPoint(ring, x, y) {
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
