@@ -41,29 +41,23 @@ function copyDir(source, target, shouldSkip = () => false) {
   }
 }
 
-function splitMap3dScript() {
+function bundleMap3dScript() {
   const sourcePath = path.join(distDir, "src", "map3d.js");
   const source = readFileSync(sourcePath, "utf8");
-  const parts = source.split(/^\/\/ @dist-split\r?\n/gm);
   const version = source.match(/const DATA_VERSION = "([^"]+)"/)?.[1] ?? Date.now().toString();
-  if (parts.length < 2) {
-    throw new Error("map3d.js does not contain dist split markers");
-  }
-
-  parts.forEach((part, index) => {
-    writeFileSync(path.join(distDir, "src", `map3d.part${index + 1}.js`), part, "utf8");
-  });
+  const bundlePath = `src/map3d.bundle.js?v=${version}`;
+  writeFileSync(path.join(distDir, "src", "map3d.bundle.js"), source, "utf8");
 
   const loader = `(() => {
   const version = "${version}";
-  const parts = [${parts.map((_, index) => `"src/map3d.part${index + 1}.js?v=${version}"`).join(", ")}];
-  const fetchPart = async (url) => {
+  const bundleUrl = "${bundlePath}";
+  const fetchBundle = async () => {
     let lastError;
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 30000);
+      const timer = setTimeout(() => controller.abort(), 45000);
       try {
-        const retryUrl = url + (attempt ? "&retry=" + attempt + "-" + Date.now() : "");
+        const retryUrl = bundleUrl + (attempt ? "&retry=" + attempt + "-" + Date.now() : "");
         const response = await fetch(retryUrl, { cache: "no-store", signal: controller.signal });
         if (!response.ok) throw new Error("HTTP " + response.status + " " + retryUrl);
         return await response.text();
@@ -76,23 +70,10 @@ function splitMap3dScript() {
     }
     throw lastError;
   };
-  const fetchChunks = async () => {
-    const chunks = new Array(parts.length);
-    let nextIndex = 0;
-    const worker = async () => {
-      while (nextIndex < parts.length) {
-        const index = nextIndex;
-        nextIndex += 1;
-        chunks[index] = await fetchPart(parts[index]);
-      }
-    };
-    await Promise.all([worker(), worker(), worker()]);
-    return chunks;
-  };
   (async () => {
-    const chunks = await fetchChunks();
+    const code = await fetchBundle();
     const script = document.createElement("script");
-    script.textContent = chunks.join("\\n") + "\\n//# sourceURL=map3d.bundle.js";
+    script.textContent = code + "\\n//# sourceURL=map3d.bundle.js";
     document.head.appendChild(script);
   })().catch((error) => {
     console.error(error);
@@ -125,7 +106,7 @@ cpSync(path.join(siteDir, "2d.html"), path.join(distDir, "2d.html"));
 cpSync(path.join(siteDir, "3d.html"), path.join(distDir, "3d.html"));
 cpSync(path.join(siteDir, "_headers"), path.join(distDir, "_headers"));
 copyDir(path.join(siteDir, "src"), path.join(distDir, "src"));
-splitMap3dScript();
+bundleMap3dScript();
 copyDir(path.join(siteDir, "public"), path.join(distDir, "public"));
 copyDir(path.join(siteDir, "data"), path.join(distDir, "data"), (sourcePath) => {
   return path.resolve(sourcePath) === rawDataDir;
