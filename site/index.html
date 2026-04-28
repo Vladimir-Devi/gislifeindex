@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3D-карта индекса качества городской среды</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="src/styles.css?v=20260428-1145" />
+    <link rel="stylesheet" href="src/map3d.css?v=20260428-1145" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <button class="icon-button hidden" id="backButton" type="button" title="К городам">←</button>
+        <div>
+          <div class="eyebrow">ГИС-оценка качества городской среды</div>
+          <h1 id="pageTitle">Города исследования</h1>
+        </div>
+        <a class="modeLink" href="2d.html">2D</a>
+        <div class="topbarMetric" id="topMetric"></div>
+      </header>
+
+      <main>
+        <section class="cityMenu" id="cityMenu"></section>
+
+        <section class="mapShell hidden mapShell3d" id="mapShell">
+          <canvas id="baseCanvas"></canvas>
+          <canvas id="glCanvas"></canvas>
+          <canvas id="overlayCanvas"></canvas>
+
+          <div class="mapControls">
+            <button class="icon-button" id="resetView" type="button" title="Сбросить вид">⌂</button>
+            <div class="controlGroup controlPanel" id="scenarioControls"></div>
+            <div class="controlGroup controlPanel" id="layerControls"></div>
+          </div>
+
+          <aside class="infoPanel" id="infoPanel"></aside>
+          <div class="legend" id="legend"></div>
+          <div class="symbolLegend" id="symbolLegend"></div>
+          <div class="accidentPopup hidden" id="accidentPopup"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="src/map3d.js?v=20260428-1145"></script>
+  </body>
+</html>

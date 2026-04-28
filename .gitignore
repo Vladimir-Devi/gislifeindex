@@ -1,0 +1,26 @@
+# Keep the repository focused on the deployable site project.
+*
+
+!.gitignore
+!site/
+!site/**
+
+# Generated deployment output.
+site_dist/
+
+# Local/generated frontend artifacts.
+site/tmp_*.png
+site/node_modules/
+site/.wrangler/
+site/.cache/
+
+# Heavy source GIS files are converted into deployable data before build.
+site/data/_raw/
+
+# Local secrets and OS files.
+.env
+.env.*
+site/.env
+site/.env.*
+.DS_Store
+Thumbs.db

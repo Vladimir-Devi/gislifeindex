@@ -1,0 +1,13 @@
+{
+  "name": "diser-city-quality-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:data": "node scripts/build-data.mjs",
+    "build:3d": "node scripts/build-3d-data.mjs",
+    "build:dist": "node scripts/build-dist.mjs",
+    "serve": "node scripts/serve.mjs",
+    "serve:dist": "node scripts/serve.mjs ../site_dist"
+  }
+}

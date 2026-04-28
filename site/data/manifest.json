@@ -1,0 +1,103 @@
+{
+  "generatedAt": "2026-04-27T18:25:45.510Z",
+  "source": "C:/institute/magic/Diser",
+  "methodology": {
+    "baseQuarterFormula": "mean(idx_housing, idx_infra, idx_transport, idx_work, idx_green, idx_commerce)",
+    "cityFormula": "population-weighted mean of common-normalized quarter scores",
+    "scenarioFormula": "mean of active subindices in the browser"
+  },
+  "blocks": [
+    "housing",
+    "infra",
+    "transport",
+    "work",
+    "green",
+    "commerce"
+  ],
+  "cities": [
+    {
+      "slug": "orel",
+      "name": "Орёл",
+      "summaryName": "Орел",
+      "bbox": [
+        35.999727,
+        52.905227,
+        36.180771,
+        53.023274
+      ],
+      "files": {
+        "quartals": "data/orel/quartals.geojson",
+        "buildings": "data/orel/buildings.geojson",
+        "green": "data/orel/green.geojson",
+        "roads": "data/orel/roads.geojson",
+        "roadsAll": "data/orel/roads-all.geojson",
+        "stops": "data/orel/stops.geojson",
+        "dtp": "data/orel/dtp.geojson",
+        "mkdUnmatched": "data/orel/mkd-unmatched.geojson"
+      },
+      "stats": {
+        "quartals": 344,
+        "buildings": 28661,
+        "mkdMatched": 1881,
+        "mkdUnmatched": 15
+      },
+      "rank": 1,
+      "index": 50.15066088619108,
+      "indexNoWork": 61.73755805676879,
+      "population": 285487.66757751553,
+      "areaHa": 3605.202112988281,
+      "lowShare": 0.14123305680438375,
+      "midShare": 0.7247939716116116,
+      "highShare": 0.13397297158400465,
+      "blocks": {
+        "housing": 65.00194233557563,
+        "infra": 63.2092888177475,
+        "transport": 73.71940969259703,
+        "work": 3.803072203880229,
+        "green": 45.01959138115501
+      }
+    },
+    {
+      "slug": "tambov",
+      "name": "Тамбов",
+      "summaryName": "Тамбов",
+      "bbox": [
+        41.359286,
+        52.670662,
+        41.513438,
+        52.791689
+      ],
+      "files": {
+        "quartals": "data/tambov/quartals.geojson",
+        "buildings": "data/tambov/buildings.geojson",
+        "green": "data/tambov/green.geojson",
+        "roads": "data/tambov/roads.geojson",
+        "roadsAll": "data/tambov/roads-all.geojson",
+        "stops": "data/tambov/stops.geojson",
+        "dtp": "data/tambov/dtp.geojson",
+        "mkdUnmatched": "data/tambov/mkd-unmatched.geojson"
+      },
+      "stats": {
+        "quartals": 391,
+        "buildings": 70707,
+        "mkdMatched": 1867,
+        "mkdUnmatched": 151
+      },
+      "rank": 2,
+      "index": 48.23832436250186,
+      "indexNoWork": 59.28041708294688,
+      "population": 250331.00001539226,
+      "areaHa": 3032.952356347656,
+      "lowShare": 0.10616963321316206,
+      "midShare": 0.88036596140659,
+      "highShare": 0.013464405380248049,
+      "blocks": {
+        "housing": 39.12245161004624,
+        "infra": 63.844108384176984,
+        "transport": 85.60180911621109,
+        "work": 4.069953480721701,
+        "green": 48.55329922135322
+      }
+    }
+  ]
+}
