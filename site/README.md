@@ -23,12 +23,6 @@ node site\scripts\serve.mjs
 node site\scripts\serve.mjs site_dist
 ```
 
-После запуска локального сервера сайт доступен на:
-
-```text
-http://127.0.0.1:4173/
-```
-
 ## Публикация
 
 Для Cloudflare Pages используется папка `site_dist`. Она собирается командой:
