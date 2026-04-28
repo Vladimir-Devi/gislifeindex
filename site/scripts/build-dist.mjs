@@ -61,7 +61,7 @@ function splitMap3dScript() {
     let lastError;
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
+      const timer = setTimeout(() => controller.abort(), 30000);
       try {
         const retryUrl = url + (attempt ? "&retry=" + attempt + "-" + Date.now() : "");
         const response = await fetch(retryUrl, { cache: "no-store", signal: controller.signal });
@@ -76,8 +76,21 @@ function splitMap3dScript() {
     }
     throw lastError;
   };
+  const fetchChunks = async () => {
+    const chunks = new Array(parts.length);
+    let nextIndex = 0;
+    const worker = async () => {
+      while (nextIndex < parts.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        chunks[index] = await fetchPart(parts[index]);
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    return chunks;
+  };
   (async () => {
-    const chunks = await Promise.all(parts.map((part) => fetchPart(part)));
+    const chunks = await fetchChunks();
     const script = document.createElement("script");
     script.textContent = chunks.join("\\n") + "\\n//# sourceURL=map3d.bundle.js";
     document.head.appendChild(script);
