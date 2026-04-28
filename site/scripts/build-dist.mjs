@@ -77,8 +77,7 @@ function splitMap3dScript() {
     throw lastError;
   };
   (async () => {
-    const chunks = [];
-    for (const part of parts) chunks.push(await fetchPart(part));
+    const chunks = await Promise.all(parts.map((part) => fetchPart(part)));
     const script = document.createElement("script");
     script.textContent = chunks.join("\\n") + "\\n//# sourceURL=map3d.bundle.js";
     document.head.appendChild(script);
