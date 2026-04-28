@@ -77,7 +77,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 2.25;
 const NON_MKD_HEIGHT_FACTOR = 0.32;
-const DATA_VERSION = "20260429-0600";
+const DATA_VERSION = "20260429-0700";
 
 const state = {
   manifest: null,

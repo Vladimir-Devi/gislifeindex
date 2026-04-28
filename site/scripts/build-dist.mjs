@@ -57,21 +57,36 @@ function splitMap3dScript() {
   const loader = `(() => {
   const version = "${version}";
   const parts = [${parts.map((_, index) => `"src/map3d.part${index + 1}.js?v=${version}"`).join(", ")}];
-  const loadPart = (index, attempt = 0) => {
-    if (index >= parts.length) return;
-    const script = document.createElement("script");
-    script.src = parts[index] + (attempt ? "&retry=" + attempt + "-" + Date.now() : "");
-    script.onload = () => loadPart(index + 1);
-    script.onerror = () => {
-      if (attempt < 3) {
-        setTimeout(() => loadPart(index, attempt + 1), 300 * (attempt + 1));
-        return;
+  const fetchPart = async (url) => {
+    let lastError;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      try {
+        const retryUrl = url + (attempt ? "&retry=" + attempt + "-" + Date.now() : "");
+        const response = await fetch(retryUrl, { cache: "no-store", signal: controller.signal });
+        if (!response.ok) throw new Error("HTTP " + response.status + " " + retryUrl);
+        return await response.text();
+      } catch (error) {
+        lastError = error;
+        await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+      } finally {
+        clearTimeout(timer);
       }
-      console.error("Не удалось загрузить", parts[index]);
-    };
-    document.head.appendChild(script);
+    }
+    throw lastError;
   };
-  loadPart(0);
+  (async () => {
+    const chunks = [];
+    for (const part of parts) chunks.push(await fetchPart(part));
+    const script = document.createElement("script");
+    script.textContent = chunks.join("\\n") + "\\n//# sourceURL=map3d.bundle.js";
+    document.head.appendChild(script);
+  })().catch((error) => {
+    console.error(error);
+    const menu = document.getElementById("cityMenu");
+    if (menu) menu.innerHTML = '<div class="muted">Не удалось загрузить 3D-модуль. Обновите страницу.</div>';
+  });
 })();
 `;
   writeFileSync(sourcePath, loader, "utf8");
