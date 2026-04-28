@@ -1,0 +1,11 @@
+/*
+  Alt-Svc: clear
+
+/
+  Cache-Control: no-store
+
+/index.html
+  Cache-Control: no-store
+
+/3d.html
+  Cache-Control: no-store

@@ -78,6 +78,7 @@ mkdirSync(distDir, { recursive: true });
 cpSync(path.join(siteDir, "index.html"), path.join(distDir, "index.html"));
 cpSync(path.join(siteDir, "2d.html"), path.join(distDir, "2d.html"));
 cpSync(path.join(siteDir, "3d.html"), path.join(distDir, "3d.html"));
+cpSync(path.join(siteDir, "_headers"), path.join(distDir, "_headers"));
 copyDir(path.join(siteDir, "src"), path.join(distDir, "src"));
 inlineMap3dScript();
 copyDir(path.join(siteDir, "public"), path.join(distDir, "public"));
