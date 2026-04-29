@@ -7,7 +7,7 @@ const BLOCKS = [
   },
   {
     key: "infra",
-    label: "Инфраструктура",
+    label: "Коммерческая инфраструктура",
     color: "#6f6c2d",
     help: "Коммерческая доступность, её функциональное разнообразие и полнота ежедневной корзины"
   },
@@ -19,9 +19,9 @@ const BLOCKS = [
   },
   {
     key: "work",
-    label: "Крупные рабочие места",
+    label: "Крупные работодатели",
     color: "#7b5796",
-    help: "Субиндекс рабочих мест. Показывает обеспеченность квартала крыпными работодателями и связанную плотность занятости"
+    help: "Субиндекс крупных работодателей. Показывает обеспеченность квартала крупными работодателями и связанную плотность занятости"
   },
   {
     key: "green",
@@ -70,11 +70,11 @@ const INDICATOR_META = {
     unit: "этажей",
     help: "Средняя этажность многоквартирной жилой застройки"
   },
-  "Инфраструктура|разнообразие": {
+  "Коммерческая инфраструктура|разнообразие": {
     unit: "0-1",
     help: "Разнообразие объектов инфраструктуры внутри квартала"
   },
-  "Инфраструктура|полнота корзины": {
+  "Коммерческая инфраструктура|полнота корзины": {
     unit: "%",
     help: "Доля объектов повседневной корзины, доступной жителям квартала в 5-минутной зоне"
   },
@@ -82,15 +82,15 @@ const INDICATOR_META = {
     unit: "%",
     help: "Доля населения в 5-минутной доступности от остановок общественного транспорта"
   },
-  "Рабочие места|обеспеченность": {
+  "Крупные работодатели|обеспеченность": {
     unit: "коэф.",
     help: "Коэффициент обеспеченности квартала рабочими местами крупных организаций"
   },
-  "Рабочие места|плотность": {
+  "Крупные работодатели|плотность": {
     unit: "ед./м²",
     help: "Плотность рабочих мест крупных организаций в пределах квартала"
   },
-  "Зеленые зоны|доступность": {
+  "Зелёные зоны|доступность": {
     unit: "%",
     help: "Доля жителей в 5-минутной доступности от зеленых зон"
   },
@@ -111,11 +111,12 @@ const INDICATOR_META = {
 const GROUP_HELP = {
   "Жилье": BLOCKS.find((block) => block.key === "housing").help,
   "Жильё": BLOCKS.find((block) => block.key === "housing").help,
-  "Инфраструктура": BLOCKS.find((block) => block.key === "infra").help,
+  "Коммерческая инфраструктура": BLOCKS.find((block) => block.key === "infra").help,
   "Транспорт": BLOCKS.find((block) => block.key === "transport").help,
-  "Рабочие места": BLOCKS.find((block) => block.key === "work").help,
+  "Крупные работодатели": BLOCKS.find((block) => block.key === "work").help,
+  "Зелёные зоны": BLOCKS.find((block) => block.key === "green").help,
   "Зеленые зоны": BLOCKS.find((block) => block.key === "green").help,
-  "Коммерция": BLOCKS.find((block) => block.key === "commerce").help
+  "Экономика": BLOCKS.find((block) => block.key === "commerce").help
 };
 
 const LAYERS = [
@@ -151,7 +152,9 @@ const state = {
   selected: null,
   accidentPopup: null,
   dragging: null,
-  pulseFrame: null
+  pulseFrame: null,
+  tooltipTarget: null,
+  tooltipNode: null
 };
 
 const canvas = document.getElementById("mapCanvas");
@@ -177,6 +180,7 @@ async function init() {
   renderCityMenu();
   renderControls();
   renderLegend();
+  initTooltip();
   attachEvents();
   resizeCanvas();
 }
@@ -224,10 +228,8 @@ function renderCityMenu() {
           <dl class="cityFacts">
             <div><dt>Жители</dt><dd>${formatInt(city.population)}</dd></div>
             <div><dt>Кварталы</dt><dd>${formatInt(city.stats.quartals)}</dd></div>
-            <div><dt>Хорошие кварталы</dt><dd>${percent(city.highShare)}</dd></div>
-            <div><dt>Средние кварталы</dt><dd>${percent(city.midShare)}</dd></div>
-            <div><dt>Плохие кварталы</dt><dd>${percent(city.lowShare)}</dd></div>
           </dl>
+          ${renderQualityStructure(city)}
         </article>`
     )
     .join("");
@@ -237,10 +239,29 @@ function renderCityMenu() {
   }
 }
 
+function renderQualityStructure(city) {
+  const low = clamp((city.lowShare || 0) * 100, 0, 100);
+  const mid = clamp((city.midShare || 0) * 100, 0, 100);
+  const high = clamp((city.highShare || 0) * 100, 0, 100);
+  return `
+    <div class="qualityMix" aria-label="Структура населения по качеству среды">
+      <div class="qualityBar">
+        <span class="qualityBad" style="width:${low}%"></span>
+        <span class="qualityMid" style="width:${mid}%"></span>
+        <span class="qualityGood" style="width:${high}%"></span>
+      </div>
+      <div class="qualityLegend">
+        <span><i class="qualityDot good"></i>Хорошая ${formatNumber(high, 1)}%</span>
+        <span><i class="qualityDot mid"></i>Средняя ${formatNumber(mid, 1)}%</span>
+        <span><i class="qualityDot bad"></i>Плохая ${formatNumber(low, 1)}%</span>
+      </div>
+    </div>`;
+}
+
 function renderControls() {
   els.scenarioControls.innerHTML = BLOCKS.map(
     (block) => `
-      <label class="toggle">
+      <label class="toggle" data-tooltip="${escapeAttr(block.help)}">
         <input type="checkbox" data-block="${block.key}" checked />
         ${block.label}
       </label>`
@@ -299,6 +320,51 @@ function renderSymbolLegend() {
   }
   els.symbolLegend.classList.remove("hidden");
   els.symbolLegend.innerHTML = `<div class="legendSymbols">${rows.join("")}</div>`;
+}
+
+function initTooltip() {
+  if (state.tooltipNode) return;
+  const node = document.createElement("div");
+  node.className = "uiTooltip hidden";
+  document.body.appendChild(node);
+  state.tooltipNode = node;
+
+  document.addEventListener("pointerover", (event) => {
+    const target = event.target.closest("[data-tooltip]");
+    if (!target || !target.dataset.tooltip) return;
+    state.tooltipTarget = target;
+    node.textContent = target.dataset.tooltip;
+    node.classList.remove("hidden");
+    positionTooltip(event);
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (state.tooltipTarget) positionTooltip(event);
+  });
+  document.addEventListener("pointerout", (event) => {
+    if (!state.tooltipTarget) return;
+    if (event.relatedTarget && state.tooltipTarget.contains(event.relatedTarget)) return;
+    hideTooltip();
+  });
+  document.addEventListener("keydown", hideTooltip);
+}
+
+function positionTooltip(event) {
+  const node = state.tooltipNode;
+  if (!node) return;
+  const margin = 12;
+  const offset = 16;
+  const rect = node.getBoundingClientRect();
+  let x = event.clientX + offset;
+  let y = event.clientY + offset;
+  if (x + rect.width + margin > window.innerWidth) x = event.clientX - rect.width - offset;
+  if (y + rect.height + margin > window.innerHeight) y = event.clientY - rect.height - offset;
+  node.style.left = `${Math.max(margin, x)}px`;
+  node.style.top = `${Math.max(margin, y)}px`;
+}
+
+function hideTooltip() {
+  state.tooltipTarget = null;
+  if (state.tooltipNode) state.tooltipNode.classList.add("hidden");
 }
 
 function attachEvents() {
@@ -1069,11 +1135,11 @@ function renderGroupedIndicators(indicators) {
         .map(
           ([group, items]) => `
             <section class="indicatorGroup">
-              <h3 title="${escapeAttr(GROUP_HELP[group] ?? "")}">${group}</h3>
+              <h3 data-tooltip="${escapeAttr(GROUP_HELP[group] ?? "")}">${group}</h3>
               ${items
                 .map(
                   (item) => `
-                    <div class="indicator" title="${escapeAttr(item.help)}">
+                    <div class="indicator" data-tooltip="${escapeAttr(item.help)}">
                       <span>${item.label}</span>
                       <em>${item.unit}</em>
                       <strong>${formatNumber(item.value, 2)}</strong>
@@ -1094,7 +1160,7 @@ function renderBars(values) {
         const value = values?.[block.key];
         const normalized = Number.isFinite(value) ? clamp(value, 0, 100) : 0;
         return `
-          <div class="barRow" title="${escapeAttr(block.help)}">
+          <div class="barRow" data-tooltip="${escapeAttr(block.help)}">
             <span class="helpText">${block.label}</span>
             <div class="barTrack"><div class="barFill" style="width:${normalized}%; background:${block.color}"></div></div>
             <strong>${formatNumber(value, 0)}</strong>

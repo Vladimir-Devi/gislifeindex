@@ -125,9 +125,9 @@ input {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 310px));
   justify-content: center;
-  gap: 22px;
+  gap: 18px;
   min-height: 100vh;
   padding: 112px 24px 36px;
   align-content: start;
@@ -170,23 +170,22 @@ input {
   position: relative;
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto minmax(170px, 1fr) auto;
-  gap: 16px;
-  min-height: 420px;
-  padding: 18px;
+  grid-template-rows: auto minmax(118px, 1fr) auto auto;
+  gap: 12px;
+  min-height: 330px;
+  padding: 14px;
   border: 1px solid rgba(210, 198, 179, 0.9);
   border-radius: 8px;
   background: #fffdf8;
   color: var(--ink);
   box-shadow:
-    0 18px 42px rgba(38, 42, 43, 0.14),
+    8px 8px 0 rgba(38, 42, 43, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.86);
   cursor: pointer;
   isolation: isolate;
   transform-style: preserve-3d;
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease;
+    transform 180ms ease;
 }
 
 .cityCard::before {
@@ -195,18 +194,18 @@ input {
   inset: -35%;
   content: "";
   background:
-    radial-gradient(circle at var(--glare-pos), rgba(255, 255, 255, 0.9), transparent 22%),
+    radial-gradient(circle at var(--glare-pos), rgba(255, 255, 255, 1), transparent 18%),
     conic-gradient(
       from var(--angle),
-      rgba(255, 255, 255, 0.12),
-      rgba(88, 154, 159, 0.28),
-      rgba(238, 210, 111, 0.26),
-      rgba(184, 76, 110, 0.2),
-      rgba(119, 176, 130, 0.24),
-      rgba(255, 255, 255, 0.12)
+      rgba(255, 255, 255, 0.16),
+      rgba(65, 154, 162, 0.44),
+      rgba(238, 210, 83, 0.42),
+      rgba(184, 76, 110, 0.34),
+      rgba(102, 178, 122, 0.42),
+      rgba(255, 255, 255, 0.16)
     );
-  animation: shimmerSpin 11s linear infinite;
-  opacity: 0.9;
+  animation: shimmerSpin 8s linear infinite;
+  opacity: 1;
 }
 
 .cityCard::after {
@@ -216,9 +215,9 @@ input {
   border-radius: 7px;
   content: "";
   background:
-    radial-gradient(circle at var(--pos), rgba(255, 255, 255, 0.52), transparent 26%),
-    linear-gradient(115deg, transparent 0 34%, rgba(255, 255, 255, 0.5) 44%, transparent 54%),
-    linear-gradient(145deg, rgba(255, 253, 248, 0.94), rgba(246, 239, 226, 0.92) 46%, rgba(235, 241, 237, 0.92));
+    radial-gradient(circle at var(--pos), rgba(255, 255, 255, 0.68), transparent 24%),
+    linear-gradient(115deg, transparent 0 28%, rgba(255, 255, 255, 0.72) 43%, transparent 58%),
+    linear-gradient(145deg, rgba(255, 253, 248, 0.88), rgba(246, 239, 226, 0.86) 45%, rgba(235, 241, 237, 0.86));
 }
 
 .cityCard > * {
@@ -233,7 +232,9 @@ input {
 }
 
 .cityCard:hover {
-  box-shadow: 0 30px 70px rgba(22, 29, 30, 0.3);
+  box-shadow:
+    8px 8px 0 rgba(38, 42, 43, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
 }
 
 .cityCardTop {
@@ -245,7 +246,7 @@ input {
 
 .cityName {
   margin: 0;
-  font-size: 31px;
+  font-size: 26px;
   font-weight: 760;
   line-height: 1.08;
 }
@@ -257,7 +258,7 @@ input {
 
 .cityRating strong {
   display: block;
-  font-size: 38px;
+  font-size: 31px;
   font-weight: 760;
   line-height: 1;
 }
@@ -278,7 +279,7 @@ input {
   place-items: center;
   align-self: center;
   justify-self: center;
-  width: min(68%, 190px);
+  width: min(58%, 142px);
   aspect-ratio: 4 / 5;
   border: 1px solid rgba(191, 178, 157, 0.72);
   border-radius: 8px;
@@ -297,7 +298,7 @@ input {
 
 .cityFacts {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   margin: 0;
 }
 
@@ -305,7 +306,7 @@ input {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  padding: 9px 0;
+  padding: 6px 0;
   border-bottom: 1px solid rgba(86, 80, 71, 0.12);
 }
 
@@ -318,6 +319,71 @@ input {
   margin: 0;
   font-size: 14px;
   font-weight: 720;
+}
+
+.qualityMix {
+  display: grid;
+  gap: 8px;
+}
+
+.qualityBar {
+  display: flex;
+  height: 11px;
+  overflow: hidden;
+  border: 1px solid rgba(86, 80, 71, 0.16);
+  border-radius: 999px;
+  background: #ede5d9;
+}
+
+.qualityBar span {
+  min-width: 2px;
+}
+
+.qualityGood {
+  background: #477f5b;
+}
+
+.qualityMid {
+  background: #dfbd54;
+}
+
+.qualityBad {
+  background: #b64c3f;
+}
+
+.qualityLegend {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.qualityLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.qualityDot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.qualityDot.good {
+  background: #477f5b;
+}
+
+.qualityDot.mid {
+  background: #dfbd54;
+}
+
+.qualityDot.bad {
+  background: #b64c3f;
 }
 
 .mapShell {
@@ -637,7 +703,7 @@ input {
   color: var(--ink);
   font-size: 12px;
   transform: translate(-50%, calc(-100% - 14px));
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .accidentPopup::after {
@@ -669,6 +735,7 @@ input {
   padding: 0;
   overflow: auto;
   list-style: none;
+  overscroll-behavior: contain;
 }
 
 .accidentList li {
@@ -676,6 +743,21 @@ input {
   gap: 2px;
   padding-top: 6px;
   border-top: 1px solid rgba(65, 66, 66, 0.12);
+}
+
+.uiTooltip {
+  position: fixed;
+  z-index: 30;
+  max-width: min(300px, calc(100vw - 24px));
+  padding: 9px 11px;
+  border: 1px solid rgba(65, 66, 66, 0.16);
+  border-radius: 8px;
+  background: rgba(35, 38, 37, 0.94);
+  box-shadow: 4px 4px 0 rgba(31, 35, 38, 0.16);
+  color: #fffaf1;
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
 }
 
 @media (max-width: 860px) {
@@ -698,11 +780,15 @@ input {
   }
 
   .cityCard {
-    min-height: 480px;
+    min-height: 360px;
   }
 
   .cityName {
     font-size: 23px;
+  }
+
+  .qualityLegend {
+    grid-template-columns: 1fr;
   }
 
   .cityRating strong {

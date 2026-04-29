@@ -7,9 +7,9 @@ const BLOCKS = [
   },
   {
     key: "infra",
-    label: "Инфраструктура",
+    label: "Коммерческая инфраструктура",
     color: "#6f6c2d",
-    help: "Субиндекс социальной и повседневной инфраструктуры: разнообразие и полнота городской корзины."
+    help: "Субиндекс коммерческой инфраструктуры: разнообразие объектов и полнота повседневной городской корзины."
   },
   {
     key: "transport",
@@ -19,9 +19,9 @@ const BLOCKS = [
   },
   {
     key: "work",
-    label: "Крупные рабочие места",
+    label: "Крупные работодатели",
     color: "#7b5796",
-    help: "Субиндекс рабочих мест: обеспеченность квартала крупными работодателями и плотность занятости."
+    help: "Субиндекс крупных работодателей: обеспеченность квартала крупными организациями и плотность занятости."
   },
   {
     key: "green",
@@ -31,9 +31,9 @@ const BLOCKS = [
   },
   {
     key: "commerce",
-    label: "Коммерция",
+    label: "Экономика",
     color: "#b88624",
-    help: "Субиндекс коммерческой активности по данным ФНС: ККТ, активность и чековые показатели."
+    help: "Субиндекс экономической активности по данным ФНС: ККТ, активность и чековые показатели."
   }
 ];
 
@@ -49,24 +49,25 @@ const INDICATOR_META = {
   "Жильё|обеспеченность": { unit: "м²/чел", help: "Обеспеченность жилой площадью на одного жителя." },
   "Жильё|износ": { unit: "%", help: "Средневзвешенный износ многоквартирного жилищного фонда." },
   "Жильё|этажность": { unit: "этажей", help: "Средняя этажность многоквартирной жилой застройки." },
-  "Инфраструктура|разнообразие": { unit: "0-1", help: "Разнообразие объектов инфраструктуры внутри квартала." },
-  "Инфраструктура|полнота корзины": { unit: "%", help: "Доля базовой городской корзины, доступной жителям квартала." },
+  "Коммерческая инфраструктура|разнообразие": { unit: "0-1", help: "Разнообразие объектов коммерческой инфраструктуры внутри квартала." },
+  "Коммерческая инфраструктура|полнота корзины": { unit: "%", help: "Доля базовой городской корзины, доступной жителям квартала." },
   "Транспорт|доступность": { unit: "%", help: "Доля населения квартала в зоне доступности остановок." },
-  "Рабочие места|обеспеченность": { unit: "коэф.", help: "Коэффициент обеспеченности квартала рабочими местами." },
-  "Рабочие места|плотность": { unit: "ед./м²", help: "Плотность рабочих мест крупных организаций." },
+  "Крупные работодатели|обеспеченность": { unit: "коэф.", help: "Коэффициент обеспеченности квартала крупными работодателями." },
+  "Крупные работодатели|плотность": { unit: "ед./м²", help: "Плотность рабочих мест крупных организаций." },
   "Зелёные зоны|доступность": { unit: "%", help: "Доля жителей квартала в зоне доступности зелёных зон." },
-  "Коммерция|активность ФНС": { unit: "0-10", help: "Оценка коммерческой активности по данным ФНС." },
-  "Коммерция|ККТ": { unit: "ед.", help: "Число единиц контрольно-кассовой техники." },
-  "Коммерция|медианный чек": { unit: "руб.", help: "Медианный чек коммерческих операций." }
+  "Экономика|активность ФНС": { unit: "0-10", help: "Оценка экономической активности по данным ФНС." },
+  "Экономика|ККТ": { unit: "ед.", help: "Число единиц контрольно-кассовой техники." },
+  "Экономика|медианный чек": { unit: "руб.", help: "Медианный чек коммерческих операций." }
 };
 
 const GROUP_HELP = {
   "Жильё": BLOCKS.find((block) => block.key === "housing").help,
-  "Инфраструктура": BLOCKS.find((block) => block.key === "infra").help,
+  "Коммерческая инфраструктура": BLOCKS.find((block) => block.key === "infra").help,
   "Транспорт": BLOCKS.find((block) => block.key === "transport").help,
-  "Рабочие места": BLOCKS.find((block) => block.key === "work").help,
+  "Крупные работодатели": BLOCKS.find((block) => block.key === "work").help,
   "Зелёные зоны": BLOCKS.find((block) => block.key === "green").help,
-  "Коммерция": BLOCKS.find((block) => block.key === "commerce").help
+  "Зеленые зоны": BLOCKS.find((block) => block.key === "green").help,
+  "Экономика": BLOCKS.find((block) => block.key === "commerce").help
 };
 
 const DETAIL_FACTOR = 4.75;
@@ -74,8 +75,8 @@ const ROAD_DETAIL_FACTOR = 4.2;
 const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 1.33;
-const NON_MKD_HEIGHT_FACTOR = 0.32;
-const DATA_VERSION = "20260430-0200";
+const NON_MKD_HEIGHT_FACTOR = 0.48;
+const DATA_VERSION = "20260430-0300";
 
 const state = {
   manifest: null,
@@ -112,6 +113,8 @@ const state = {
   activePointers: new Map(),
   pinchGesture: null,
   suppressHandleClickUntil: 0,
+  tooltipTarget: null,
+  tooltipNode: null,
   renderToken: 0
 };
 
@@ -154,6 +157,7 @@ async function init() {
   renderCityMenu();
   renderControls();
   renderLegend();
+  initTooltip();
   attachEvents();
   resizeCanvases();
   if (!gl) {
@@ -318,10 +322,8 @@ function renderCityMenu() {
           <dl class="cityFacts">
             <div><dt>Жители</dt><dd>${formatInt(city.population)}</dd></div>
             <div><dt>Кварталы</dt><dd>${formatInt(city.stats.quartals)}</dd></div>
-            <div><dt>3D-здания</dt><dd>${formatInt(city.stats3d.buildings)}</dd></div>
-            <div><dt>Обзорные здания</dt><dd>${formatInt(city.stats3d.buildingsOverview)}</dd></div>
-            <div><dt>Хорошие кварталы</dt><dd>${percent(city.highShare)}</dd></div>
           </dl>
+          ${renderQualityStructure(city)}
         </article>`
     )
     .join("");
@@ -333,13 +335,32 @@ function renderCityMenu() {
   }
 }
 
+function renderQualityStructure(city) {
+  const low = clamp((city.lowShare || 0) * 100, 0, 100);
+  const mid = clamp((city.midShare || 0) * 100, 0, 100);
+  const high = clamp((city.highShare || 0) * 100, 0, 100);
+  return `
+    <div class="qualityMix" aria-label="Структура населения по качеству среды">
+      <div class="qualityBar">
+        <span class="qualityBad" style="width:${low}%"></span>
+        <span class="qualityMid" style="width:${mid}%"></span>
+        <span class="qualityGood" style="width:${high}%"></span>
+      </div>
+      <div class="qualityLegend">
+        <span><i class="qualityDot good"></i>Хорошая ${formatNumber(high, 1)}%</span>
+        <span><i class="qualityDot mid"></i>Средняя ${formatNumber(mid, 1)}%</span>
+        <span><i class="qualityDot bad"></i>Плохая ${formatNumber(low, 1)}%</span>
+      </div>
+    </div>`;
+}
+
 function updateCityCardTilt(event) {
   const card = event.currentTarget;
   const rect = card.getBoundingClientRect();
   const mx = clamp((event.clientX - rect.left) / rect.width, 0, 1);
   const my = clamp((event.clientY - rect.top) / rect.height, 0, 1);
-  const rotateX = (0.5 - my) * 9;
-  const rotateY = (mx - 0.5) * 11;
+  const rotateX = (0.5 - my) * 11;
+  const rotateY = (mx - 0.5) * 14;
   card.style.setProperty("--mx", mx.toFixed(3));
   card.style.setProperty("--my", my.toFixed(3));
   card.style.setProperty("--pos", `${(mx * 100).toFixed(1)}% ${(my * 100).toFixed(1)}%`);
@@ -369,7 +390,7 @@ function renderControls() {
     <div class="controlPanelBody">
       ${BLOCKS.map(
     (block) => `
-      <label class="toggle" title="${escapeAttr(block.help)}">
+      <label class="toggle" data-tooltip="${escapeAttr(block.help)}">
         <input type="checkbox" data-block="${block.key}" checked />
         ${block.label}
       </label>`
@@ -436,6 +457,51 @@ function renderSymbolLegend() {
   els.symbolLegend.innerHTML = items.join("");
 }
 
+function initTooltip() {
+  if (state.tooltipNode) return;
+  const node = document.createElement("div");
+  node.className = "uiTooltip hidden";
+  document.body.appendChild(node);
+  state.tooltipNode = node;
+
+  document.addEventListener("pointerover", (event) => {
+    const target = event.target.closest("[data-tooltip]");
+    if (!target || !target.dataset.tooltip) return;
+    state.tooltipTarget = target;
+    node.textContent = target.dataset.tooltip;
+    node.classList.remove("hidden");
+    positionTooltip(event);
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (state.tooltipTarget) positionTooltip(event);
+  });
+  document.addEventListener("pointerout", (event) => {
+    if (!state.tooltipTarget) return;
+    if (event.relatedTarget && state.tooltipTarget.contains(event.relatedTarget)) return;
+    hideTooltip();
+  });
+  document.addEventListener("keydown", hideTooltip);
+}
+
+function positionTooltip(event) {
+  const node = state.tooltipNode;
+  if (!node) return;
+  const margin = 12;
+  const offset = 16;
+  const rect = node.getBoundingClientRect();
+  let x = event.clientX + offset;
+  let y = event.clientY + offset;
+  if (x + rect.width + margin > window.innerWidth) x = event.clientX - rect.width - offset;
+  if (y + rect.height + margin > window.innerHeight) y = event.clientY - rect.height - offset;
+  node.style.left = `${Math.max(margin, x)}px`;
+  node.style.top = `${Math.max(margin, y)}px`;
+}
+
+function hideTooltip() {
+  state.tooltipTarget = null;
+  if (state.tooltipNode) state.tooltipNode.classList.add("hidden");
+}
+
 // @dist-split
 function attachEvents() {
   window.addEventListener("resize", resizeCanvases);
@@ -446,6 +512,10 @@ function attachEvents() {
   els.infoPanel.addEventListener("pointermove", moveSheetDrag);
   els.infoPanel.addEventListener("pointerup", endSheetDrag);
   els.infoPanel.addEventListener("pointercancel", endSheetDrag);
+  els.accidentPopup.addEventListener("wheel", (event) => event.stopPropagation(), { passive: true });
+  els.accidentPopup.addEventListener("pointerdown", (event) => event.stopPropagation());
+  els.accidentPopup.addEventListener("pointermove", (event) => event.stopPropagation());
+  els.accidentPopup.addEventListener("touchmove", (event) => event.stopPropagation(), { passive: true });
   els.infoPanel.addEventListener("click", (event) => {
     if (!isMobileLayout() || !event.target.closest(".sheetHandle")) return;
     if (performance.now() < state.suppressHandleClickUntil) return;
@@ -1171,15 +1241,15 @@ function createBuildingMesh(features) {
 function buildingColors(feature) {
   if (isResidentialBuilding(feature)) {
     return {
-      roof: [0.64, 0.64, 0.61, 1],
-      sideTop: [0.61, 0.61, 0.58, 1],
-      sideBottom: [0.55, 0.55, 0.52, 1]
+      roof: [0.78, 0.78, 0.74, 1],
+      sideTop: [0.75, 0.75, 0.71, 1],
+      sideBottom: [0.69, 0.69, 0.65, 1]
     };
   }
   return {
-    roof: [0.78, 0.78, 0.74, 1],
-    sideTop: [0.75, 0.75, 0.71, 1],
-    sideBottom: [0.69, 0.69, 0.65, 1]
+    roof: [0.68, 0.68, 0.65, 1],
+    sideTop: [0.65, 0.65, 0.62, 1],
+    sideBottom: [0.6, 0.6, 0.57, 1]
   };
 }
 
@@ -1891,11 +1961,11 @@ function renderGroupedIndicators(indicators) {
         .map(
           ([group, items]) => `
             <section class="indicatorGroup">
-              <h3 title="${escapeAttr(GROUP_HELP[group] || "")}">${group}</h3>
+              <h3 data-tooltip="${escapeAttr(GROUP_HELP[group] || "")}">${group}</h3>
               ${items
                 .map(
                   (item) => `
-                    <div class="indicator" title="${escapeAttr(item.help)}">
+                    <div class="indicator" data-tooltip="${escapeAttr(item.help)}">
                       <span>${item.label}</span>
                       <em>${item.unit}</em>
                       <strong>${formatNumber(item.value, 2)}</strong>
@@ -1916,7 +1986,7 @@ function renderBars(values) {
         const value = values ? values[block.key] : undefined;
         const normalized = Number.isFinite(value) ? clamp(value, 0, 100) : 0;
         return `
-          <div class="barRow" title="${escapeAttr(block.help)}">
+          <div class="barRow" data-tooltip="${escapeAttr(block.help)}">
             <span class="helpText">${block.label}</span>
             <div class="barTrack"><div class="barFill" style="width:${normalized}%; background:${block.color}"></div></div>
             <strong>${formatNumber(value, 0)}</strong>

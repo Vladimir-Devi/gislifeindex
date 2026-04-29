@@ -71,15 +71,15 @@ const indicatorAliases = [
   ["Жильё: обеспеченность", ["zhil_usl_obespech_zhil", "zhil_usl_obespech"]],
   ["Жильё: износ", ["zhil_usl_srdnvzv_izns"]],
   ["Жильё: этажность", ["zhil_usl_floor_num_mean", "zhil_usl_floor_mean"]],
-  ["Инфраструктура: разнообразие", ["infr_funk_diversity", "soc_infr_funk_diversity"]],
-  ["Инфраструктура: полнота корзины", ["infr_ind_poln", "soc_infr_ind_poln"]],
+  ["Коммерческая инфраструктура: разнообразие", ["infr_funk_diversity", "soc_infr_funk_diversity"]],
+  ["Коммерческая инфраструктура: полнота корзины", ["infr_ind_poln", "soc_infr_ind_poln"]],
   ["Транспорт: доступность", ["trnsp_bezop_dostup_dostup", "trnsp_bezop_dostup"]],
-  ["Рабочие места: обеспеченность", ["zanyatost_obespech", "zanyatost_obespech_coef"]],
-  ["Рабочие места: плотность", ["zanyatost_density"]],
-  ["Зеленые зоны: доступность", ["green_zone_dostup"]],
-  ["Коммерция: активность ФНС", ["commerce_fns_activity_idx"]],
-  ["Коммерция: ККТ", ["commerce_fns_kkt_est"]],
-  ["Коммерция: медианный чек", ["commerce_fns_median_check_proxy"]]
+  ["Крупные работодатели: обеспеченность", ["zanyatost_obespech", "zanyatost_obespech_coef"]],
+  ["Крупные работодатели: плотность", ["zanyatost_density"]],
+  ["Зелёные зоны: доступность", ["green_zone_dostup"]],
+  ["Экономика: активность ФНС", ["commerce_fns_activity_idx"]],
+  ["Экономика: ККТ", ["commerce_fns_kkt_est"]],
+  ["Экономика: медианный чек", ["commerce_fns_median_check_proxy"]]
 ];
 
 mkdirSync(rawDir, { recursive: true });
