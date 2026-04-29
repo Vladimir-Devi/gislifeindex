@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-29T17:32:13.797Z",
+  "generatedAt": "2026-04-29T21:54:14.571Z",
   "tileCount": 8,
   "overviewAreaThreshold": 700,
   "cities": [
@@ -8,15 +8,16 @@
       "name": "Орёл",
       "summaryName": "Орел",
       "bbox": [
-        35.999727,
+        35.999736,
         52.905227,
         36.180771,
-        53.023274
+        53.023258
       ],
       "files": {
         "quartals": "data/orel/quartals.geojson",
         "buildings": "data/orel/buildings.geojson",
         "green": "data/orel/green.geojson",
+        "water": "data/orel/water.geojson",
         "roads": "data/orel/roads.geojson",
         "roadsAll": "data/orel/roads-all.geojson",
         "stops": "data/orel/stops.geojson",
@@ -25,9 +26,9 @@
       },
       "stats": {
         "quartals": 344,
-        "buildings": 28661,
-        "mkdMatched": 1881,
-        "mkdUnmatched": 15
+        "buildings": 22422,
+        "mkdMatched": 1836,
+        "mkdUnmatched": 60
       },
       "rank": 1,
       "index": 50.15066088619108,
@@ -45,19 +46,20 @@
         "green": 45.01959138115501
       },
       "center": [
-        36.090249,
-        52.9642505
+        36.0902535,
+        52.9642425
       ],
       "projectedBbox": [
-        -6069.5,
-        -6570.5,
-        6069.5,
-        6570.5
+        -6069.2,
+        -6569.6,
+        6069.2,
+        6569.6
       ],
       "tileCount": 8,
       "files3d": {
         "quartals": "data3d/orel/quartals.json",
         "green": "data3d/orel/green.json",
+        "water": "data3d/orel/water.json",
         "roads": "data3d/orel/roads.json",
         "points": "data3d/orel/points.json",
         "buildingsOverview": "data3d/orel/buildings-overview.json",
@@ -71,9 +73,7 @@
           "0-2",
           "0-3",
           "0-4",
-          "0-5",
           "0-6",
-          "0-7",
           "1-0",
           "1-1",
           "1-2",
@@ -81,7 +81,6 @@
           "1-4",
           "1-5",
           "1-6",
-          "1-7",
           "2-0",
           "2-1",
           "2-2",
@@ -89,7 +88,6 @@
           "2-4",
           "2-5",
           "2-6",
-          "2-7",
           "3-0",
           "3-1",
           "3-2",
@@ -97,7 +95,6 @@
           "3-4",
           "3-5",
           "3-6",
-          "3-7",
           "4-1",
           "4-2",
           "4-3",
@@ -105,7 +102,6 @@
           "4-5",
           "4-6",
           "4-7",
-          "5-0",
           "5-1",
           "5-2",
           "5-3",
@@ -114,18 +110,14 @@
           "5-6",
           "5-7",
           "6-0",
-          "6-1",
           "6-2",
           "6-3",
           "6-4",
           "6-5",
           "6-6",
           "6-7",
-          "7-0",
-          "7-1",
           "7-2",
           "7-3",
-          "7-4",
           "7-5",
           "7-6",
           "7-7"
@@ -138,7 +130,6 @@
           "0-4",
           "0-5",
           "0-6",
-          "0-7",
           "1-0",
           "1-1",
           "1-2",
@@ -146,7 +137,6 @@
           "1-4",
           "1-5",
           "1-6",
-          "1-7",
           "2-0",
           "2-1",
           "2-2",
@@ -154,7 +144,6 @@
           "2-4",
           "2-5",
           "2-6",
-          "2-7",
           "3-0",
           "3-1",
           "3-2",
@@ -162,8 +151,6 @@
           "3-4",
           "3-5",
           "3-6",
-          "3-7",
-          "4-0",
           "4-1",
           "4-2",
           "4-3",
@@ -179,16 +166,12 @@
           "5-5",
           "5-6",
           "5-7",
-          "6-0",
-          "6-1",
           "6-2",
           "6-3",
           "6-4",
           "6-5",
           "6-6",
           "6-7",
-          "7-0",
-          "7-1",
           "7-2",
           "7-3",
           "7-4",
@@ -198,9 +181,9 @@
         ]
       },
       "stats3d": {
-        "buildings": 28661,
-        "buildingsOverview": 4240,
-        "roadAllTiles": 64
+        "buildings": 22422,
+        "buildingsOverview": 3804,
+        "roadAllTiles": 55
       }
     },
     {
@@ -217,6 +200,7 @@
         "quartals": "data/tambov/quartals.geojson",
         "buildings": "data/tambov/buildings.geojson",
         "green": "data/tambov/green.geojson",
+        "water": "data/tambov/water.geojson",
         "roads": "data/tambov/roads.geojson",
         "roadsAll": "data/tambov/roads-all.geojson",
         "stops": "data/tambov/stops.geojson",
@@ -225,7 +209,7 @@
       },
       "stats": {
         "quartals": 391,
-        "buildings": 70707,
+        "buildings": 50988,
         "mkdMatched": 1867,
         "mkdUnmatched": 151
       },
@@ -258,6 +242,7 @@
       "files3d": {
         "quartals": "data3d/tambov/quartals.json",
         "green": "data3d/tambov/green.json",
+        "water": "data3d/tambov/water.json",
         "roads": "data3d/tambov/roads.json",
         "points": "data3d/tambov/points.json",
         "buildingsOverview": "data3d/tambov/buildings-overview.json",
@@ -266,7 +251,6 @@
       },
       "tiles3d": {
         "buildings": [
-          "0-0",
           "0-1",
           "0-2",
           "0-3",
@@ -281,7 +265,6 @@
           "1-5",
           "1-6",
           "1-7",
-          "2-0",
           "2-1",
           "2-2",
           "2-3",
@@ -289,7 +272,6 @@
           "2-5",
           "2-6",
           "2-7",
-          "3-0",
           "3-1",
           "3-2",
           "3-3",
@@ -304,7 +286,6 @@
           "4-4",
           "4-5",
           "4-6",
-          "4-7",
           "5-0",
           "5-1",
           "5-2",
@@ -312,26 +293,18 @@
           "5-4",
           "5-5",
           "5-6",
-          "5-7",
           "6-0",
           "6-1",
           "6-2",
           "6-3",
           "6-4",
           "6-5",
-          "6-6",
-          "6-7",
-          "7-0",
-          "7-1",
           "7-2",
           "7-3",
           "7-4",
-          "7-5",
-          "7-6",
-          "7-7"
+          "7-5"
         ],
         "roadsAll": [
-          "0-0",
           "0-1",
           "0-2",
           "0-3",
@@ -339,7 +312,6 @@
           "0-5",
           "0-6",
           "0-7",
-          "1-0",
           "1-1",
           "1-2",
           "1-3",
@@ -347,7 +319,6 @@
           "1-5",
           "1-6",
           "1-7",
-          "2-0",
           "2-1",
           "2-2",
           "2-3",
@@ -355,7 +326,6 @@
           "2-5",
           "2-6",
           "2-7",
-          "3-0",
           "3-1",
           "3-2",
           "3-3",
@@ -370,7 +340,6 @@
           "4-4",
           "4-5",
           "4-6",
-          "4-7",
           "5-0",
           "5-1",
           "5-2",
@@ -378,7 +347,6 @@
           "5-4",
           "5-5",
           "5-6",
-          "5-7",
           "6-0",
           "6-1",
           "6-2",
@@ -386,21 +354,17 @@
           "6-4",
           "6-5",
           "6-6",
-          "6-7",
-          "7-0",
           "7-1",
           "7-2",
           "7-3",
           "7-4",
-          "7-5",
-          "7-6",
-          "7-7"
+          "7-5"
         ]
       },
       "stats3d": {
-        "buildings": 70707,
+        "buildings": 50988,
         "buildingsOverview": 2014,
-        "roadAllTiles": 64
+        "roadAllTiles": 54
       }
     }
   ]

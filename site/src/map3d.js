@@ -41,6 +41,7 @@ const LAYERS = [
   { key: "quartals", label: "Кварталы" },
   { key: "buildings", label: "Здания" },
   { key: "green", label: "Зелёные зоны" },
+  { key: "water", label: "Вода" },
   { key: "roads", label: "Улично-дорожная сеть" },
   { key: "stops", label: "Остановки" },
   { key: "dtp", label: "ДТП" }
@@ -75,9 +76,9 @@ const DETAIL_FACTOR = 4.75;
 const ROAD_DETAIL_FACTOR = 4.2;
 const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
-const HEIGHT_EXAGGERATION = 2.25;
+const HEIGHT_EXAGGERATION = 2.0;
 const NON_MKD_HEIGHT_FACTOR = 0.32;
-const DATA_VERSION = "20260429-1100";
+const DATA_VERSION = "20260430-0100";
 
 const state = {
   manifest: null,
@@ -88,6 +89,7 @@ const state = {
     quartals: true,
     buildings: true,
     green: true,
+    water: true,
     roads: true,
     stops: false,
     dtp: false
@@ -185,12 +187,13 @@ function fallbackManifest() {
         population: 285487.66757751553,
         highShare: 0.13397297158400465,
         stats: { quartals: 344 },
-        stats3d: { buildings: 28661, buildingsOverview: 4240 },
+        stats3d: { buildings: 22422, buildingsOverview: 3804 },
         projectedBbox: [-6069.5, -6570.5, 6069.5, 6570.5],
         tileCount: 8,
         files3d: {
           quartals: "data3d/orel/quartals.json",
           green: "data3d/orel/green.json",
+          water: "data3d/orel/water.json",
           roads: "data3d/orel/roads.json",
           points: "data3d/orel/points.json",
           buildingsOverview: "data3d/orel/buildings-overview.json",
@@ -210,12 +213,13 @@ function fallbackManifest() {
         population: 250331.00001539226,
         highShare: 0.013464405380248049,
         stats: { quartals: 391 },
-        stats3d: { buildings: 70707, buildingsOverview: 2014 },
+        stats3d: { buildings: 50988, buildingsOverview: 2014 },
         projectedBbox: [-5195.7, -6736.4, 5195.7, 6736.4],
         tileCount: 8,
         files3d: {
           quartals: "data3d/tambov/quartals.json",
           green: "data3d/tambov/green.json",
+          water: "data3d/tambov/water.json",
           roads: "data3d/tambov/roads.json",
           points: "data3d/tambov/points.json",
           buildingsOverview: "data3d/tambov/buildings-overview.json",
@@ -669,9 +673,10 @@ async function loadCity(slug) {
   els.infoPanel.classList.remove("sheetExpanded");
   els.infoPanel.innerHTML = `<div class="muted">Загрузка 3D-данных</div>`;
 
-  const [quartals, green, roads, points, overview] = await Promise.all([
+  const [quartals, green, water, roads, points, overview] = await Promise.all([
     fetchJson(city.files3d.quartals),
     fetchJson(city.files3d.green),
+    fetchJson(city.files3d.water),
     fetchJson(city.files3d.roads),
     fetchJson(city.files3d.points),
     fetchJson(city.files3d.buildingsOverview)
@@ -687,6 +692,7 @@ async function loadCity(slug) {
     availableRoadTiles: new Set(city.tiles3d.roadsAll),
     quartals: quartals.features.map(withCenter),
     green: green.features.map(withCenter),
+    water: water.features.map(withCenter),
     roads: roads.lines,
     points,
     overviewBuildings
@@ -825,6 +831,7 @@ function drawBase() {
   baseCtx.fillRect(0, 0, rect.width, rect.height);
   drawGrid(baseCtx, rect);
 
+  if (state.layers.water) drawPolygonLayer(baseCtx, state.data.water, "rgba(87, 145, 176, 0.44)", "rgba(54, 106, 138, 0.32)", 0);
   if (state.layers.green) drawPolygonLayer(baseCtx, state.data.green, "rgba(80, 130, 78, 0.34)", "rgba(61, 92, 58, 0.2)", 0);
   if (state.layers.quartals) drawQuartals(baseCtx);
   if (state.layers.buildings) drawBuildingFootprints(baseCtx);

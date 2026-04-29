@@ -180,13 +180,19 @@ function prepareGreen(feature, projection) {
   return { bbox: bboxFromPolygons(polygons), polygons };
 }
 
+function prepareWater(feature, projection) {
+  const polygons = preparePolygonFeature(feature, projection, 2, true);
+  if (!polygons) return null;
+  return { bbox: bboxFromPolygons(polygons), polygons };
+}
+
 function prepareBuilding(feature, index, projection) {
   const polygons = preparePolygonFeature(feature, projection, 0.35, false);
   if (!polygons) return null;
   const props = feature.properties ?? {};
   const height = Math.max(2.5, Math.min(80, Number(props.height) || 8));
   const area = Number(props.area) || 0;
-  const isResidential = props.source === "mkd" || Number(props.pop) > 0 || Number(props.floors) > 0;
+  const isResidential = Number(props.residential) === 1 || props.source === "mkd" || Number(props.pop) > 0 || Number(props.floors) > 0;
   return {
     id: String(props.id ?? feature.id ?? index + 1),
     bbox: bboxFromPolygons(polygons),
@@ -326,6 +332,9 @@ for (const city of sourceManifest.cities) {
   const green = readJson(city.files.green).features
     .map((feature) => prepareGreen(feature, projection))
     .filter(Boolean);
+  const water = readJson(city.files.water).features
+    .map((feature) => prepareWater(feature, projection))
+    .filter(Boolean);
   const buildings = readJson(city.files.buildings).features
     .map((feature, index) => prepareBuilding(feature, index, projection))
     .filter(Boolean);
@@ -343,6 +352,7 @@ for (const city of sourceManifest.cities) {
 
   writeJson(path.join(cityDir, "quartals.json"), { features: quartals });
   writeJson(path.join(cityDir, "green.json"), { features: green });
+  writeJson(path.join(cityDir, "water.json"), { features: water });
   writeJson(path.join(cityDir, "roads.json"), { lines: roads });
   writeJson(path.join(cityDir, "points.json"), { stops, dtp, mkdUnmatched });
 
@@ -354,6 +364,7 @@ for (const city of sourceManifest.cities) {
     files3d: {
       quartals: `data3d/${city.slug}/quartals.json`,
       green: `data3d/${city.slug}/green.json`,
+      water: `data3d/${city.slug}/water.json`,
       roads: `data3d/${city.slug}/roads.json`,
       points: `data3d/${city.slug}/points.json`,
       buildingsOverview: `data3d/${city.slug}/buildings-overview.json`,

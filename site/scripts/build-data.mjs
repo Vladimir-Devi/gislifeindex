@@ -20,12 +20,14 @@ const cities = [
     sourceDir: "Orel",
     summaryName: "Орел",
     displayName: "Орёл",
-    indexLayer: "kvartals_life_index_norm",
-    buildingsLayer: "building_all",
+    indexLayer: "kvartals_life_index_norm_site",
+    buildingsLayer: "building_all_site",
+    buildingSelect: ["area", "Тип дома", "Тип дома_2", "Тип помещения (блока)", "Тип помещения (блока)_2", "pop", "pop_2", "pop_formula", "pop_formula_2", "zhil_area", "zhil_area_2"],
     buildingWhere: "area >= 25",
     greenLayer: "green_zone",
-    roadLayer: "road_auto",
-    roadAllLayer: "road_all",
+    waterLayer: "water_site",
+    roadLayer: "road_auto_site",
+    roadAllLayer: "road_all_site",
     mkdLayer: "mkd",
     mkdFields: ["address", "floor_num", "pop"],
     mkdWhere: "lon >= 35 AND lon <= 37 AND lat >= 52 AND lat <= 54",
@@ -42,11 +44,13 @@ const cities = [
     summaryName: "Тамбов",
     displayName: "Тамбов",
     indexLayer: "kvartals_life_index_norm",
-    buildingsLayer: "building_all",
+    buildingsLayer: "building_site",
+    buildingSelect: ["area", "Тип дома", "Тип дома_2", "Тип помещения (блока)", "Тип помещения (блока)_2", "pop", "pop_2", "floor", "floor_2", "build_type", "build_type_2"],
     buildingWhere: "area IS NULL OR area >= 21",
     greenLayer: "green_zone",
-    roadLayer: "road_auto",
-    roadAllLayer: "road_all",
+    waterLayer: "water_site",
+    roadLayer: "road_auto_site",
+    roadAllLayer: "road_all_site",
     mkdLayer: "mkd_plus",
     mkdFields: ["address", "floor", "pop"],
     mkdWhere: "lon >= 41 AND lon <= 42 AND lat >= 52 AND lat <= 53",
@@ -150,6 +154,16 @@ function firstNumber(properties, names) {
     if (value !== null) return value;
   }
   return null;
+}
+
+function firstText(properties, names) {
+  for (const name of names) {
+    const value = properties[name];
+    if (value === null || value === undefined) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return "";
 }
 
 function clamp(value, min, max) {
@@ -294,13 +308,24 @@ function candidateBuildingIndexes(index, x, y) {
   return index.grid.get(`${gx}:${gy}`) ?? [];
 }
 
-function buildBuildings(rawBuildings, rawMkd) {
+function buildBuildings(rawBuildings, rawMkd, city) {
+  const buildingTypeFields = [
+    "Тип поля",
+    "Тип поля_2",
+    "Тип дома",
+    "Тип дома_2",
+    "Тип помещения (блока)",
+    "Тип помещения (блока)_2",
+    "build_type",
+    "build_type_2"
+  ];
   const buildings = rawBuildings.features
     .filter((feature) => feature.geometry)
     .map((feature, index) => {
       const props = cleanProperties(feature.properties);
       const area = number(props.area) ?? 0;
       const id = String(props.fid ?? feature.id ?? index + 1);
+      const buildingType = firstText(props, city.buildingTypeFields ?? buildingTypeFields);
       const randomPart = seededUnit(id) * 8;
       let height = clamp(4 + Math.sqrt(Math.max(area, 1)) * 0.22 + randomPart, 4, 32);
       if (area > 4000) height *= 0.5;
@@ -314,6 +339,8 @@ function buildBuildings(rawBuildings, rawMkd) {
           source: "area",
           floors: null,
           pop: null,
+          buildingType,
+          residential: buildingType ? 1 : 0,
           bbox: geometryBbox(feature.geometry)
         },
         geometry: feature.geometry
@@ -348,6 +375,7 @@ function buildBuildings(rawBuildings, rawMkd) {
       target.source = "mkd";
       target.floors = floors;
       target.pop = number(props.pop);
+      target.residential = 1;
     } else {
       unmatchedMkd.push({
         type: "Feature",
@@ -444,13 +472,18 @@ function exportCity(city) {
     output: path.join(rawBase, "buildings.geojson"),
     input: path.join(sourceBase, "osnova.gpkg"),
     layer: city.buildingsLayer,
-    select: ["area"],
+    select: city.buildingSelect,
     where: city.buildingWhere
   });
   exportLayer({
     output: path.join(rawBase, "green.geojson"),
     input: path.join(sourceBase, "osnova.gpkg"),
     layer: city.greenLayer
+  });
+  exportLayer({
+    output: path.join(rawBase, "water.geojson"),
+    input: path.join(sourceBase, "osnova.gpkg"),
+    layer: city.waterLayer
   });
   exportLayer({
     output: path.join(rawBase, "roads.geojson"),
@@ -497,7 +530,7 @@ function prepareCity(city, populationRows) {
 
   const rawBuildings = readJson(path.join(rawBase, "buildings.geojson"));
   const rawMkd = readJson(path.join(rawBase, "mkd.geojson"));
-  const { buildings, unmatchedMkd } = buildBuildings(rawBuildings, rawMkd);
+  const { buildings, unmatchedMkd } = buildBuildings(rawBuildings, rawMkd, city);
 
   const stops = mergeFeatureCollections(
     city.stopLayers.map((layer) => pointCollection(readJson(path.join(rawBase, `${layer}.geojson`)), layer))
@@ -506,6 +539,7 @@ function prepareCity(city, populationRows) {
   writeJson(path.join(cityOut, "quartals.geojson"), { type: "FeatureCollection", features: quartals });
   writeJson(path.join(cityOut, "buildings.geojson"), { type: "FeatureCollection", features: buildings });
   writeJson(path.join(cityOut, "green.geojson"), readJson(path.join(rawBase, "green.geojson")));
+  writeJson(path.join(cityOut, "water.geojson"), readJson(path.join(rawBase, "water.geojson")));
   writeJson(path.join(cityOut, "roads.geojson"), readJson(path.join(rawBase, "roads.geojson")));
   writeJson(path.join(cityOut, "roads-all.geojson"), readJson(path.join(rawBase, "roads-all.geojson")));
   writeJson(path.join(cityOut, "stops.geojson"), stops);
@@ -522,6 +556,7 @@ function prepareCity(city, populationRows) {
       quartals: `data/${city.slug}/quartals.geojson`,
       buildings: `data/${city.slug}/buildings.geojson`,
       green: `data/${city.slug}/green.geojson`,
+      water: `data/${city.slug}/water.geojson`,
       roads: `data/${city.slug}/roads.geojson`,
       roadsAll: `data/${city.slug}/roads-all.geojson`,
       stops: `data/${city.slug}/stops.geojson`,

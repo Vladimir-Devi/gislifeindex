@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T18:25:45.510Z",
+  "generatedAt": "2026-04-29T21:54:09.443Z",
   "source": "C:/institute/magic/Diser",
   "methodology": {
     "baseQuarterFormula": "mean(idx_housing, idx_infra, idx_transport, idx_work, idx_green, idx_commerce)",
@@ -20,15 +20,16 @@
       "name": "Орёл",
       "summaryName": "Орел",
       "bbox": [
-        35.999727,
+        35.999736,
         52.905227,
         36.180771,
-        53.023274
+        53.023258
       ],
       "files": {
         "quartals": "data/orel/quartals.geojson",
         "buildings": "data/orel/buildings.geojson",
         "green": "data/orel/green.geojson",
+        "water": "data/orel/water.geojson",
         "roads": "data/orel/roads.geojson",
         "roadsAll": "data/orel/roads-all.geojson",
         "stops": "data/orel/stops.geojson",
@@ -37,9 +38,9 @@
       },
       "stats": {
         "quartals": 344,
-        "buildings": 28661,
-        "mkdMatched": 1881,
-        "mkdUnmatched": 15
+        "buildings": 22422,
+        "mkdMatched": 1836,
+        "mkdUnmatched": 60
       },
       "rank": 1,
       "index": 50.15066088619108,
@@ -71,6 +72,7 @@
         "quartals": "data/tambov/quartals.geojson",
         "buildings": "data/tambov/buildings.geojson",
         "green": "data/tambov/green.geojson",
+        "water": "data/tambov/water.geojson",
         "roads": "data/tambov/roads.geojson",
         "roadsAll": "data/tambov/roads-all.geojson",
         "stops": "data/tambov/stops.geojson",
@@ -79,7 +81,7 @@
       },
       "stats": {
         "quartals": 391,
-        "buildings": 70707,
+        "buildings": 50988,
         "mkdMatched": 1867,
         "mkdUnmatched": 151
       },
