@@ -8,6 +8,7 @@ const sourceManifest = JSON.parse(readFileSync(path.join(siteDir, "data", "manif
 
 const TILE_COUNT = 8;
 const OVERVIEW_AREA_THRESHOLD = 700;
+const BUILDING_COORD_SCALE = 10;
 
 function assertOutputPath(target) {
   const resolved = path.resolve(target);
@@ -229,11 +230,41 @@ function splitBuildings(buildings, cityDir, bbox) {
   const buildingDir = path.join(cityDir, "buildings");
   const available = [];
   for (const [key, features] of tiles) {
-    writeJson(path.join(buildingDir, `${key}.json`), { features });
+    writeJson(path.join(buildingDir, `${key}.json`), compactBuildings(features));
     available.push(key);
   }
-  writeJson(path.join(cityDir, "buildings-overview.json"), { features: overview });
+  writeJson(path.join(cityDir, "buildings-overview.json"), compactBuildings(overview));
   return { available: available.sort(), overview: overview.length, total: buildings.length };
+}
+
+function compactBuildings(features) {
+  return {
+    f: "b1",
+    s: BUILDING_COORD_SCALE,
+    b: features.map(compactBuilding)
+  };
+}
+
+function compactBuilding(feature) {
+  const rings = [];
+  for (const polygon of feature.polygons) {
+    if (!polygon[0] || polygon[0].length < 3) continue;
+    rings.push(compactRing(polygon[0]));
+  }
+  return [
+    Math.round(feature.h * BUILDING_COORD_SCALE),
+    feature.s === "mkd" ? 1 : 0,
+    feature.r ? 1 : 0,
+    ...rings
+  ];
+}
+
+function compactRing(ring) {
+  const open = ring.length > 1 && ring[0][0] === ring.at(-1)[0] && ring[0][1] === ring.at(-1)[1] ? ring.slice(0, -1) : ring;
+  return open.flatMap((point) => [
+    Math.round(point[0] * BUILDING_COORD_SCALE),
+    Math.round(point[1] * BUILDING_COORD_SCALE)
+  ]);
 }
 
 function splitRoadSegments(collection, projection, cityDir, bbox) {

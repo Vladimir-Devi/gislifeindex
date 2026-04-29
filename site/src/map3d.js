@@ -77,7 +77,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 2.25;
 const NON_MKD_HEIGHT_FACTOR = 0.32;
-const DATA_VERSION = "20260429-1000";
+const DATA_VERSION = "20260429-1100";
 
 const state = {
   manifest: null,
@@ -261,6 +261,41 @@ async function fetchJson(url) {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error(`Не удалось загрузить ${url}`);
   return response.json();
+}
+
+function decodeBuildings(payload) {
+  if (payload && Array.isArray(payload.features)) return payload.features;
+  if (!payload || payload.f !== "b1" || !Array.isArray(payload.b)) return [];
+  const scale = payload.s || 10;
+  return payload.b
+    .map((item) => decodeBuilding(item, scale))
+    .filter(Boolean);
+}
+
+function decodeBuilding(item, scale) {
+  if (!Array.isArray(item) || item.length < 4) return null;
+  const polygons = [];
+  for (let i = 3; i < item.length; i += 1) {
+    const ring = decodeBuildingRing(item[i], scale);
+    if (ring.length >= 3) polygons.push([ring]);
+  }
+  if (!polygons.length) return null;
+  return {
+    bbox: bboxFromPoints(polygons.flat(2)),
+    polygons,
+    h: item[0] / scale,
+    s: item[1] ? "mkd" : "area",
+    r: item[2] ? 1 : 0
+  };
+}
+
+function decodeBuildingRing(values, scale) {
+  if (!Array.isArray(values)) return [];
+  const ring = [];
+  for (let i = 0; i < values.length - 1; i += 2) {
+    ring.push([values[i] / scale, values[i + 1] / scale]);
+  }
+  return ring;
 }
 
 function renderCityMenu() {
@@ -642,6 +677,7 @@ async function loadCity(slug) {
     fetchJson(city.files3d.buildingsOverview)
   ]);
   if (token !== state.renderToken) return;
+  const overviewBuildings = decodeBuildings(overview);
 
   state.data = {
     city,
@@ -653,10 +689,10 @@ async function loadCity(slug) {
     green: green.features.map(withCenter),
     roads: roads.lines,
     points,
-    overviewBuildings: overview.features
+    overviewBuildings
   };
 
-  state.overviewMesh = createBuildingMesh(overview.features);
+  state.overviewMesh = createBuildingMesh(overviewBuildings);
   resizeCanvases();
   resetView();
   recomputeScores();
@@ -1375,8 +1411,9 @@ async function loadTile(key) {
   if (state.data.availableBuildingTiles.has(key)) {
     jobs.push(
       fetchJson(`${city.files3d.buildingsTileBase}/${key}.json`).then((payload) => {
-        state.tileMeshes.set(key, createBuildingMesh(payload.features));
-        state.tileBuildingFeatures.set(key, payload.features);
+        const features = decodeBuildings(payload);
+        state.tileMeshes.set(key, createBuildingMesh(features));
+        state.tileBuildingFeatures.set(key, features);
       })
     );
   }
