@@ -40,9 +40,6 @@ const BLOCKS = [
 const LAYERS = [
   { key: "quartals", label: "Кварталы" },
   { key: "buildings", label: "Здания" },
-  { key: "green", label: "Зелёные зоны" },
-  { key: "water", label: "Вода" },
-  { key: "roads", label: "Улично-дорожная сеть" },
   { key: "stops", label: "Остановки" },
   { key: "dtp", label: "ДТП" }
 ];
@@ -76,9 +73,9 @@ const DETAIL_FACTOR = 4.75;
 const ROAD_DETAIL_FACTOR = 4.2;
 const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
-const HEIGHT_EXAGGERATION = 2.0;
+const HEIGHT_EXAGGERATION = 1.33;
 const NON_MKD_HEIGHT_FACTOR = 0.32;
-const DATA_VERSION = "20260430-0100";
+const DATA_VERSION = "20260430-0200";
 
 const state = {
   manifest: null,
@@ -88,9 +85,6 @@ const state = {
   layers: {
     quartals: true,
     buildings: true,
-    green: true,
-    water: true,
-    roads: true,
     stops: false,
     dtp: false
   },
@@ -103,6 +97,8 @@ const state = {
   },
   selected: null,
   accidentPopup: null,
+  accidentDisplayItems: [],
+  cameraAnimation: null,
   dragging: null,
   pulseFrame: null,
   overviewMesh: null,
@@ -195,6 +191,7 @@ function fallbackManifest() {
           green: "data3d/orel/green.json",
           water: "data3d/orel/water.json",
           roads: "data3d/orel/roads.json",
+          railways: "data3d/orel/railways.json",
           points: "data3d/orel/points.json",
           buildingsOverview: "data3d/orel/buildings-overview.json",
           buildingsTileBase: "data3d/orel/buildings",
@@ -221,6 +218,7 @@ function fallbackManifest() {
           green: "data3d/tambov/green.json",
           water: "data3d/tambov/water.json",
           roads: "data3d/tambov/roads.json",
+          railways: "data3d/tambov/railways.json",
           points: "data3d/tambov/points.json",
           buildingsOverview: "data3d/tambov/buildings-overview.json",
           buildingsTileBase: "data3d/tambov/buildings",
@@ -456,6 +454,7 @@ function attachEvents() {
 
   overlayCanvas.addEventListener("pointerdown", (event) => {
     if (!state.data) return;
+    stopCameraAnimation();
     rememberPointer(event);
     if (overlayCanvas.setPointerCapture) overlayCanvas.setPointerCapture(event.pointerId);
     if (event.pointerType === "touch" && state.activePointers.size >= 2) {
@@ -529,6 +528,7 @@ function attachEvents() {
     "wheel",
     (event) => {
       if (!state.data) return;
+      stopCameraAnimation();
       event.preventDefault();
       const rect = overlayCanvas.getBoundingClientRect();
       const cursor = [event.clientX - rect.left, event.clientY - rect.top];
@@ -673,11 +673,12 @@ async function loadCity(slug) {
   els.infoPanel.classList.remove("sheetExpanded");
   els.infoPanel.innerHTML = `<div class="muted">Загрузка 3D-данных</div>`;
 
-  const [quartals, green, water, roads, points, overview] = await Promise.all([
+  const [quartals, green, water, roads, railways, points, overview] = await Promise.all([
     fetchJson(city.files3d.quartals),
     fetchJson(city.files3d.green),
     fetchJson(city.files3d.water),
     fetchJson(city.files3d.roads),
+    fetchJson(city.files3d.railways),
     fetchJson(city.files3d.points),
     fetchJson(city.files3d.buildingsOverview)
   ]);
@@ -694,6 +695,7 @@ async function loadCity(slug) {
     green: green.features.map(withCenter),
     water: water.features.map(withCenter),
     roads: roads.lines,
+    railways: railways.lines,
     points,
     overviewBuildings
   };
@@ -723,6 +725,7 @@ function showCityMenu() {
 }
 
 function clearMeshes() {
+  stopCameraAnimation();
   if (gl) {
     for (const mesh of state.tileMeshes.values()) gl.deleteBuffer(mesh.buffer);
     if (state.overviewMesh) gl.deleteBuffer(state.overviewMesh.buffer);
@@ -831,11 +834,12 @@ function drawBase() {
   baseCtx.fillRect(0, 0, rect.width, rect.height);
   drawGrid(baseCtx, rect);
 
-  if (state.layers.water) drawPolygonLayer(baseCtx, state.data.water, "rgba(87, 145, 176, 0.44)", "rgba(54, 106, 138, 0.32)", 0);
-  if (state.layers.green) drawPolygonLayer(baseCtx, state.data.green, "rgba(80, 130, 78, 0.34)", "rgba(61, 92, 58, 0.2)", 0);
+  drawPolygonLayer(baseCtx, state.data.water, "rgba(87, 145, 176, 0.44)", "rgba(54, 106, 138, 0.32)", 0);
+  drawPolygonLayer(baseCtx, state.data.green, "rgba(80, 130, 78, 0.34)", "rgba(61, 92, 58, 0.2)", 0);
   if (state.layers.quartals) drawQuartals(baseCtx);
   if (state.layers.buildings) drawBuildingFootprints(baseCtx);
-  if (state.layers.roads) drawRoads(baseCtx);
+  drawRailways(baseCtx);
+  drawRoads(baseCtx);
 }
 
 function drawGrid(ctx, rect) {
@@ -888,6 +892,20 @@ function drawRoads(ctx) {
   ctx.lineWidth = 1.28;
   ctx.strokeStyle = `rgba(47, 54, 55, ${mainAlpha})`;
   for (const line of state.data.roads) drawLine(ctx, line, 6);
+  ctx.restore();
+}
+
+function drawRailways(ctx) {
+  if (!state.data.railways || !state.data.railways.length) return;
+  const alpha = zoomFade(0.18, 0.54, 3.2);
+  ctx.save();
+  ctx.lineWidth = 2.1;
+  ctx.strokeStyle = `rgba(62, 61, 58, ${alpha})`;
+  for (const line of state.data.railways) drawLine(ctx, line, 7);
+  ctx.lineWidth = 1.05;
+  ctx.setLineDash([7, 7]);
+  ctx.strokeStyle = `rgba(244, 238, 226, ${Math.min(0.72, alpha + 0.18)})`;
+  for (const line of state.data.railways) drawLine(ctx, line, 7.4);
   ctx.restore();
 }
 
@@ -1044,25 +1062,82 @@ function drawStops() {
 }
 
 function drawAccidents() {
+  state.accidentDisplayItems = buildAccidentDisplayItems();
   overlayCtx.save();
-  overlayCtx.fillStyle = "#b64c3f";
   overlayCtx.strokeStyle = "#ffffff";
   overlayCtx.lineWidth = 1;
-  for (const item of state.data.points.dtp) {
+  overlayCtx.textAlign = "center";
+  overlayCtx.textBaseline = "middle";
+  overlayCtx.font = "700 11px system-ui, sans-serif";
+  for (const item of state.accidentDisplayItems) {
     const radius = accidentRadius(item);
     const [sx, sy] = worldToScreen(item.point[0], item.point[1], 15);
+    overlayCtx.fillStyle = item.items ? "#893a35" : "#b64c3f";
     overlayCtx.beginPath();
     overlayCtx.arc(sx, sy, radius, 0, Math.PI * 2);
     overlayCtx.fill();
     overlayCtx.stroke();
+    if (item.items) {
+      overlayCtx.fillStyle = "#fffaf1";
+      overlayCtx.fillText(String(item.items.length), sx, sy + 0.5);
+    }
   }
   overlayCtx.restore();
 }
 
 // @dist-split
 function accidentRadius(item) {
+  if (item.items) {
+    const severity = item.properties.severity ?? item.items.length;
+    return clamp(7 + Math.sqrt(item.items.length) * 3.2 + Math.sqrt(Math.max(severity, 1)) * 0.55, 10, 25);
+  }
   const severity = item.properties.severity != null ? item.properties.severity : item.properties.injured != null ? item.properties.injured : 1;
   return clamp(2.8 + Math.sqrt(Math.max(severity, 1)) * 2.2, 3.5, 13);
+}
+
+function buildAccidentDisplayItems() {
+  if (!state.layers.dtp || !state.data?.points?.dtp?.length) return [];
+  const clusterDistance = accidentClusterDistance();
+  const clusters = [];
+  for (const item of state.data.points.dtp) {
+    const [sx, sy] = worldToScreen(item.point[0], item.point[1], 15);
+    let cluster = null;
+    for (const candidate of clusters) {
+      if (Math.hypot(candidate.sx - sx, candidate.sy - sy) <= clusterDistance) {
+        cluster = candidate;
+        break;
+      }
+    }
+    if (!cluster) {
+      clusters.push({ sx, sy, wx: item.point[0], wy: item.point[1], items: [item] });
+      continue;
+    }
+    const nextCount = cluster.items.length + 1;
+    cluster.sx = (cluster.sx * cluster.items.length + sx) / nextCount;
+    cluster.sy = (cluster.sy * cluster.items.length + sy) / nextCount;
+    cluster.wx = (cluster.wx * cluster.items.length + item.point[0]) / nextCount;
+    cluster.wy = (cluster.wy * cluster.items.length + item.point[1]) / nextCount;
+    cluster.items.push(item);
+  }
+  return clusters.map((cluster) => {
+    if (cluster.items.length === 1) return cluster.items[0];
+    const injured = cluster.items.reduce((sum, item) => sum + (Number(item.properties.injured) || 0), 0);
+    const dead = cluster.items.reduce((sum, item) => sum + (Number(item.properties.dead) || 0), 0);
+    return {
+      items: cluster.items,
+      point: [cluster.wx, cluster.wy],
+      properties: {
+        type: "Кластер ДТП",
+        injured,
+        dead,
+        severity: injured + dead * 3
+      }
+    };
+  });
+}
+
+function accidentClusterDistance() {
+  return clamp(44 - zoomProgress(12) * 28, 16, 44);
 }
 
 // @dist-split
@@ -1096,15 +1171,15 @@ function createBuildingMesh(features) {
 function buildingColors(feature) {
   if (isResidentialBuilding(feature)) {
     return {
-      roof: [0.78, 0.78, 0.74, 1],
-      sideTop: [0.75, 0.75, 0.71, 1],
-      sideBottom: [0.69, 0.69, 0.65, 1]
+      roof: [0.64, 0.64, 0.61, 1],
+      sideTop: [0.61, 0.61, 0.58, 1],
+      sideBottom: [0.55, 0.55, 0.52, 1]
     };
   }
   return {
-    roof: [0.64, 0.64, 0.61, 1],
-    sideTop: [0.61, 0.61, 0.58, 1],
-    sideBottom: [0.55, 0.55, 0.52, 1]
+    roof: [0.78, 0.78, 0.74, 1],
+    sideTop: [0.75, 0.75, 0.71, 1],
+    sideBottom: [0.69, 0.69, 0.65, 1]
   };
 }
 
@@ -1509,6 +1584,14 @@ function pickFeature(event) {
   const screen = [event.clientX - rect.left, event.clientY - rect.top];
   const accident = pickAccident(screen[0], screen[1]);
   if (accident) {
+    if (accident.items && shouldZoomAccidentCluster(accident)) {
+      state.accidentPopup = null;
+      state.selected = null;
+      stopPulse();
+      updatePanel();
+      zoomToAccidentCluster(accident);
+      return;
+    }
     state.accidentPopup = accident;
     state.selected = null;
     stopPulse();
@@ -1533,7 +1616,8 @@ function pickAccident(screenX, screenY) {
   if (!state.layers.dtp || !state.data || !state.data.points || !state.data.points.dtp || !state.data.points.dtp.length) return null;
   let best = null;
   let bestDistance = Infinity;
-  for (const item of state.data.points.dtp) {
+  const items = state.accidentDisplayItems.length ? state.accidentDisplayItems : buildAccidentDisplayItems();
+  for (const item of items) {
     const [sx, sy] = worldToScreen(item.point[0], item.point[1], 15);
     const radius = accidentRadius(item) + 5;
     const distance = Math.hypot(screenX - sx, screenY - sy);
@@ -1543,6 +1627,43 @@ function pickAccident(screenX, screenY) {
     }
   }
   return best;
+}
+
+function shouldZoomAccidentCluster(cluster) {
+  return cluster.items?.length > 1 && state.camera.scale < state.camera.fitScale * 13.5;
+}
+
+function zoomToAccidentCluster(cluster) {
+  const targetScale = Math.min(state.camera.scale * 2.35, state.camera.fitScale * 16);
+  animateCameraTo(cluster.point, targetScale, 720);
+}
+
+function animateCameraTo(targetCenter, targetScale, duration = 650) {
+  stopCameraAnimation();
+  const startCenter = [...state.camera.center];
+  const startScale = state.camera.scale;
+  const startTime = performance.now();
+  const tick = (time) => {
+    const t = clamp((time - startTime) / duration, 0, 1);
+    const eased = t * t * (3 - 2 * t);
+    state.camera.center = [
+      startCenter[0] + (targetCenter[0] - startCenter[0]) * eased,
+      startCenter[1] + (targetCenter[1] - startCenter[1]) * eased
+    ];
+    state.camera.scale = startScale + (targetScale - startScale) * eased;
+    draw();
+    if (t < 1) {
+      state.cameraAnimation = requestAnimationFrame(tick);
+    } else {
+      state.cameraAnimation = null;
+    }
+  };
+  state.cameraAnimation = requestAnimationFrame(tick);
+}
+
+function stopCameraAnimation() {
+  if (state.cameraAnimation) cancelAnimationFrame(state.cameraAnimation);
+  state.cameraAnimation = null;
 }
 
 function startPulse() {
@@ -1571,6 +1692,26 @@ function renderAccidentPopup() {
   const item = state.accidentPopup;
   const [sx, sy] = worldToScreen(item.point[0], item.point[1], 30);
   const props = item.properties;
+  if (item.items) {
+    const rows = item.items.slice(0, 8).map((accident) => {
+      const accidentProps = accident.properties;
+      const when = [accidentProps.date, accidentProps.time].filter(Boolean).join(" ");
+      const title = accidentProps.type || "ДТП";
+      return `<li><b>${escapeAttr(title)}</b><span>${escapeAttr(when || "Дата не указана")}</span><small>${formatInt(accidentProps.injured || 0)} постр. · ${formatInt(accidentProps.dead || 0)} погиб.</small></li>`;
+    }).join("");
+    const extra = item.items.length > 8 ? `<small>Ещё ДТП: ${formatInt(item.items.length - 8)}</small>` : "";
+    els.accidentPopup.classList.remove("hidden");
+    els.accidentPopup.style.left = `${sx}px`;
+    els.accidentPopup.style.top = `${sy}px`;
+    els.accidentPopup.innerHTML = `
+      <strong>ДТП: ${formatInt(item.items.length)}</strong>
+      <span>Пострадавшие: ${formatInt(props.injured || 0)}</span>
+      <span>Погибшие: ${formatInt(props.dead || 0)}</span>
+      <ul class="accidentList">${rows}</ul>
+      ${extra}
+    `;
+    return;
+  }
   const when = [props.date, props.time].filter(Boolean).join(" ");
   els.accidentPopup.classList.remove("hidden");
   els.accidentPopup.style.left = `${sx}px`;

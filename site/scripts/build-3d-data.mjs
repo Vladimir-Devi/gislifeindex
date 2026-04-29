@@ -340,6 +340,8 @@ for (const city of sourceManifest.cities) {
     .filter(Boolean);
   const roads = readJson(city.files.roads).features
     .flatMap((feature) => prepareMajorRoad(feature, projection));
+  const railways = readJson(city.files.railways).features
+    .flatMap((feature) => prepareMajorRoad(feature, projection));
   const roadsAll = readJson(city.files.roadsAll);
   const stops = preparePoints(readJson(city.files.stops), projection);
   const dtp = preparePoints(readJson(city.files.dtp), projection);
@@ -354,6 +356,7 @@ for (const city of sourceManifest.cities) {
   writeJson(path.join(cityDir, "green.json"), { features: green });
   writeJson(path.join(cityDir, "water.json"), { features: water });
   writeJson(path.join(cityDir, "roads.json"), { lines: roads });
+  writeJson(path.join(cityDir, "railways.json"), { lines: railways });
   writeJson(path.join(cityDir, "points.json"), { stops, dtp, mkdUnmatched });
 
   data3dManifest.cities.push({
@@ -366,6 +369,7 @@ for (const city of sourceManifest.cities) {
       green: `data3d/${city.slug}/green.json`,
       water: `data3d/${city.slug}/water.json`,
       roads: `data3d/${city.slug}/roads.json`,
+      railways: `data3d/${city.slug}/railways.json`,
       points: `data3d/${city.slug}/points.json`,
       buildingsOverview: `data3d/${city.slug}/buildings-overview.json`,
       buildingsTileBase: `data3d/${city.slug}/buildings`,

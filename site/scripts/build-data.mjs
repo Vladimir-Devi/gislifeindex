@@ -26,6 +26,7 @@ const cities = [
     buildingWhere: "area >= 25",
     greenLayer: "green_zone",
     waterLayer: "water_site",
+    railwayLayer: "railway_site",
     roadLayer: "road_auto_site",
     roadAllLayer: "road_all_site",
     mkdLayer: "mkd",
@@ -49,6 +50,7 @@ const cities = [
     buildingWhere: "area IS NULL OR area >= 21",
     greenLayer: "green_zone",
     waterLayer: "water_site",
+    railwayLayer: "railway_site",
     roadLayer: "road_auto_site",
     roadAllLayer: "road_all_site",
     mkdLayer: "mkd_plus",
@@ -486,6 +488,11 @@ function exportCity(city) {
     layer: city.waterLayer
   });
   exportLayer({
+    output: path.join(rawBase, "railways.geojson"),
+    input: path.join(sourceBase, "osnova.gpkg"),
+    layer: city.railwayLayer
+  });
+  exportLayer({
     output: path.join(rawBase, "roads.geojson"),
     input: path.join(sourceBase, "road.gpkg"),
     layer: city.roadLayer
@@ -540,6 +547,7 @@ function prepareCity(city, populationRows) {
   writeJson(path.join(cityOut, "buildings.geojson"), { type: "FeatureCollection", features: buildings });
   writeJson(path.join(cityOut, "green.geojson"), readJson(path.join(rawBase, "green.geojson")));
   writeJson(path.join(cityOut, "water.geojson"), readJson(path.join(rawBase, "water.geojson")));
+  writeJson(path.join(cityOut, "railways.geojson"), readJson(path.join(rawBase, "railways.geojson")));
   writeJson(path.join(cityOut, "roads.geojson"), readJson(path.join(rawBase, "roads.geojson")));
   writeJson(path.join(cityOut, "roads-all.geojson"), readJson(path.join(rawBase, "roads-all.geojson")));
   writeJson(path.join(cityOut, "stops.geojson"), stops);
@@ -557,6 +565,7 @@ function prepareCity(city, populationRows) {
       buildings: `data/${city.slug}/buildings.geojson`,
       green: `data/${city.slug}/green.geojson`,
       water: `data/${city.slug}/water.geojson`,
+      railways: `data/${city.slug}/railways.geojson`,
       roads: `data/${city.slug}/roads.geojson`,
       roadsAll: `data/${city.slug}/roads-all.geojson`,
       stops: `data/${city.slug}/stops.geojson`,

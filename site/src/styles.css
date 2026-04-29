@@ -661,6 +661,23 @@ input {
   color: var(--muted);
 }
 
+.accidentList {
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  margin: 8px 0 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.accidentList li {
+  display: grid;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(65, 66, 66, 0.12);
+}
+
 @media (max-width: 860px) {
   .topbar {
     min-height: 66px;

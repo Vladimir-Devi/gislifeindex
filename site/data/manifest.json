@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-29T21:54:09.443Z",
+  "generatedAt": "2026-04-29T23:03:01.334Z",
   "source": "C:/institute/magic/Diser",
   "methodology": {
     "baseQuarterFormula": "mean(idx_housing, idx_infra, idx_transport, idx_work, idx_green, idx_commerce)",
@@ -30,6 +30,7 @@
         "buildings": "data/orel/buildings.geojson",
         "green": "data/orel/green.geojson",
         "water": "data/orel/water.geojson",
+        "railways": "data/orel/railways.geojson",
         "roads": "data/orel/roads.geojson",
         "roadsAll": "data/orel/roads-all.geojson",
         "stops": "data/orel/stops.geojson",
@@ -73,6 +74,7 @@
         "buildings": "data/tambov/buildings.geojson",
         "green": "data/tambov/green.geojson",
         "water": "data/tambov/water.geojson",
+        "railways": "data/tambov/railways.geojson",
         "roads": "data/tambov/roads.geojson",
         "roadsAll": "data/tambov/roads-all.geojson",
         "stops": "data/tambov/stops.geojson",
