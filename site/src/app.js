@@ -251,9 +251,9 @@ function renderQualityStructure(city) {
         <span class="qualityGood" style="width:${high}%"></span>
       </div>
       <div class="qualityLegend">
-        <span><i class="qualityDot good"></i>Хорошая ${formatNumber(high, 1)}%</span>
-        <span><i class="qualityDot mid"></i>Средняя ${formatNumber(mid, 1)}%</span>
-        <span><i class="qualityDot bad"></i>Плохая ${formatNumber(low, 1)}%</span>
+        <span><i class="qualityDot bad"></i>Низкое ${formatNumber(low, 1)}%</span>
+        <span><i class="qualityDot mid"></i>Среднее ${formatNumber(mid, 1)}%</span>
+        <span><i class="qualityDot good"></i>Высокое ${formatNumber(high, 1)}%</span>
       </div>
     </div>`;
 }
