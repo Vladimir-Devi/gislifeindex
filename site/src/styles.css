@@ -52,8 +52,8 @@ input {
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 72px;
-  padding: 12px 18px;
+  min-height: 64px;
+  padding: 8px 18px;
   border-bottom: 1px solid rgba(46, 48, 50, 0.12);
   background: rgba(255, 253, 248, 0.94);
   backdrop-filter: blur(14px);
@@ -61,16 +61,15 @@ input {
 
 .topbar h1 {
   margin: 1px 0 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 720;
   letter-spacing: 0;
 }
 
 .eyebrow {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 650;
-  text-transform: uppercase;
 }
 
 .topbarMetric {
@@ -129,7 +128,7 @@ input {
   justify-content: center;
   gap: 18px;
   min-height: 100vh;
-  padding: 112px 24px 36px;
+  padding: 98px 24px 36px;
   align-content: start;
 }
 
@@ -326,6 +325,12 @@ input {
   gap: 8px;
 }
 
+.qualityTitle {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
 .qualityBar {
   display: flex;
   height: 11px;
@@ -388,7 +393,7 @@ input {
 
 .mapShell {
   position: fixed;
-  inset: 72px 0 0;
+  inset: 64px 0 0;
   overflow: hidden;
   background: #e7e0d3;
 }
@@ -762,12 +767,12 @@ input {
 
 @media (max-width: 860px) {
   .topbar {
-    min-height: 66px;
-    padding: 10px 12px;
+    min-height: 58px;
+    padding: 7px 12px;
   }
 
   .topbar h1 {
-    font-size: 18px;
+    font-size: 17px;
   }
 
   .topbarMetric {
@@ -775,7 +780,7 @@ input {
   }
 
   .cityMenu {
-    padding: 90px 14px 20px;
+    padding: 80px 14px 20px;
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -796,7 +801,7 @@ input {
   }
 
   .mapShell {
-    top: 66px;
+    top: 58px;
   }
 
   .infoPanel {

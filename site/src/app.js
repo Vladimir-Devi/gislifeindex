@@ -245,15 +245,16 @@ function renderQualityStructure(city) {
   const high = clamp((city.highShare || 0) * 100, 0, 100);
   return `
     <div class="qualityMix" aria-label="Структура населения по качеству среды">
+      <div class="qualityTitle">Структура населения по качеству среды:</div>
       <div class="qualityBar">
         <span class="qualityBad" style="width:${low}%"></span>
         <span class="qualityMid" style="width:${mid}%"></span>
         <span class="qualityGood" style="width:${high}%"></span>
       </div>
       <div class="qualityLegend">
-        <span><i class="qualityDot bad"></i>Низкое ${formatNumber(low, 1)}%</span>
-        <span><i class="qualityDot mid"></i>Среднее ${formatNumber(mid, 1)}%</span>
-        <span><i class="qualityDot good"></i>Высокое ${formatNumber(high, 1)}%</span>
+        <span><i class="qualityDot bad"></i>Плохая ${formatNumber(low, 1)}%</span>
+        <span><i class="qualityDot mid"></i>Средняя ${formatNumber(mid, 1)}%</span>
+        <span><i class="qualityDot good"></i>Хорошая ${formatNumber(high, 1)}%</span>
       </div>
     </div>`;
 }
@@ -1117,6 +1118,8 @@ function renderQuarterPanel(feature) {
 function renderGroupedIndicators(indicators) {
   const groups = new Map();
   for (const item of indicators) {
+    const value = Number(item.value);
+    if (!Number.isFinite(value) || value === 0) continue;
     const parts = item.label.split(":").map((part) => part.trim());
     const group = parts.length > 1 ? parts[0] : "Показатели";
     const label = parts.length > 1 ? parts[1] : parts[0];
@@ -1124,11 +1127,12 @@ function renderGroupedIndicators(indicators) {
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push({
       label: label.charAt(0).toUpperCase() + label.slice(1),
-      value: item.value,
+      value,
       unit: meta.unit,
       help: meta.help
     });
   }
+  if (!groups.size) return "";
   return `
     <div class="indicatorList">
       ${[...groups.entries()]

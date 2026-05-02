@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T08:19:44.406Z",
+  "generatedAt": "2026-05-02T18:23:18.742Z",
   "source": "C:/institute/magic/Diser",
   "methodology": {
     "baseQuarterFormula": "mean(idx_housing, idx_infra, idx_transport, idx_work, idx_green, idx_commerce)",
@@ -20,10 +20,10 @@
       "name": "Орёл",
       "summaryName": "Орел",
       "bbox": [
-        35.999736,
+        35.999727,
         52.905227,
         36.180771,
-        53.023258
+        53.023274
       ],
       "files": {
         "quartals": "data/orel/quartals.geojson",

@@ -76,7 +76,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 1.33;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
-const DATA_VERSION = "20260430-0300";
+const DATA_VERSION = "20260502-0100";
 
 const state = {
   manifest: null,
@@ -341,15 +341,16 @@ function renderQualityStructure(city) {
   const high = clamp((city.highShare || 0) * 100, 0, 100);
   return `
     <div class="qualityMix" aria-label="Структура населения по качеству среды">
+      <div class="qualityTitle">Структура населения по качеству среды:</div>
       <div class="qualityBar">
         <span class="qualityBad" style="width:${low}%"></span>
         <span class="qualityMid" style="width:${mid}%"></span>
         <span class="qualityGood" style="width:${high}%"></span>
       </div>
       <div class="qualityLegend">
-        <span><i class="qualityDot good"></i>Хорошая ${formatNumber(high, 1)}%</span>
-        <span><i class="qualityDot mid"></i>Средняя ${formatNumber(mid, 1)}%</span>
         <span><i class="qualityDot bad"></i>Плохая ${formatNumber(low, 1)}%</span>
+        <span><i class="qualityDot mid"></i>Средняя ${formatNumber(mid, 1)}%</span>
+        <span><i class="qualityDot good"></i>Хорошая ${formatNumber(high, 1)}%</span>
       </div>
     </div>`;
 }
@@ -385,8 +386,9 @@ function resetCityCardTilt(event) {
 }
 
 function renderControls() {
+  const collapsed = isMobileLayout();
   els.scenarioControls.innerHTML = `
-    <button class="controlPanelTitle" type="button" aria-expanded="true">Сценарии индекса</button>
+    <button class="controlPanelTitle" type="button" aria-expanded="${collapsed ? "false" : "true"}">Сценарии индекса</button>
     <div class="controlPanelBody">
       ${BLOCKS.map(
     (block) => `
@@ -398,7 +400,7 @@ function renderControls() {
     </div>`;
 
   els.layerControls.innerHTML = `
-    <button class="controlPanelTitle" type="button" aria-expanded="true">Слои</button>
+    <button class="controlPanelTitle" type="button" aria-expanded="${collapsed ? "false" : "true"}">Слои</button>
     <div class="controlPanelBody">
       ${LAYERS.map(
     (layer) => `
@@ -410,6 +412,7 @@ function renderControls() {
     </div>`;
 
   for (const panel of [els.scenarioControls, els.layerControls]) {
+    panel.classList.toggle("collapsed", collapsed);
     const title = panel.querySelector(".controlPanelTitle");
     title.addEventListener("click", () => {
       panel.classList.toggle("collapsed");
@@ -1943,6 +1946,8 @@ function renderQuarterPanel(feature) {
 function renderGroupedIndicators(indicators) {
   const groups = new Map();
   for (const item of indicators) {
+    const value = Number(item.value);
+    if (!Number.isFinite(value) || value === 0) continue;
     const parts = item.label.split(":").map((part) => part.trim());
     const group = parts.length > 1 ? parts[0] : "Показатели";
     const label = parts.length > 1 ? parts[1] : parts[0];
@@ -1950,11 +1955,12 @@ function renderGroupedIndicators(indicators) {
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push({
       label: label.charAt(0).toUpperCase() + label.slice(1),
-      value: item.value,
+      value,
       unit: meta.unit,
       help: meta.help
     });
   }
+  if (!groups.size) return "";
   return `
     <div class="indicatorList">
       ${[...groups.entries()]
