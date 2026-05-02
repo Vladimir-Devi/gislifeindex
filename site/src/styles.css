@@ -505,16 +505,16 @@ input {
 .comparisonSwitch {
   display: flex;
   flex: 0 0 auto;
-  gap: 8px;
+  gap: 7px;
   align-items: center;
-  max-width: 178px;
+  max-width: 170px;
 }
 
 .comparisonToggle {
   position: relative;
   flex: 0 0 auto;
-  width: 18px;
-  height: 42px;
+  width: 16px;
+  height: 30px;
   padding: 3px;
   border: 1px solid #d8d0c4;
   border-radius: 999px;
@@ -526,12 +526,12 @@ input {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
-  transform: translateY(22px);
+  transform: translateY(16px);
   transition: transform 180ms ease, background 180ms ease;
 }
 
@@ -541,9 +541,9 @@ input {
 
 .comparisonLabels {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 620;
   line-height: 1.08;
 }
@@ -927,12 +927,12 @@ input {
   }
 
   .infoPanel .comparisonSwitch {
-    max-width: 154px;
-    gap: 6px;
+    max-width: 148px;
+    gap: 5px;
   }
 
   .infoPanel .comparisonLabels {
-    font-size: 10px;
+    font-size: 9.5px;
   }
 
   .infoPanel .metricGrid {

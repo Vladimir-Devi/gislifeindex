@@ -287,7 +287,8 @@ function quarterFeature(feature, city, populationByFid, index) {
     all: comparisonValues(props, "all")
   };
   const blocks = compare.city.blocks;
-  const population = populationByFid.get(fid) ?? null;
+  const layerPopulation = firstNumber(props, ["pop_sum", "population", "population_est", "pop"]);
+  const population = layerPopulation !== null ? layerPopulation : populationByFid.get(fid) ?? null;
   return {
     type: "Feature",
     id: fid,

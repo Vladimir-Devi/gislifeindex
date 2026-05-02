@@ -76,7 +76,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 1.33;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
-const DATA_VERSION = "20260503-0100";
+const DATA_VERSION = "20260503-0200";
 
 const state = {
   manifest: null,
@@ -656,7 +656,11 @@ function beginPinchGesture() {
   overlayCanvas.classList.remove("orbiting");
   state.pinchGesture = {
     startDistance: Math.max(1, pinchDistance(pointers)),
+    startAngle: pinchAngle(pointers),
+    startMidpoint: midpoint,
     startScale: state.camera.scale,
+    startBearing: state.camera.bearing,
+    startPitch: state.camera.pitch,
     startWorld: screenToWorld(midpoint[0], midpoint[1])
   };
 }
@@ -666,11 +670,15 @@ function updatePinchGesture() {
   if (!pointers || !state.pinchGesture) return;
   const midpoint = pinchMidpoint(pointers);
   const factor = pinchDistance(pointers) / state.pinchGesture.startDistance;
+  const angleDelta = normalizeAngleDelta(pinchAngle(pointers) - state.pinchGesture.startAngle);
+  const midpointDy = midpoint[1] - state.pinchGesture.startMidpoint[1];
   state.camera.scale = clamp(
     state.pinchGesture.startScale * factor,
     state.camera.fitScale * 0.58,
     state.camera.fitScale * 16
   );
+  state.camera.bearing = state.pinchGesture.startBearing + angleDelta;
+  state.camera.pitch = clamp(state.pinchGesture.startPitch - midpointDy * 0.0038, 0.34, 1.18);
   const after = screenToWorld(midpoint[0], midpoint[1]);
   state.camera.center[0] += state.pinchGesture.startWorld[0] - after[0];
   state.camera.center[1] += state.pinchGesture.startWorld[1] - after[1];
@@ -679,6 +687,17 @@ function updatePinchGesture() {
 
 function pinchDistance(pointers) {
   return Math.hypot(pointers[0].x - pointers[1].x, pointers[0].y - pointers[1].y);
+}
+
+function pinchAngle(pointers) {
+  return Math.atan2(pointers[1].y - pointers[0].y, pointers[1].x - pointers[0].x);
+}
+
+function normalizeAngleDelta(value) {
+  let delta = value;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  return delta;
 }
 
 function pinchMidpoint(pointers) {
@@ -955,8 +974,8 @@ function drawQuartals(ctx) {
     drawPath(ctx, feature.polygons, 0);
     ctx.fillStyle = scoreColor(score, 0.82);
     ctx.fill("evenodd");
-    ctx.strokeStyle = "rgba(64, 66, 62, 0.72)";
-    ctx.lineWidth = 0.85;
+    ctx.strokeStyle = "rgba(64, 66, 62, 0.58)";
+    ctx.lineWidth = 0.58;
     ctx.stroke();
   }
 }
@@ -1993,7 +2012,6 @@ function renderQuarterPanel(feature) {
     <div class="panelTitle">
       <div class="panelHeading">
         <h2>Квартал ${props.id}</h2>
-        <span class="muted">#${props.currentRank != null ? props.currentRank : "—"}</span>
       </div>
       ${renderComparisonSwitch()}
     </div>
@@ -2027,7 +2045,7 @@ function renderGroupedIndicators(indicators) {
   const groups = new Map();
   for (const item of indicators) {
     const value = Number(item.value);
-    if (!Number.isFinite(value) || value === 0) continue;
+    if (!isVisibleIndicatorValue(value)) continue;
     const parts = item.label.split(":").map((part) => part.trim());
     const group = parts.length > 1 ? parts[0] : "Показатели";
     const label = parts.length > 1 ? parts[1] : parts[0];
@@ -2063,6 +2081,10 @@ function renderGroupedIndicators(indicators) {
         .join("")}
     </div>
   `;
+}
+
+function isVisibleIndicatorValue(value) {
+  return Number.isFinite(value) && Math.abs(value) >= 0.005;
 }
 
 function renderBars(values) {
