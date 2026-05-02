@@ -76,12 +76,13 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 1.33;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
-const DATA_VERSION = "20260502-0200";
+const DATA_VERSION = "20260503-0100";
 
 const state = {
   manifest: null,
   activeCity: null,
   data: null,
+  comparisonMode: "city",
   activeBlocks: new Set(BLOCKS.map((block) => block.key)),
   layers: {
     quartals: true,
@@ -520,6 +521,14 @@ function attachEvents() {
   els.accidentPopup.addEventListener("pointermove", (event) => event.stopPropagation());
   els.accidentPopup.addEventListener("touchmove", (event) => event.stopPropagation(), { passive: true });
   els.infoPanel.addEventListener("click", (event) => {
+    const comparisonToggle = event.target.closest("[data-comparison-toggle]");
+    if (comparisonToggle) {
+      state.comparisonMode = state.comparisonMode === "city" ? "all" : "city";
+      recomputeScores();
+      updatePanel();
+      draw();
+      return;
+    }
     if (!isMobileLayout() || !event.target.closest(".sheetHandle")) return;
     if (performance.now() < state.suppressHandleClickUntil) return;
     els.infoPanel.classList.toggle("sheetExpanded");
@@ -686,6 +695,7 @@ function isMobileLayout() {
 
 function startSheetDrag(event) {
   if (!isMobileLayout()) return;
+  if (event.target.closest("[data-comparison-toggle]")) return;
   const expanded = els.infoPanel.classList.contains("sheetExpanded");
   const fromHandle = Boolean(event.target.closest(".sheetHandle"));
   const fromTop = event.clientY - els.infoPanel.getBoundingClientRect().top < 112;
@@ -736,6 +746,7 @@ async function loadCity(slug) {
   clearMeshes();
   state.activeCity = city;
   state.selected = null;
+  state.comparisonMode = "city";
   state.accidentPopup = null;
   state.panelValues = null;
   els.title.textContent = city.name;
@@ -1606,9 +1617,16 @@ function visibleTileKeys() {
 function recomputeScores() {
   if (!state.data) return;
   const active = [...state.activeBlocks];
+  const fullScenario = active.length === BLOCKS.length && BLOCKS.every((block) => state.activeBlocks.has(block.key));
   for (const feature of state.data.quartals) {
+    const baseScore = comparisonScore(feature.properties);
+    if (fullScenario && Number.isFinite(baseScore)) {
+      feature.properties.currentScore = baseScore;
+      continue;
+    }
+    const blocks = comparisonBlocks(feature.properties);
     const values = active
-      .map((key) => feature.properties.blocks ? feature.properties.blocks[key] : undefined)
+      .map((key) => blocks ? blocks[key] : undefined)
       .filter((value) => Number.isFinite(value));
     feature.properties.currentScore = values.length ? (values.reduce((sum, value) => sum + value, 0) / values.length) * 100 : null;
   }
@@ -1618,6 +1636,28 @@ function recomputeScores() {
   ranked.forEach((feature, index) => {
     feature.properties.currentRank = index + 1;
   });
+  if (fullScenario) {
+    for (const feature of state.data.quartals) {
+      const rank = comparisonRank(feature.properties);
+      if (Number.isFinite(rank)) feature.properties.currentRank = rank;
+    }
+  }
+}
+
+function comparisonData(properties) {
+  return properties?.compare?.[state.comparisonMode] ?? null;
+}
+
+function comparisonBlocks(properties) {
+  return comparisonData(properties)?.blocks ?? properties?.blocks ?? null;
+}
+
+function comparisonScore(properties) {
+  return comparisonData(properties)?.score ?? properties?.baseScore ?? null;
+}
+
+function comparisonRank(properties) {
+  return comparisonData(properties)?.rank ?? properties?.baseRank ?? null;
 }
 
 function cityScenarioScore() {
@@ -1634,13 +1674,28 @@ function cityScenarioScore() {
   return total > 0 ? weighted / total : null;
 }
 
+function cityBaseScore() {
+  if (!state.data) return null;
+  let weighted = 0;
+  let total = 0;
+  for (const feature of state.data.quartals) {
+    const score = comparisonScore(feature.properties);
+    const weight = feature.properties.population;
+    if (!Number.isFinite(score) || !Number.isFinite(weight) || weight <= 0) continue;
+    weighted += score * weight;
+    total += weight;
+  }
+  return total > 0 ? weighted / total : state.activeCity?.index ?? null;
+}
+
 function cityBlockScores() {
   const result = {};
   for (const block of BLOCKS) {
     let weighted = 0;
     let total = 0;
     for (const feature of state.data.quartals) {
-      const value = feature.properties.blocks ? feature.properties.blocks[block.key] : undefined;
+      const blocks = comparisonBlocks(feature.properties);
+      const value = blocks ? blocks[block.key] : undefined;
       const weight = feature.properties.population;
       if (!Number.isFinite(value) || !Number.isFinite(weight) || weight <= 0) continue;
       weighted += value * 100 * weight;
@@ -1807,9 +1862,10 @@ function hideAccidentPopup() {
 function updatePanel() {
   if (!state.activeCity || !state.data) return;
   const cityScore = cityScenarioScore();
+  const baseScore = cityBaseScore();
   const previousValues = state.panelValues;
   const nextValues = panelAnimationValues(cityScore);
-  els.topMetric.textContent = `Сценарный индекс ${formatNumber(cityScore, 2)} · Основной индекс ${formatNumber(state.activeCity.index, 2)}`;
+  els.topMetric.textContent = `Сценарный индекс ${formatNumber(cityScore, 2)} · Основной индекс ${formatNumber(baseScore, 2)}`;
   els.infoPanel.innerHTML = state.selected ? renderQuarterPanel(state.selected) : renderCityPanel(cityScore);
   animateInfoPanel(previousValues, nextValues);
   state.panelValues = nextValues;
@@ -1824,11 +1880,12 @@ function panelAnimationValues(cityScore) {
   ];
   if (state.selected) {
     const props = state.selected.properties;
+    const blocks = comparisonBlocks(props);
     return {
       metricFormats,
-      metrics: [props.currentScore, props.baseScore, props.baseRank, props.population],
+      metrics: [props.currentScore, comparisonScore(props), comparisonRank(props), props.population],
       bars: BLOCKS.map((block) => {
-        const value = props.blocks ? props.blocks[block.key] : null;
+        const value = blocks ? blocks[block.key] : null;
         return value == null ? null : value * 100;
       })
     };
@@ -1837,7 +1894,7 @@ function panelAnimationValues(cityScore) {
   const cityBars = cityBlockScores();
   return {
     metricFormats,
-    metrics: [cityScore, city.index, city.rank, city.population],
+    metrics: [cityScore, cityBaseScore(), city.rank, city.population],
     bars: BLOCKS.map((block) => cityBars[block.key])
   };
 }
@@ -1908,15 +1965,19 @@ function formatAnimatedValue(value, format = {}) {
 
 function renderCityPanel(cityScore) {
   const city = state.activeCity;
+  const baseScore = cityBaseScore();
   return `
     <button class="sheetHandle" type="button" aria-label="Свернуть или раскрыть панель"></button>
     <div class="panelTitle">
-      <h2>${city.name}</h2>
-      <span class="muted">#${city.rank}</span>
+      <div class="panelHeading">
+        <h2>${city.name}</h2>
+        <span class="muted">#${city.rank}</span>
+      </div>
+      ${renderComparisonSwitch()}
     </div>
     <div class="metricGrid">
       <div class="metric"><strong>${formatNumber(cityScore, 2)}</strong><span>Сценарный индекс</span></div>
-      <div class="metric"><strong>${formatNumber(city.index, 2)}</strong><span>Основной индекс</span></div>
+      <div class="metric"><strong>${formatNumber(baseScore, 2)}</strong><span>Основной индекс</span></div>
       <div class="metric"><strong>${formatInt(city.rank)}</strong><span>Ранг</span></div>
       <div class="metric"><strong>${formatInt(city.population)}</strong><span>Численность населения</span></div>
     </div>
@@ -1926,20 +1987,39 @@ function renderCityPanel(cityScore) {
 
 function renderQuarterPanel(feature) {
   const props = feature.properties;
+  const blocks = comparisonBlocks(props);
   return `
     <button class="sheetHandle" type="button" aria-label="Свернуть или раскрыть панель"></button>
     <div class="panelTitle">
-      <h2>Квартал ${props.id}</h2>
-      <span class="muted">#${props.currentRank != null ? props.currentRank : "—"}</span>
+      <div class="panelHeading">
+        <h2>Квартал ${props.id}</h2>
+        <span class="muted">#${props.currentRank != null ? props.currentRank : "—"}</span>
+      </div>
+      ${renderComparisonSwitch()}
     </div>
     <div class="metricGrid">
       <div class="metric"><strong>${formatNumber(props.currentScore, 2)}</strong><span>Сценарный индекс</span></div>
-      <div class="metric"><strong>${formatNumber(props.baseScore, 2)}</strong><span>Основной индекс</span></div>
-      <div class="metric"><strong>${formatNumber(props.baseRank, 0)}</strong><span>Ранг</span></div>
+      <div class="metric"><strong>${formatNumber(comparisonScore(props), 2)}</strong><span>Основной индекс</span></div>
+      <div class="metric"><strong>${formatNumber(comparisonRank(props), 0)}</strong><span>Ранг</span></div>
       <div class="metric"><strong>${formatInt(props.population)}</strong><span>Численность населения</span></div>
     </div>
-    ${renderBars(blockScoreValues(props.blocks))}
+    ${renderBars(blockScoreValues(blocks))}
     ${renderGroupedIndicators(props.indicators || [])}
+  `;
+}
+
+function renderComparisonSwitch() {
+  const isAll = state.comparisonMode === "all";
+  return `
+    <div class="comparisonSwitch" aria-label="Уровень сравнения">
+      <button class="comparisonToggle ${isAll ? "isAll" : "isCity"}" type="button" data-comparison-toggle aria-pressed="${isAll}" aria-label="Переключить уровень сравнения">
+        <span></span>
+      </button>
+      <div class="comparisonLabels">
+        <span class="${isAll ? "active" : ""}">Общегородское сравнение</span>
+        <span class="${isAll ? "" : "active"}">Внутригородское сравнение</span>
+      </div>
+    </div>
   `;
 }
 

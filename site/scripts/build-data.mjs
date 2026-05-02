@@ -20,7 +20,7 @@ const cities = [
     sourceDir: "Orel",
     summaryName: "Орел",
     displayName: "Орёл",
-    indexLayer: "kvartals_life_index_norm_site",
+    indexLayer: "kvartals_life_index_compare_site",
     buildingsLayer: "building_all_site",
     buildingSelect: ["area", "Тип дома", "Тип дома_2", "Тип помещения (блока)", "Тип помещения (блока)_2", "pop", "pop_2", "pop_formula", "pop_formula_2", "zhil_area", "zhil_area_2"],
     buildingWhere: "area >= 25",
@@ -44,7 +44,7 @@ const cities = [
     sourceDir: "Tambov",
     summaryName: "Тамбов",
     displayName: "Тамбов",
-    indexLayer: "kvartals_life_index_norm",
+    indexLayer: "kvartals_life_index_compare_site",
     buildingsLayer: "building_site",
     buildingSelect: ["area", "Тип дома", "Тип дома_2", "Тип помещения (блока)", "Тип помещения (блока)_2", "pop", "pop_2", "floor", "floor_2", "build_type", "build_type_2"],
     buildingWhere: "area IS NULL OR area >= 21",
@@ -148,6 +148,31 @@ function number(value) {
   if (!normalized) return null;
   const parsed = Number(normalized[0]);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function scoreRatio(value) {
+  const parsed = number(value);
+  if (parsed === null) return null;
+  return parsed > 1 ? parsed / 100 : parsed;
+}
+
+function comparisonBlocks(properties, suffix) {
+  return {
+    housing: scoreRatio(properties[`idx_housing_${suffix}`] ?? properties.idx_housing),
+    infra: scoreRatio(properties[`idx_infra_${suffix}`] ?? properties.idx_infra),
+    transport: scoreRatio(properties[`idx_transport_${suffix}`] ?? properties.idx_transport),
+    work: scoreRatio(properties[`idx_work_${suffix}`] ?? properties.idx_work),
+    green: scoreRatio(properties[`idx_green_${suffix}`] ?? properties.idx_green),
+    commerce: scoreRatio(properties[`idx_commerce_${suffix}`] ?? properties.idx_commerce)
+  };
+}
+
+function comparisonValues(properties, suffix) {
+  return {
+    score: number(properties[`idx_life_${suffix}`] ?? properties.idx_life_100),
+    rank: number(properties[`rank_${suffix}`] ?? properties.idx_rank),
+    blocks: comparisonBlocks(properties, suffix)
+  };
 }
 
 function firstNumber(properties, names) {
@@ -257,14 +282,11 @@ function pickIndicators(properties) {
 function quarterFeature(feature, city, populationByFid, index) {
   const props = cleanProperties(feature.properties);
   const fid = String(props.source_fid ?? props.fid ?? feature.id ?? index + 1);
-  const blocks = {
-    housing: number(props.idx_housing),
-    infra: number(props.idx_infra),
-    transport: number(props.idx_transport),
-    work: number(props.idx_work),
-    green: number(props.idx_green),
-    commerce: number(props.idx_commerce)
+  const compare = {
+    city: comparisonValues(props, "city"),
+    all: comparisonValues(props, "all")
   };
+  const blocks = compare.city.blocks;
   const population = populationByFid.get(fid) ?? null;
   return {
     type: "Feature",
@@ -272,11 +294,12 @@ function quarterFeature(feature, city, populationByFid, index) {
     properties: {
       id: fid,
       city: city.slug,
-      baseScore: number(props.idx_life_100),
+      baseScore: compare.city.score,
       baseScoreNoCommerce: number(props.idx_life_no_commerce_100),
-      baseRank: number(props.idx_rank),
+      baseRank: compare.city.rank,
       population,
       blocks,
+      compare,
       indicators: pickIndicators(props)
     },
     geometry: feature.geometry

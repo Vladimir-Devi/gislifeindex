@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-30T08:19:44.406Z",
+  "generatedAt": "2026-05-02T23:02:46.539Z",
   "source": "C:/institute/magic/Diser",
   "methodology": {
     "baseQuarterFormula": "mean(idx_housing, idx_infra, idx_transport, idx_work, idx_green, idx_commerce)",

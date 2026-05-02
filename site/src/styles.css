@@ -474,7 +474,7 @@ input {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  align-items: baseline;
+  align-items: flex-start;
   margin-bottom: 14px;
 }
 
@@ -485,6 +485,72 @@ input {
 .panelTitle h2 {
   margin: 0;
   font-size: 20px;
+}
+
+.panelHeading {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.panelHeading h2 {
+  min-width: 0;
+}
+
+.panelHeading .muted {
+  flex: 0 0 auto;
+}
+
+.comparisonSwitch {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+  max-width: 178px;
+}
+
+.comparisonToggle {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 42px;
+  padding: 3px;
+  border: 1px solid #d8d0c4;
+  border-radius: 999px;
+  background: #eee7dc;
+  cursor: pointer;
+}
+
+.comparisonToggle span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+  transform: translateY(22px);
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.comparisonToggle.isAll span {
+  transform: translateY(0);
+}
+
+.comparisonLabels {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 620;
+  line-height: 1.08;
+}
+
+.comparisonLabels .active {
+  color: var(--ink);
+  font-weight: 780;
 }
 
 .metricGrid {
@@ -845,7 +911,28 @@ input {
   }
 
   .infoPanel .panelTitle {
+    align-items: flex-start;
+    gap: 8px;
     margin-bottom: 10px;
+  }
+
+  .infoPanel .panelHeading {
+    display: grid;
+    gap: 1px;
+  }
+
+  .infoPanel .panelTitle h2 {
+    font-size: 18px;
+    line-height: 1.1;
+  }
+
+  .infoPanel .comparisonSwitch {
+    max-width: 154px;
+    gap: 6px;
+  }
+
+  .infoPanel .comparisonLabels {
+    font-size: 10px;
   }
 
   .infoPanel .metricGrid {
