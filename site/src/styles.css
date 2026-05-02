@@ -508,6 +508,7 @@ input {
   gap: 7px;
   align-items: center;
   max-width: 170px;
+  margin-right: 12px;
 }
 
 .comparisonToggle {
@@ -929,6 +930,7 @@ input {
   .infoPanel .comparisonSwitch {
     max-width: 148px;
     gap: 5px;
+    margin-right: 6px;
   }
 
   .infoPanel .comparisonLabels {

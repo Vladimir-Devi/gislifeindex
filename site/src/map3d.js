@@ -76,7 +76,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 1.33;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
-const DATA_VERSION = "20260503-0200";
+const DATA_VERSION = "20260503-0300";
 
 const state = {
   manifest: null,
@@ -974,8 +974,8 @@ function drawQuartals(ctx) {
     drawPath(ctx, feature.polygons, 0);
     ctx.fillStyle = scoreColor(score, 0.82);
     ctx.fill("evenodd");
-    ctx.strokeStyle = "rgba(64, 66, 62, 0.58)";
-    ctx.lineWidth = 0.58;
+    ctx.strokeStyle = "rgba(64, 66, 62, 0.42)";
+    ctx.lineWidth = 0.36;
     ctx.stroke();
   }
 }
@@ -1990,7 +1990,6 @@ function renderCityPanel(cityScore) {
     <div class="panelTitle">
       <div class="panelHeading">
         <h2>${city.name}</h2>
-        <span class="muted">#${city.rank}</span>
       </div>
       ${renderComparisonSwitch()}
     </div>
