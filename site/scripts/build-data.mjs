@@ -20,7 +20,7 @@ const cities = [
     sourceDir: "Orel",
     summaryName: "Орел",
     displayName: "Орёл",
-    indexLayer: "kvartals_life_index_norm",
+    indexLayer: "kvartals_life_index_norm_site",
     buildingsLayer: "building_all_site",
     buildingSelect: ["area", "Тип дома", "Тип дома_2", "Тип помещения (блока)", "Тип помещения (блока)_2", "pop", "pop_2", "pop_formula", "pop_formula_2", "zhil_area", "zhil_area_2"],
     buildingWhere: "area >= 25",
