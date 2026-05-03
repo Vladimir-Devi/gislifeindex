@@ -14,7 +14,6 @@ import { fileURLToPath } from "node:url";
 const siteDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const rootDir = path.resolve(siteDir, "..");
 const distDir = path.join(rootDir, "site_dist");
-const rawDataDir = path.join(siteDir, "data", "_raw");
 
 function assertDistPath(target) {
   const resolved = path.resolve(target);
@@ -102,15 +101,13 @@ rmSync(distDir, { recursive: true, force: true });
 mkdirSync(distDir, { recursive: true });
 
 cpSync(path.join(siteDir, "index.html"), path.join(distDir, "index.html"));
-cpSync(path.join(siteDir, "2d.html"), path.join(distDir, "2d.html"));
 cpSync(path.join(siteDir, "3d.html"), path.join(distDir, "3d.html"));
 cpSync(path.join(siteDir, "_headers"), path.join(distDir, "_headers"));
-copyDir(path.join(siteDir, "src"), path.join(distDir, "src"));
+copyDir(path.join(siteDir, "src"), path.join(distDir, "src"), (sourcePath) => {
+  return path.basename(sourcePath) === "app.js";
+});
 bundleMap3dScript();
 copyDir(path.join(siteDir, "public"), path.join(distDir, "public"));
-copyDir(path.join(siteDir, "data"), path.join(distDir, "data"), (sourcePath) => {
-  return path.resolve(sourcePath) === rawDataDir;
-});
 copyDir(path.join(siteDir, "data3d"), path.join(distDir, "data3d"));
 
 console.log(`Created ${distDir}`);

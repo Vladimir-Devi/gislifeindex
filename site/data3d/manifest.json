@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-02T23:30:28.683Z",
+  "generatedAt": "2026-05-03T18:55:30.450Z",
   "tileCount": 8,
   "overviewAreaThreshold": 700,
   "cities": [
@@ -63,7 +63,8 @@
         "water": "data3d/orel/water.json",
         "roads": "data3d/orel/roads.json",
         "railways": "data3d/orel/railways.json",
-        "points": "data3d/orel/points.json",
+        "stops": "data3d/orel/stops.json",
+        "dtp": "data3d/orel/dtp.json",
         "buildingsOverview": "data3d/orel/buildings-overview.json",
         "buildingsTileBase": "data3d/orel/buildings",
         "roadsAllTileBase": "data3d/orel/roads-all"
@@ -248,7 +249,8 @@
         "water": "data3d/tambov/water.json",
         "roads": "data3d/tambov/roads.json",
         "railways": "data3d/tambov/railways.json",
-        "points": "data3d/tambov/points.json",
+        "stops": "data3d/tambov/stops.json",
+        "dtp": "data3d/tambov/dtp.json",
         "buildingsOverview": "data3d/tambov/buildings-overview.json",
         "buildingsTileBase": "data3d/tambov/buildings",
         "roadsAllTileBase": "data3d/tambov/roads-all"

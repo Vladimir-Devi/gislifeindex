@@ -31,7 +31,7 @@ node site\scripts\serve.mjs site_dist
 node site\scripts\build-dist.mjs
 ```
 
-В `site_dist` попадают `index.html`, `2d.html`, `3d.html`, `src`, `public`, подготовленные GeoJSON из `site/data` и тайловые 3D-данные из `site/data3d`. Папка `site/data/_raw` не копируется и не должна публиковаться.
+В `site_dist` попадают `index.html`, `3d.html`, 3D-файлы из `src`, `public` и тайловые 3D-данные из `site/data3d`. 2D-страница, старый 2D-скрипт и подготовленные GeoJSON из `site/data` не публикуются.
 
 ## Cloudflare Pages
 

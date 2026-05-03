@@ -357,7 +357,8 @@ for (const city of sourceManifest.cities) {
   writeJson(path.join(cityDir, "water.json"), { features: water });
   writeJson(path.join(cityDir, "roads.json"), { lines: roads });
   writeJson(path.join(cityDir, "railways.json"), { lines: railways });
-  writeJson(path.join(cityDir, "points.json"), { stops, dtp, mkdUnmatched });
+  writeJson(path.join(cityDir, "stops.json"), { items: stops });
+  writeJson(path.join(cityDir, "dtp.json"), { items: dtp });
 
   data3dManifest.cities.push({
     ...city,
@@ -370,7 +371,8 @@ for (const city of sourceManifest.cities) {
       water: `data3d/${city.slug}/water.json`,
       roads: `data3d/${city.slug}/roads.json`,
       railways: `data3d/${city.slug}/railways.json`,
-      points: `data3d/${city.slug}/points.json`,
+      stops: `data3d/${city.slug}/stops.json`,
+      dtp: `data3d/${city.slug}/dtp.json`,
       buildingsOverview: `data3d/${city.slug}/buildings-overview.json`,
       buildingsTileBase: `data3d/${city.slug}/buildings`,
       roadsAllTileBase: `data3d/${city.slug}/roads-all`
