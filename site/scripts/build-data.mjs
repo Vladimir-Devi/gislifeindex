@@ -71,11 +71,11 @@ const indicatorAliases = [
   ["Жильё: обеспеченность", ["zhil_usl_obespech_zhil", "zhil_usl_obespech"]],
   ["Жильё: износ", ["zhil_usl_srdnvzv_izns"]],
   ["Жильё: этажность", ["zhil_usl_floor_num_mean", "zhil_usl_floor_mean"]],
-  ["Коммерческая инфраструктура: разнообразие", ["infr_funk_diversity", "soc_infr_funk_diversity"]],
+  ["Коммерческая инфраструктура: разнообразие", ["infr_funk_diversity", "soc_infr_funk_diversity", "soc_infr_diversity"]],
   ["Коммерческая инфраструктура: полнота корзины", ["infr_ind_poln", "soc_infr_ind_poln"]],
   ["Транспорт: доступность", ["trnsp_bezop_dostup_dostup", "trnsp_bezop_dostup"]],
-  ["Крупные работодатели: обеспеченность", ["zanyatost_obespech", "zanyatost_obespech_coef"]],
-  ["Крупные работодатели: плотность", ["zanyatost_density"]],
+  ["Крупные работодатели: обеспеченность", ["zanyatost_obespech", "zanyatost_obespech_coef", "zanyatost_index_obespech", "zanyatost_index_obespech_coef"]],
+  ["Крупные работодатели: плотность", ["zanyatost_density", "zanyatost_index_density"]],
   ["Зелёные зоны: доступность", ["green_zone_dostup"]],
   ["Экономика: активность ФНС", ["commerce_fns_activity_idx"]],
   ["Экономика: ККТ", ["commerce_fns_kkt_est"]],
@@ -492,7 +492,7 @@ function exportCity(city) {
     output: path.join(rawBase, "quartals.geojson"),
     input: path.join(sourceBase, "index_normalized.gpkg"),
     layer: city.indexLayer,
-    sql: `SELECT fid AS source_fid, * FROM ${city.indexLayer}`
+    sql: `SELECT source_fid AS source_fid, * FROM ${city.indexLayer}`
   });
   exportLayer({
     output: path.join(rawBase, "buildings.geojson"),
