@@ -1,11 +1,23 @@
-/*
-  Alt-Svc: clear
+/src/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/data3d/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/data/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/public/*
+  Cache-Control: public, max-age=31536000, immutable
 
 /
-  Cache-Control: no-store
+  Cache-Control: public, max-age=0, must-revalidate
 
 /index.html
-  Cache-Control: no-store
+  Cache-Control: public, max-age=0, must-revalidate
 
 /3d.html
-  Cache-Control: no-store
+  Cache-Control: public, max-age=0, must-revalidate
+
+/2d.html
+  Cache-Control: public, max-age=0, must-revalidate

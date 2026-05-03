@@ -58,7 +58,7 @@ function bundleMap3dScript() {
       const timer = setTimeout(() => controller.abort(), 45000);
       try {
         const retryUrl = bundleUrl + (attempt ? "&retry=" + attempt + "-" + Date.now() : "");
-        const response = await fetch(retryUrl, { cache: "no-store", signal: controller.signal });
+        const response = await fetch(retryUrl, { signal: controller.signal });
         if (!response.ok) throw new Error("HTTP " + response.status + " " + retryUrl);
         return await response.text();
       } catch (error) {

@@ -76,7 +76,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 1.33;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
-const DATA_VERSION = "20260503-0300";
+const DATA_VERSION = "20260503-0400";
 
 const state = {
   manifest: null,
@@ -264,9 +264,16 @@ async function loadManifest() {
   throw lastError;
 }
 
+function versionedDataUrl(url) {
+  if (!url || url.includes("?") || /^(https?:|data:|blob:)/.test(url)) return url;
+  const [path, hash = ""] = url.split("#");
+  return `${path}?v=${DATA_VERSION}${hash ? `#${hash}` : ""}`;
+}
+
 async function fetchJson(url) {
-  const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok) throw new Error(`Не удалось загрузить ${url}`);
+  const requestUrl = versionedDataUrl(url);
+  const response = await fetch(requestUrl);
+  if (!response.ok) throw new Error(`Не удалось загрузить ${requestUrl}`);
   return response.json();
 }
 
