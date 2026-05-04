@@ -15,8 +15,8 @@ const TERRAIN_GRID_WIDTH = 128;
 const TERRAIN_HEIGHT_SCALE = 10;
 const TERRAIN_NODATA = -32768;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
-const MESH_MAGIC = "LIM3";
-const MESH_HEADER_BYTES = 48;
+const MESH_MAGIC = "LIM4";
+const MESH_HEADER_BYTES = 32;
 const PACKED_VERTEX_BYTES = 8;
 const MESH_XY_SCALE = 0.25;
 const MESH_Z_SCALE = 0.1;
@@ -299,7 +299,6 @@ function writeBuildingMesh(filePath, features) {
 
 function buildBuildingMesh(features) {
   const vertices = [];
-  const indices = [];
   for (const feature of features) {
     const ground = feature.g || 0;
     const height = (feature.h || 8) * (feature.s === "mkd" ? 1 : NON_MKD_HEIGHT_FACTOR);
@@ -310,46 +309,29 @@ function buildBuildingMesh(features) {
       for (let i = 0; i < outer.length; i += 1) {
         const a = outer[i];
         const b = outer[(i + 1) % outer.length];
-        pushWall(vertices, indices, a, b, ground, height, styles, wallShade(a, b));
+        pushWall(vertices, a, b, ground, height, styles, wallShade(a, b));
       }
       const roofHeight = ground + height;
-      const roofIndexes = new Map();
-      const roofIndex = (point) => {
-        const key = `${point[0]}:${point[1]}`;
-        let index = roofIndexes.get(key);
-        if (index == null) {
-          index = pushVertex(vertices, point, roofHeight, styles.roof);
-          roofIndexes.set(key, index);
-        }
-        return index;
-      };
       for (const triangle of triangulateRoof(outer)) {
-        indices.push(roofIndex(triangle[0]), roofIndex(triangle[1]), roofIndex(triangle[2]));
+        pushTriangle(vertices, triangle[0], roofHeight, triangle[1], roofHeight, triangle[2], roofHeight, styles.roof);
       }
     }
   }
-  return { vertices, indices };
+  return vertices;
 }
 
-function packBuildingMesh(mesh) {
-  const { vertices, indices } = mesh;
+function packBuildingMesh(vertices) {
   const vertexCount = Math.floor(vertices.length / 4);
-  const indexCount = indices.length;
-  const indexBytes = vertexCount > 65535 ? 4 : 2;
-  const indexOffset = MESH_HEADER_BYTES + vertexCount * PACKED_VERTEX_BYTES;
-  const buffer = Buffer.alloc(indexOffset + indexCount * indexBytes);
+  const buffer = Buffer.alloc(MESH_HEADER_BYTES + vertexCount * PACKED_VERTEX_BYTES);
   buffer.write(MESH_MAGIC, 0, "ascii");
   buffer.writeUInt32LE(vertexCount, 4);
-  buffer.writeUInt32LE(indexCount, 8);
-  buffer.writeUInt32LE(PACKED_VERTEX_BYTES, 32);
-  buffer.writeUInt32LE(indexBytes, 36);
-  buffer.writeUInt32LE(indexOffset, 40);
+  buffer.writeUInt32LE(PACKED_VERTEX_BYTES, 28);
   if (!vertexCount) {
+    buffer.writeFloatLE(0, 8);
     buffer.writeFloatLE(0, 12);
     buffer.writeFloatLE(0, 16);
-    buffer.writeFloatLE(0, 20);
-    buffer.writeFloatLE(MESH_XY_SCALE, 24);
-    buffer.writeFloatLE(MESH_Z_SCALE, 28);
+    buffer.writeFloatLE(MESH_XY_SCALE, 20);
+    buffer.writeFloatLE(MESH_Z_SCALE, 24);
     return buffer;
   }
 
@@ -373,11 +355,11 @@ function packBuildingMesh(mesh) {
   const originZ = (minZ + maxZ) / 2;
   const xyScale = Math.max(MESH_XY_SCALE, (maxX - minX) / 65000, (maxY - minY) / 65000);
   const zScale = Math.max(MESH_Z_SCALE, (maxZ - minZ) / 65000);
-  buffer.writeFloatLE(originX, 12);
-  buffer.writeFloatLE(originY, 16);
-  buffer.writeFloatLE(originZ, 20);
-  buffer.writeFloatLE(xyScale, 24);
-  buffer.writeFloatLE(zScale, 28);
+  buffer.writeFloatLE(originX, 8);
+  buffer.writeFloatLE(originY, 12);
+  buffer.writeFloatLE(originZ, 16);
+  buffer.writeFloatLE(xyScale, 20);
+  buffer.writeFloatLE(zScale, 24);
 
   let offset = MESH_HEADER_BYTES;
   for (let i = 0; i < vertices.length; i += 4) {
@@ -386,16 +368,6 @@ function packBuildingMesh(mesh) {
     buffer.writeInt16LE(clamp(Math.round((vertices[i + 2] - originZ) / zScale), -32768, 32767), offset + 4);
     buffer.writeUInt8(vertices[i + 3], offset + 6);
     offset += PACKED_VERTEX_BYTES;
-  }
-  offset = indexOffset;
-  for (const index of indices) {
-    if (indexBytes === 4) {
-      buffer.writeUInt32LE(index, offset);
-      offset += 4;
-    } else {
-      buffer.writeUInt16LE(index, offset);
-      offset += 2;
-    }
   }
   return buffer;
 }
@@ -563,20 +535,26 @@ function signedTriangleArea(a, b, c) {
   return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
 }
 
-function pushWall(vertices, indices, a, b, ground, height, styles, shade) {
+function pushTriangle(target, a, za, b, zb, c, zc, style) {
+  pushVertex(target, a, za, style);
+  pushVertex(target, b, zb, style);
+  pushVertex(target, c, zc, style);
+}
+
+function pushWall(vertices, a, b, ground, height, styles, shade) {
   const top = styleCode(styles.sideTop, shade);
   const bottom = styleCode(styles.sideBottom, shade);
   const roof = ground + height;
-  const aBottom = pushVertex(vertices, a, ground, bottom);
-  const bBottom = pushVertex(vertices, b, ground, bottom);
-  const bTop = pushVertex(vertices, b, roof, top);
-  const aTop = pushVertex(vertices, a, roof, top);
-  indices.push(aBottom, bBottom, bTop, aBottom, bTop, aTop);
+  pushVertex(vertices, a, ground, bottom);
+  pushVertex(vertices, b, ground, bottom);
+  pushVertex(vertices, b, roof, top);
+  pushVertex(vertices, a, ground, bottom);
+  pushVertex(vertices, b, roof, top);
+  pushVertex(vertices, a, roof, top);
 }
 
 function pushVertex(target, point, z, style) {
   target.push(point[0], point[1], z, style);
-  return target.length / 4 - 1;
 }
 
 function clamp(value, min, max) {

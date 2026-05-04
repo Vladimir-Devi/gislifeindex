@@ -75,7 +75,7 @@ const ROAD_DETAIL_FACTOR = 4.2;
 const BUILDING_FADE_FACTOR = 5.35;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
-const DATA_VERSION = "20260505-0100";
+const DATA_VERSION = "20260505-0200";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
@@ -1058,7 +1058,6 @@ function clearMeshes() {
     const meshes = new Set([...state.tileMeshes.values(), ...state.overviewMeshes.values(), state.overviewMesh].filter(Boolean));
     for (const mesh of meshes) {
       if (mesh) gl.deleteBuffer(mesh.buffer);
-      if (mesh?.indexBuffer) gl.deleteBuffer(mesh.indexBuffer);
     }
   }
   state.overviewMesh = null;
@@ -1635,7 +1634,7 @@ function buildingTileUrl(key, mode) {
 }
 
 function createBuildingMeshFromPacked(arrayBuffer) {
-  if (!gl || !arrayBuffer || arrayBuffer.byteLength < 48) return null;
+  if (!gl || !arrayBuffer || arrayBuffer.byteLength < 32) return null;
   const view = new DataView(arrayBuffer);
   const magic = String.fromCharCode(
     view.getUint8(0),
@@ -1643,30 +1642,19 @@ function createBuildingMeshFromPacked(arrayBuffer) {
     view.getUint8(2),
     view.getUint8(3)
   );
-  if (magic !== "LIM3") throw new Error("Unsupported building mesh format");
+  if (magic !== "LIM4") throw new Error("Unsupported building mesh format");
   const vertexCount = view.getUint32(4, true);
-  const indexCount = view.getUint32(8, true);
-  const stride = view.getUint32(32, true) || PACKED_VERTEX_BYTES;
-  const indexBytes = view.getUint32(36, true) || 2;
-  const indexOffset = view.getUint32(40, true) || 48 + vertexCount * stride;
-  if (!vertexCount || !indexCount) return null;
-  if (indexBytes === 4 && !glState?.uintIndexExtension) {
-    throw new Error("Uint32 building mesh indices are not supported by this WebGL context");
-  }
+  const stride = view.getUint32(28, true) || PACKED_VERTEX_BYTES;
+  if (!vertexCount) return null;
   const vertexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(arrayBuffer, 48, vertexCount * stride), gl.STATIC_DRAW);
-  const indexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(arrayBuffer, indexOffset, indexCount * indexBytes), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(arrayBuffer, 32, vertexCount * stride), gl.STATIC_DRAW);
   return {
     buffer: vertexBuffer,
-    indexBuffer,
-    count: indexCount,
-    indexType: indexBytes === 4 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
+    count: vertexCount,
     stride,
-    origin: [view.getFloat32(12, true), view.getFloat32(16, true), view.getFloat32(20, true)],
-    scale: [view.getFloat32(24, true), view.getFloat32(28, true)]
+    origin: [view.getFloat32(8, true), view.getFloat32(12, true), view.getFloat32(16, true)],
+    scale: [view.getFloat32(20, true), view.getFloat32(24, true)]
   };
 }
 
@@ -1679,8 +1667,7 @@ function drawMesh(mesh) {
   gl.uniform2f(glState.uniforms.meshScale, mesh.scale[0], mesh.scale[1]);
   gl.vertexAttribPointer(glState.attributes.position, 3, gl.SHORT, false, mesh.stride || PACKED_VERTEX_BYTES, 0);
   gl.vertexAttribPointer(glState.attributes.style, 1, gl.UNSIGNED_BYTE, false, mesh.stride || PACKED_VERTEX_BYTES, 6);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-  gl.drawElements(gl.TRIANGLES, mesh.count, mesh.indexType, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
 }
 
 // @dist-split
@@ -1757,9 +1744,6 @@ function initGl(glContext) {
   glContext.blendFunc(glContext.SRC_ALPHA, glContext.ONE_MINUS_SRC_ALPHA);
   return {
     program,
-    uintIndexExtension:
-      (typeof WebGL2RenderingContext !== "undefined" && glContext instanceof WebGL2RenderingContext) ||
-      glContext.getExtension("OES_element_index_uint"),
     attributes: {
       position: glContext.getAttribLocation(program, "a_pos"),
       style: glContext.getAttribLocation(program, "a_style")
@@ -1874,7 +1858,6 @@ function setTileMesh(key, mesh, meshMode) {
   const previous = state.tileMeshes.get(key);
   if (previous) {
     gl.deleteBuffer(previous.buffer);
-    if (previous.indexBuffer) gl.deleteBuffer(previous.indexBuffer);
   }
   if (mesh) state.tileMeshes.set(key, mesh);
   else state.tileMeshes.delete(key);
