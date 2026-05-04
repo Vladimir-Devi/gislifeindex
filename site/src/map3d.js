@@ -76,8 +76,10 @@ const BUILDING_FADE_FACTOR = 5.35;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-0300";
+const DATA_VERSION = "20260505-0400";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
+const SMALL_NON_RESIDENTIAL_FACTOR = 12.5;
+const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15.7;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
 const CAMERA_MAX_ZOOM_FACTOR = 16;
@@ -965,7 +967,7 @@ async function loadCity(slug) {
     setLoadingStage("layers", "done");
 
     setLoadingStage("buildings");
-    const overviewMode = isMobileLayout() ? "residential" : "full";
+    const overviewMode = initialBuildingMeshMode();
     const overviewMesh = await loadOverviewMeshForCity(city, overviewMode);
     if (token !== state.renderToken) return;
     setLoadingStage("buildings", "done");
@@ -1870,11 +1872,21 @@ function setTileMesh(key, mesh, meshMode) {
 }
 
 function desiredBuildingMeshMode() {
-  return isMobileLayout() && !showNonResidentialBuildings() ? "residential" : "full";
+  if (isMobileLayout() && !showNonResidentialBuildings()) return "residential";
+  return showSmallNonResidentialBuildings() ? "full" : "standard";
+}
+
+function initialBuildingMeshMode() {
+  return isMobileLayout() ? "residential" : "standard";
 }
 
 function showNonResidentialBuildings() {
   return state.camera.scale >= state.camera.fitScale * MOBILE_NON_RESIDENTIAL_FACTOR;
+}
+
+function showSmallNonResidentialBuildings() {
+  const factor = isMobileLayout() ? MOBILE_SMALL_NON_RESIDENTIAL_FACTOR : SMALL_NON_RESIDENTIAL_FACTOR;
+  return state.camera.scale >= state.camera.fitScale * factor;
 }
 
 function visibleTileKeys() {

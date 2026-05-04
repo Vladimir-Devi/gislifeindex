@@ -15,6 +15,7 @@ const TERRAIN_GRID_WIDTH = 128;
 const TERRAIN_HEIGHT_SCALE = 10;
 const TERRAIN_NODATA = -32768;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
+const SMALL_NON_RESIDENTIAL_AREA_THRESHOLD = 100;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
 const MESH_MAGIC = "LIM4";
 const MESH_HEADER_BYTES = 32;
@@ -288,6 +289,7 @@ function splitBuildings(buildings, cityDir, bbox) {
 
 function writeBuildingMeshVariants(basePath, features) {
   writeBuildingMesh(`${basePath}-full.bin`, features);
+  writeBuildingMesh(`${basePath}-standard.bin`, features.filter((feature) => !isSmallNonResidentialBuilding(feature)));
   writeBuildingMesh(`${basePath}-residential.bin`, features.filter(isResidentialBuilding));
 }
 
@@ -389,6 +391,10 @@ function styleCode(kind, shade) {
 
 function isResidentialBuilding(feature) {
   return feature.r === 1 || feature.r === true || feature.s === "mkd";
+}
+
+function isSmallNonResidentialBuilding(feature) {
+  return !isResidentialBuilding(feature) && (feature.a || 0) < SMALL_NON_RESIDENTIAL_AREA_THRESHOLD;
 }
 
 function wallShade(a, b) {
