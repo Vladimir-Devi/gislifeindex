@@ -41,6 +41,83 @@
   z-index: 6;
 }
 
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: rgba(231, 224, 211, 0.38);
+  backdrop-filter: blur(2px);
+}
+
+.loadingCard {
+  width: min(330px, calc(100vw - 32px));
+  padding: 15px 16px 14px;
+  border: 1px solid rgba(65, 66, 66, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 5px 5px 0 rgba(31, 35, 38, 0.16);
+}
+
+.loadingTitle {
+  margin-bottom: 10px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 780;
+}
+
+.loadingSteps {
+  display: grid;
+  gap: 8px;
+}
+
+.loadingStep {
+  display: grid;
+  grid-template-columns: 15px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.loadingStep span {
+  width: 9px;
+  height: 9px;
+  border: 1px solid rgba(65, 66, 66, 0.28);
+  border-radius: 50%;
+  background: #fffaf1;
+}
+
+.loadingStep p {
+  margin: 0;
+}
+
+.loadingStep.active {
+  color: var(--ink);
+}
+
+.loadingStep.active span {
+  border-color: rgba(37, 109, 114, 0.42);
+  background: #256d72;
+  box-shadow: 0 0 0 5px rgba(37, 109, 114, 0.11);
+}
+
+.loadingStep.done span {
+  border-color: rgba(71, 127, 91, 0.45);
+  background: #477f5b;
+}
+
+.loadingStep.error {
+  color: #893a35;
+}
+
+.loadingStep.error span {
+  border-color: rgba(137, 58, 53, 0.45);
+  background: #b64c3f;
+}
+
 .cameraTutorial {
   position: absolute;
   z-index: 7;
@@ -234,6 +311,16 @@
 
   .mapShell3d .symbolLegend.legendOffset {
     bottom: calc(var(--sheet-peek) + 86px);
+  }
+
+  .loadingOverlay {
+    align-items: start;
+    padding-top: 76px;
+  }
+
+  .loadingCard {
+    width: min(280px, calc(100vw - 24px));
+    padding: 12px;
   }
 
   .cameraTutorial {

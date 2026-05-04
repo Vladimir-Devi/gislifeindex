@@ -73,10 +73,9 @@ const GROUP_HELP = {
 const DETAIL_FACTOR = 4.75;
 const ROAD_DETAIL_FACTOR = 4.2;
 const BUILDING_FADE_FACTOR = 5.35;
-const FLOATS_PER_VERTEX = 7;
+const PACKED_VERTEX_BYTES = 7;
 const HEIGHT_EXAGGERATION = 1.33;
-const NON_MKD_HEIGHT_FACTOR = 0.48;
-const DATA_VERSION = "20260504-0400";
+const DATA_VERSION = "20260505-0100";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
@@ -107,17 +106,16 @@ const state = {
   accidentPopup: null,
   accidentDisplayItems: [],
   pointLoadPromises: { stops: null, dtp: null },
-  buildingWorker: null,
-  workerRequests: new Map(),
   cameraAnimation: null,
   smoothZoom: null,
   cameraInertia: null,
   dragging: null,
   pulseFrame: null,
   overviewMesh: null,
+  overviewMeshes: new Map(),
+  loadingOverviewMeshes: new Set(),
   tileMeshes: new Map(),
   tileMeshModes: new Map(),
-  tileBuildingFeatures: new Map(),
   roadTiles: new Map(),
   loadingTiles: new Set(),
   requestedTiles: new Set(),
@@ -139,12 +137,13 @@ const baseCtx = baseCanvas.getContext("2d");
 const overlayCtx = overlayCanvas.getContext("2d");
 let gl = null;
 try {
-  gl = glCanvas.getContext("webgl", {
+  const glOptions = {
     alpha: true,
     antialias: true,
     preserveDrawingBuffer: true,
     premultipliedAlpha: false
-  });
+  };
+  gl = glCanvas.getContext("webgl2", glOptions) || glCanvas.getContext("webgl", glOptions);
 } catch (error) {
   console.error(error);
 }
@@ -161,7 +160,8 @@ const els = {
   legend: document.getElementById("legend"),
   symbolLegend: document.getElementById("symbolLegend"),
   accidentPopup: document.getElementById("accidentPopup"),
-  cameraTutorial: document.getElementById("cameraTutorial")
+  cameraTutorial: document.getElementById("cameraTutorial"),
+  loadingOverlay: document.getElementById("loadingOverlay")
 };
 
 let glState = null;
@@ -214,7 +214,7 @@ function fallbackManifest() {
           terrain: "data3d/orel/terrain.json",
           stops: "data3d/orel/stops.json",
           dtp: "data3d/orel/dtp.json",
-          buildingsOverview: "data3d/orel/buildings-overview.json",
+          buildingsOverviewBase: "data3d/orel/buildings-overview",
           buildingsTileBase: "data3d/orel/buildings",
           roadsAllTileBase: "data3d/orel/roads-all"
         },
@@ -243,7 +243,7 @@ function fallbackManifest() {
           terrain: "data3d/tambov/terrain.json",
           stops: "data3d/tambov/stops.json",
           dtp: "data3d/tambov/dtp.json",
-          buildingsOverview: "data3d/tambov/buildings-overview.json",
+          buildingsOverviewBase: "data3d/tambov/buildings-overview",
           buildingsTileBase: "data3d/tambov/buildings",
           roadsAllTileBase: "data3d/tambov/roads-all"
         },
@@ -295,45 +295,27 @@ async function fetchJson(url) {
   return response.json();
 }
 
-function decodeBuildings(payload) {
-  if (payload && Array.isArray(payload.features)) return payload.features;
-  if (!payload || !["b1", "b2"].includes(payload.f) || !Array.isArray(payload.b)) return [];
-  const scale = payload.s || 10;
-  return payload.b
-    .map((item) => decodeBuilding(item, scale, payload.f))
-    .filter(Boolean);
+async function fetchArrayBuffer(url) {
+  const requestUrl = versionedDataUrl(url);
+  const response = await fetch(requestUrl);
+  if (!response.ok) throw new Error(`Не удалось загрузить ${requestUrl}`);
+  return response.arrayBuffer();
 }
 
-function decodeBuilding(item, scale, format = "b1") {
-  if (!Array.isArray(item) || item.length < 4) return null;
-  const polygons = [];
-  const ringStart = format === "b2" ? 4 : 3;
-  for (let i = ringStart; i < item.length; i += 1) {
-    const ring = decodeBuildingRing(item[i], scale);
-    if (ring.length >= 3) polygons.push([ring]);
+async function fetchMeshArrayBuffer(url) {
+  if (typeof DecompressionStream === "function") {
+    try {
+      return await decompressGzip(await fetchArrayBuffer(`${url}.gz`));
+    } catch (error) {
+      console.warn(error);
+    }
   }
-  if (!polygons.length) return null;
-  return {
-    bbox: bboxFromPoints(polygons.flat(2)),
-    polygons,
-    h: item[0] / scale,
-    s: item[1] ? "mkd" : "area",
-    r: item[2] ? 1 : 0,
-    g: format === "b2" ? item[3] / scale : 0
-  };
+  return fetchArrayBuffer(url);
 }
 
-function decodeBuildingRing(values, scale) {
-  if (!Array.isArray(values)) return [];
-  const ring = [];
-  let x = 0;
-  let y = 0;
-  for (let i = 0; i < values.length - 1; i += 2) {
-    x += values[i];
-    y += values[i + 1];
-    ring.push([x / scale, y / scale]);
-  }
-  return ring;
+async function decompressGzip(buffer) {
+  const stream = new Blob([buffer]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).arrayBuffer();
 }
 
 function decodeTerrain(payload) {
@@ -901,6 +883,47 @@ function endSheetDrag(event) {
   state.sheetDrag = null;
 }
 
+const LOADING_STAGES = [
+  { key: "quartals", label: "Загружаю кварталы" },
+  { key: "layers", label: "Загружаю слои" },
+  { key: "buildings", label: "Загружаю здания" },
+  { key: "prepare", label: "Готовлю 3D" }
+];
+
+function showLoadingOverlay(cityName) {
+  if (!els.loadingOverlay) return;
+  els.loadingOverlay.classList.remove("hidden");
+  els.loadingOverlay.innerHTML = `
+    <div class="loadingCard" role="status" aria-live="polite">
+      <div class="loadingTitle">${cityName}</div>
+      <div class="loadingSteps">
+        ${LOADING_STAGES.map((stage) => `
+          <div class="loadingStep" data-stage="${stage.key}">
+            <span></span>
+            <p>${stage.label}</p>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function setLoadingStage(key, status = "active") {
+  if (!els.loadingOverlay) return;
+  const currentIndex = LOADING_STAGES.findIndex((stage) => stage.key === key);
+  for (const node of els.loadingOverlay.querySelectorAll(".loadingStep")) {
+    const stageIndex = LOADING_STAGES.findIndex((stage) => stage.key === node.dataset.stage);
+    node.classList.toggle("done", stageIndex < currentIndex || (node.dataset.stage === key && status === "done"));
+    node.classList.toggle("active", node.dataset.stage === key && status === "active");
+    node.classList.toggle("error", node.dataset.stage === key && status === "error");
+  }
+}
+
+function hideLoadingOverlay() {
+  if (!els.loadingOverlay) return;
+  els.loadingOverlay.classList.add("hidden");
+}
+
 async function loadCity(slug) {
   const city = state.manifest.cities.find((item) => item.slug === slug);
   if (!city) return;
@@ -921,43 +944,68 @@ async function loadCity(slug) {
   renderCameraTutorial();
   els.infoPanel.classList.remove("sheetExpanded");
   els.infoPanel.innerHTML = `<div class="muted">Загрузка 3D-данных</div>`;
+  showLoadingOverlay(city.name);
 
-  const [quartals, green, water, roads, railways, terrain, overview] = await Promise.all([
-    fetchJson(city.files3d.quartals),
-    fetchJson(city.files3d.green),
-    fetchJson(city.files3d.water),
-    fetchJson(city.files3d.roads),
-    fetchJson(city.files3d.railways),
-    city.files3d.terrain ? fetchJson(city.files3d.terrain).catch(() => null) : Promise.resolve(null),
-    fetchJson(city.files3d.buildingsOverview)
-  ]);
-  if (token !== state.renderToken) return;
-  const overviewBuildings = decodeBuildings(overview);
+  try {
+    setLoadingStage("quartals");
+    const quartals = await fetchJson(city.files3d.quartals);
+    if (token !== state.renderToken) return;
+    setLoadingStage("quartals", "done");
 
-  state.data = {
-    city,
-    bbox: city.projectedBbox,
-    tileCount: city.tileCount,
-    availableBuildingTiles: new Set(city.tiles3d.buildings),
-    availableRoadTiles: new Set(city.tiles3d.roadsAll),
-    quartals: quartals.features.map(withCenter),
-    green: green.features.map(withCenter),
-    water: water.features.map(withCenter),
-    roads: roads.lines,
-    railways: railways.lines,
-    terrain: decodeTerrain(terrain),
-    points: { stops: [], dtp: [] },
-    pointLayersLoaded: { stops: false, dtp: false },
-    overviewBuildings
-  };
+    setLoadingStage("layers");
+    const [green, water, roads, railways, terrain] = await Promise.all([
+      fetchJson(city.files3d.green),
+      fetchJson(city.files3d.water),
+      fetchJson(city.files3d.roads),
+      fetchJson(city.files3d.railways),
+      city.files3d.terrain ? fetchJson(city.files3d.terrain).catch(() => null) : Promise.resolve(null)
+    ]);
+    if (token !== state.renderToken) return;
+    setLoadingStage("layers", "done");
 
-  state.pointLoadPromises = { stops: null, dtp: null };
-  state.overviewMesh = createBuildingMesh(filterBuildingsForMesh(overviewBuildings));
-  resizeCanvases();
-  resetView();
-  recomputeScores();
-  updatePanel();
-  draw();
+    setLoadingStage("buildings");
+    const overviewMode = isMobileLayout() ? "residential" : "full";
+    const overviewMesh = await loadOverviewMeshForCity(city, overviewMode);
+    if (token !== state.renderToken) return;
+    setLoadingStage("buildings", "done");
+
+    setLoadingStage("prepare");
+    state.data = {
+      city,
+      bbox: city.projectedBbox,
+      tileCount: city.tileCount,
+      availableBuildingTiles: new Set(city.tiles3d.buildings),
+      availableRoadTiles: new Set(city.tiles3d.roadsAll),
+      quartals: quartals.features.map(withCenter),
+      green: green.features.map(withCenter),
+      water: water.features.map(withCenter),
+      roads: roads.lines,
+      railways: railways.lines,
+      terrain: decodeTerrain(terrain),
+      points: { stops: [], dtp: [] },
+      pointLayersLoaded: { stops: false, dtp: false }
+    };
+
+    state.pointLoadPromises = { stops: null, dtp: null };
+    if (overviewMesh) {
+      state.overviewMesh = overviewMesh;
+      state.overviewMeshes.set(overviewMode, overviewMesh);
+    }
+    resizeCanvases();
+    resetView();
+    recomputeScores();
+    updatePanel();
+    draw();
+    setLoadingStage("prepare", "done");
+    setTimeout(() => {
+      if (token === state.renderToken) hideLoadingOverlay();
+    }, 220);
+  } catch (error) {
+    console.error(error);
+    if (token !== state.renderToken) return;
+    setLoadingStage("prepare", "error");
+    els.infoPanel.innerHTML = `<div class="muted">Не удалось загрузить 3D-данные</div>`;
+  }
 }
 
 async function ensurePointLayer(layer) {
@@ -995,6 +1043,7 @@ function showCityMenu() {
   state.selected = null;
   state.accidentPopup = null;
   hideAccidentPopup();
+  hideLoadingOverlay();
   els.title.textContent = "Города исследования";
   els.topMetric.textContent = "";
   els.mapShell.classList.add("hidden");
@@ -1005,22 +1054,18 @@ function showCityMenu() {
 
 function clearMeshes() {
   stopCameraAnimation();
-  if (state.buildingWorker) {
-    state.buildingWorker.terminate();
-    state.buildingWorker = null;
-  }
-  for (const request of state.workerRequests.values()) request.resolve(null);
-  state.workerRequests.clear();
   if (gl) {
-    for (const mesh of state.tileMeshes.values()) {
+    const meshes = new Set([...state.tileMeshes.values(), ...state.overviewMeshes.values(), state.overviewMesh].filter(Boolean));
+    for (const mesh of meshes) {
       if (mesh) gl.deleteBuffer(mesh.buffer);
+      if (mesh?.indexBuffer) gl.deleteBuffer(mesh.indexBuffer);
     }
-    if (state.overviewMesh) gl.deleteBuffer(state.overviewMesh.buffer);
   }
   state.overviewMesh = null;
+  state.overviewMeshes.clear();
+  state.loadingOverviewMeshes.clear();
   state.tileMeshes.clear();
   state.tileMeshModes.clear();
-  state.tileBuildingFeatures.clear();
   state.roadTiles.clear();
   state.loadingTiles.clear();
   state.requestedTiles.clear();
@@ -1262,7 +1307,6 @@ function drawBase() {
   drawPolygonLayer(baseCtx, state.data.water, "rgba(87, 145, 176, 0.44)", "rgba(54, 106, 138, 0.32)", 0);
   drawPolygonLayer(baseCtx, state.data.green, "rgba(80, 130, 78, 0.34)", "rgba(61, 92, 58, 0.2)", 0);
   if (state.layers.quartals) drawQuartals(baseCtx);
-  if (state.layers.buildings) drawBuildingFootprints(baseCtx);
   drawRailways(baseCtx);
   drawRoads(baseCtx);
 }
@@ -1375,32 +1419,6 @@ function buildingLightenFactor() {
   return 1 - zoomProgress(BUILDING_FADE_FACTOR);
 }
 
-function drawBuildingFootprints(ctx) {
-  if (state.camera.scale >= state.camera.fitScale * DETAIL_FACTOR) return;
-  const view = worldViewBbox();
-  const features = currentBuildingFeatures();
-  const alpha = zoomFade(0.01, 0.045, DETAIL_FACTOR);
-  ctx.save();
-  ctx.lineWidth = 0.25;
-  ctx.strokeStyle = `rgba(76, 76, 70, ${alpha})`;
-  for (const feature of features) {
-    if (!bboxIntersects(feature.bbox, view)) continue;
-    drawPath(ctx, feature.polygons, 0);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function currentBuildingFeatures() {
-  const filter = (features) => filterBuildingsForMesh(features);
-  if (state.camera.scale < state.camera.fitScale * DETAIL_FACTOR || state.tileBuildingFeatures.size === 0) {
-    return filter(state.data.overviewBuildings);
-  }
-  const features = [];
-  for (const tileFeatures of state.tileBuildingFeatures.values()) features.push(...tileFeatures);
-  return filter(features);
-}
-
 function drawPolygonLayer(ctx, features, fill, stroke, z = 0) {
   const view = worldViewBbox();
   for (const feature of features) {
@@ -1465,9 +1483,16 @@ function drawBuildings() {
   gl.uniform1f(glState.uniforms.alphaFactor, buildingAlphaFactor());
   gl.uniform1f(glState.uniforms.lightenFactor, buildingLightenFactor());
   gl.uniform1f(glState.uniforms.depthScale, 62000);
+  const meshMode = desiredBuildingMeshMode();
+  const overviewMesh =
+    state.overviewMeshes.get(meshMode) ||
+    state.overviewMeshes.get("full") ||
+    state.overviewMeshes.get("residential") ||
+    state.overviewMesh;
 
   if (state.camera.scale < state.camera.fitScale * DETAIL_FACTOR || state.tileMeshes.size === 0) {
-    drawMesh(state.overviewMesh);
+    drawMesh(overviewMesh);
+    if (!state.overviewMeshes.has(meshMode)) requestOverviewMesh(meshMode);
   }
   if (state.camera.scale >= state.camera.fitScale * DETAIL_FACTOR) {
     for (const mesh of state.tileMeshes.values()) drawMesh(mesh);
@@ -1594,253 +1619,75 @@ function accidentClusterDistance() {
 }
 
 // @dist-split
-function createBuildingMesh(features) {
-  if (!gl || !features || !features.length) return null;
-  const vertices = [];
-  for (const feature of features) {
-    const ground = feature.g || 0;
-    const height = (feature.h || 8) * (feature.s === "mkd" ? 1 : NON_MKD_HEIGHT_FACTOR);
-    const colors = buildingColors(feature);
-    for (const polygon of feature.polygons) {
-      const outer = openRing(polygon[0]);
-      if (outer.length < 3) continue;
-      for (let i = 0; i < outer.length; i += 1) {
-        const a = outer[i];
-        const b = outer[(i + 1) % outer.length];
-        pushWall(vertices, a, b, ground, height, colors, wallShade(a, b));
-      }
-      const roofHeight = ground + height;
-      for (const triangle of triangulateRoof(outer)) {
-        pushTriangle(vertices, triangle[0], roofHeight, triangle[1], roofHeight, triangle[2], roofHeight, colors.roof);
-      }
-    }
-  }
-
-  return createBuildingMeshFromVertices(vertices);
+async function loadOverviewMeshForCity(city, mode) {
+  if (!gl || !city?.files3d) return null;
+  const buffer = await fetchMeshArrayBuffer(buildingOverviewUrl(city, mode));
+  return createBuildingMeshFromPacked(buffer);
 }
 
-function createBuildingMeshFromVertices(vertices) {
-  if (!gl || !vertices || !vertices.length) return null;
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  const vertexArray = vertices instanceof Float32Array ? vertices : new Float32Array(vertices);
-  gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
-  return { buffer, count: vertexArray.length / FLOATS_PER_VERTEX };
+function buildingOverviewUrl(city, mode) {
+  const base = city.files3d.buildingsOverviewBase || String(city.files3d.buildingsOverview || "").replace(/(?:-(?:full|residential))?\.bin$|\.json$/, "");
+  return `${base}-${mode}.bin`;
 }
 
-function buildingColors(feature) {
-  if (isResidentialBuilding(feature)) {
-    return {
-      roof: [0.78, 0.78, 0.74, 1],
-      sideTop: [0.75, 0.75, 0.71, 1],
-      sideBottom: [0.69, 0.69, 0.65, 1]
-    };
+function buildingTileUrl(key, mode) {
+  return `${state.activeCity.files3d.buildingsTileBase}/${key}-${mode}.bin`;
+}
+
+function createBuildingMeshFromPacked(arrayBuffer) {
+  if (!gl || !arrayBuffer || arrayBuffer.byteLength < 48) return null;
+  const view = new DataView(arrayBuffer);
+  const magic = String.fromCharCode(
+    view.getUint8(0),
+    view.getUint8(1),
+    view.getUint8(2),
+    view.getUint8(3)
+  );
+  if (magic !== "LIM3") throw new Error("Unsupported building mesh format");
+  const vertexCount = view.getUint32(4, true);
+  const indexCount = view.getUint32(8, true);
+  const stride = view.getUint32(32, true) || PACKED_VERTEX_BYTES;
+  const indexBytes = view.getUint32(36, true) || 2;
+  const indexOffset = view.getUint32(40, true) || 48 + vertexCount * stride;
+  if (!vertexCount || !indexCount) return null;
+  if (indexBytes === 4 && !glState?.uintIndexExtension) {
+    throw new Error("Uint32 building mesh indices are not supported by this WebGL context");
   }
+  const vertexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(arrayBuffer, 48, vertexCount * stride), gl.STATIC_DRAW);
+  const indexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(arrayBuffer, indexOffset, indexCount * indexBytes), gl.STATIC_DRAW);
   return {
-    roof: [0.68, 0.68, 0.65, 1],
-    sideTop: [0.65, 0.65, 0.62, 1],
-    sideBottom: [0.6, 0.6, 0.57, 1]
+    buffer: vertexBuffer,
+    indexBuffer,
+    count: indexCount,
+    indexType: indexBytes === 4 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
+    stride,
+    origin: [view.getFloat32(12, true), view.getFloat32(16, true), view.getFloat32(20, true)],
+    scale: [view.getFloat32(24, true), view.getFloat32(28, true)]
   };
-}
-
-function isResidentialBuilding(feature) {
-  return feature.r === 1 || feature.r === true || feature.s === "mkd";
-}
-
-function wallShade(a, b) {
-  const dx = b[0] - a[0];
-  const dy = b[1] - a[1];
-  const length = Math.hypot(dx, dy) || 1;
-  const nx = dy / length;
-  const ny = -dx / length;
-  const light = nx * -0.42 + ny * -0.9;
-  return clamp(0.94 + light * 0.08, 0.86, 1.04);
-}
-
-function openRing(ring) {
-  const last = ring[ring.length - 1];
-  if (ring.length > 1 && ring[0][0] === last[0] && ring[0][1] === last[1]) {
-    return ring.slice(0, -1);
-  }
-  return ring;
-}
-
-function triangulateRoof(ring) {
-  const points = cleanRoofRing(ring);
-  if (points.length < 3) return [];
-  const triangles = earClip(points);
-  if (triangles.length > 0) return triangles;
-  const reversedTriangles = earClip([...points].reverse());
-  if (reversedTriangles.length > 0) return reversedTriangles;
-  return fallbackRoofTriangles(points);
-}
-
-function cleanRoofRing(ring) {
-  const cleaned = [];
-  for (const point of ring) {
-    const last = cleaned[cleaned.length - 1];
-    if (!last || last[0] !== point[0] || last[1] !== point[1]) cleaned.push(point);
-  }
-  while (cleaned.length > 2) {
-    const first = cleaned[0];
-    const last = cleaned[cleaned.length - 1];
-    if (first[0] !== last[0] || first[1] !== last[1]) break;
-    cleaned.pop();
-  }
-  return removeCollinearPoints(cleaned);
-}
-
-function removeCollinearPoints(points) {
-  if (points.length < 4) return points;
-  const result = [];
-  for (let i = 0; i < points.length; i += 1) {
-    const prev = points[(i - 1 + points.length) % points.length];
-    const current = points[i];
-    const next = points[(i + 1) % points.length];
-    const area = signedTriangleArea(prev, current, next);
-    if (Math.abs(area) > 0.001) result.push(current);
-  }
-  return result.length >= 3 ? result : points;
-}
-
-function earClip(points) {
-  const indexes = points.map((_, index) => index);
-  const triangles = [];
-  const orientation = polygonArea(points) >= 0 ? 1 : -1;
-  let guard = 0;
-  while (indexes.length > 3 && guard < points.length * points.length) {
-    guard += 1;
-    let clipped = false;
-    for (let i = 0; i < indexes.length; i += 1) {
-      const prevIndex = indexes[(i - 1 + indexes.length) % indexes.length];
-      const currentIndex = indexes[i];
-      const nextIndex = indexes[(i + 1) % indexes.length];
-      const prev = points[prevIndex];
-      const current = points[currentIndex];
-      const next = points[nextIndex];
-      if (!isConvexCorner(prev, current, next, orientation)) continue;
-      if (containsRoofPoint(points, indexes, prevIndex, currentIndex, nextIndex, prev, current, next)) continue;
-      triangles.push(orientation > 0 ? [prev, current, next] : [next, current, prev]);
-      indexes.splice(i, 1);
-      clipped = true;
-      break;
-    }
-    if (!clipped) break;
-  }
-  if (indexes.length === 3) {
-    const tri = [points[indexes[0]], points[indexes[1]], points[indexes[2]]];
-    triangles.push(orientation > 0 ? tri : [tri[2], tri[1], tri[0]]);
-  }
-  return indexes.length === 3 ? triangles : [];
-}
-
-function isConvexCorner(a, b, c, orientation) {
-  return signedTriangleArea(a, b, c) * orientation > 0.001;
-}
-
-function containsRoofPoint(points, indexes, aIndex, bIndex, cIndex, a, b, c) {
-  for (const index of indexes) {
-    if (index === aIndex || index === bIndex || index === cIndex) continue;
-    const point = points[index];
-    if (pointInTriangle(point, a, b, c)) return true;
-  }
-  return false;
-}
-
-// @dist-split
-function pointInTriangle(point, a, b, c) {
-  const area1 = signedTriangleArea(point, a, b);
-  const area2 = signedTriangleArea(point, b, c);
-  const area3 = signedTriangleArea(point, c, a);
-  const epsilon = 0.001;
-  const hasNegative = area1 < -epsilon || area2 < -epsilon || area3 < -epsilon;
-  const hasPositive = area1 > epsilon || area2 > epsilon || area3 > epsilon;
-  if (hasNegative && hasPositive) return false;
-  return Math.abs(area1) > epsilon && Math.abs(area2) > epsilon && Math.abs(area3) > epsilon;
-}
-
-function fallbackRoofTriangles(points) {
-  if (!isConvexPolygon(points)) return [];
-  const triangles = [];
-  const orientation = polygonArea(points) >= 0 ? 1 : -1;
-  for (let i = 1; i < points.length - 1; i += 1) {
-    const triangle = [points[0], points[i], points[i + 1]];
-    triangles.push(orientation > 0 ? triangle : [triangle[2], triangle[1], triangle[0]]);
-  }
-  return triangles;
-}
-
-function isConvexPolygon(points) {
-  const orientation = polygonArea(points) >= 0 ? 1 : -1;
-  for (let i = 0; i < points.length; i += 1) {
-    const a = points[(i - 1 + points.length) % points.length];
-    const b = points[i];
-    const c = points[(i + 1) % points.length];
-    if (signedTriangleArea(a, b, c) * orientation < -0.001) return false;
-  }
-  return true;
-}
-
-function polygonArea(points) {
-  let area = 0;
-  for (let i = 0; i < points.length; i += 1) {
-    const a = points[i];
-    const b = points[(i + 1) % points.length];
-    area += a[0] * b[1] - b[0] * a[1];
-  }
-  return area / 2;
-}
-
-function signedTriangleArea(a, b, c) {
-  return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-}
-
-function pushTriangle(target, a, za, b, zb, c, zc, color) {
-  pushVertex(target, a, za, color);
-  pushVertex(target, b, zb, color);
-  pushVertex(target, c, zc, color);
-}
-
-function pushWall(target, a, b, ground, height, colors, shade) {
-  const top = scaleColor(colors.sideTop, shade);
-  const bottom = scaleColor(colors.sideBottom, shade);
-  const roof = ground + height;
-  pushVertex(target, a, ground, bottom);
-  pushVertex(target, b, ground, bottom);
-  pushVertex(target, b, roof, top);
-  pushVertex(target, a, ground, bottom);
-  pushVertex(target, b, roof, top);
-  pushVertex(target, a, roof, top);
-}
-
-function pushVertex(target, point, z, color) {
-  target.push(point[0], point[1], z, color[0], color[1], color[2], color[3]);
-}
-
-function scaleColor(color, factor) {
-  return [
-    clamp(color[0] * factor, 0, 1),
-    clamp(color[1] * factor, 0, 1),
-    clamp(color[2] * factor, 0, 1),
-    color[3]
-  ];
 }
 
 function drawMesh(mesh) {
   if (!mesh || mesh.count === 0) return;
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
   gl.enableVertexAttribArray(glState.attributes.position);
-  gl.enableVertexAttribArray(glState.attributes.color);
-  gl.vertexAttribPointer(glState.attributes.position, 3, gl.FLOAT, false, FLOATS_PER_VERTEX * 4, 0);
-  gl.vertexAttribPointer(glState.attributes.color, 4, gl.FLOAT, false, FLOATS_PER_VERTEX * 4, 3 * 4);
-  gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
+  gl.enableVertexAttribArray(glState.attributes.style);
+  gl.uniform3f(glState.uniforms.meshOrigin, mesh.origin[0], mesh.origin[1], mesh.origin[2]);
+  gl.uniform2f(glState.uniforms.meshScale, mesh.scale[0], mesh.scale[1]);
+  gl.vertexAttribPointer(glState.attributes.position, 3, gl.SHORT, false, mesh.stride || PACKED_VERTEX_BYTES, 0);
+  gl.vertexAttribPointer(glState.attributes.style, 1, gl.UNSIGNED_BYTE, false, mesh.stride || PACKED_VERTEX_BYTES, 6);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+  gl.drawElements(gl.TRIANGLES, mesh.count, mesh.indexType, 0);
 }
 
 // @dist-split
 function initGl(glContext) {
   const vertexSource = `
     attribute vec3 a_pos;
-    attribute vec4 a_color;
+    attribute float a_style;
     uniform vec2 u_center;
     uniform vec2 u_viewport;
     uniform float u_scale;
@@ -1852,12 +1699,32 @@ function initGl(glContext) {
     uniform float u_alphaFactor;
     uniform float u_lightenFactor;
     uniform float u_depthScale;
+    uniform vec3 u_meshOrigin;
+    uniform vec2 u_meshScale;
     varying vec4 v_color;
 
+    vec3 styleColor(float style) {
+      float kind = floor((style + 0.5) / 16.0);
+      float shadeLevel = mod(style + 0.5, 16.0);
+      float shade = 0.86 + shadeLevel * 0.012;
+      vec3 base = vec3(0.78, 0.78, 0.74);
+      if (kind > 0.5 && kind < 1.5) base = vec3(0.75, 0.75, 0.71);
+      else if (kind > 1.5 && kind < 2.5) base = vec3(0.69, 0.69, 0.65);
+      else if (kind > 2.5 && kind < 3.5) base = vec3(0.68, 0.68, 0.65);
+      else if (kind > 3.5 && kind < 4.5) base = vec3(0.65, 0.65, 0.62);
+      else if (kind > 4.5) base = vec3(0.6, 0.6, 0.57);
+      return clamp(base * shade, 0.0, 1.0);
+    }
+
     void main() {
-      float height = a_pos.z * u_heightScale;
-      float dx = a_pos.x - u_center.x;
-      float dy = a_pos.y - u_center.y;
+      vec3 worldPos = vec3(
+        u_meshOrigin.x + a_pos.x * u_meshScale.x,
+        u_meshOrigin.y + a_pos.y * u_meshScale.x,
+        u_meshOrigin.z + a_pos.z * u_meshScale.y
+      );
+      float height = worldPos.z * u_heightScale;
+      float dx = worldPos.x - u_center.x;
+      float dy = worldPos.y - u_center.y;
       float rx = dx * u_bearingCos - dy * u_bearingSin;
       float ry = dx * u_bearingSin + dy * u_bearingCos;
       float sy = ry * u_pitchCos + height * u_pitchSin;
@@ -1868,7 +1735,7 @@ function initGl(glContext) {
         depth / u_depthScale,
         1.0
       );
-      v_color = a_color;
+      v_color = vec4(styleColor(a_style), 1.0);
     }
   `;
 
@@ -1890,9 +1757,12 @@ function initGl(glContext) {
   glContext.blendFunc(glContext.SRC_ALPHA, glContext.ONE_MINUS_SRC_ALPHA);
   return {
     program,
+    uintIndexExtension:
+      (typeof WebGL2RenderingContext !== "undefined" && glContext instanceof WebGL2RenderingContext) ||
+      glContext.getExtension("OES_element_index_uint"),
     attributes: {
       position: glContext.getAttribLocation(program, "a_pos"),
-      color: glContext.getAttribLocation(program, "a_color")
+      style: glContext.getAttribLocation(program, "a_style")
     },
     uniforms: {
       center: glContext.getUniformLocation(program, "u_center"),
@@ -1905,7 +1775,9 @@ function initGl(glContext) {
       heightScale: glContext.getUniformLocation(program, "u_heightScale"),
       alphaFactor: glContext.getUniformLocation(program, "u_alphaFactor"),
       lightenFactor: glContext.getUniformLocation(program, "u_lightenFactor"),
-      depthScale: glContext.getUniformLocation(program, "u_depthScale")
+      depthScale: glContext.getUniformLocation(program, "u_depthScale"),
+      meshOrigin: glContext.getUniformLocation(program, "u_meshOrigin"),
+      meshScale: glContext.getUniformLocation(program, "u_meshScale")
     }
   };
 }
@@ -1948,6 +1820,23 @@ function requestVisibleTiles() {
   }
 }
 
+function requestOverviewMesh(meshMode) {
+  if (!state.activeCity || state.overviewMeshes.has(meshMode) || state.loadingOverviewMeshes.has(meshMode)) return;
+  const token = state.renderToken;
+  state.loadingOverviewMeshes.add(meshMode);
+  loadOverviewMeshForCity(state.activeCity, meshMode)
+    .then((mesh) => {
+      if (token !== state.renderToken || !mesh) return;
+      state.overviewMeshes.set(meshMode, mesh);
+      if (!state.overviewMesh) state.overviewMesh = mesh;
+    })
+    .catch((error) => console.error(error))
+    .finally(() => {
+      state.loadingOverviewMeshes.delete(meshMode);
+      draw();
+    });
+}
+
 function requestBuildingTile(key, meshMode) {
   const requestKey = `b:${key}:${meshMode}`;
   if (state.loadingTiles.has(requestKey)) return;
@@ -1961,15 +1850,8 @@ function requestBuildingTile(key, meshMode) {
 }
 
 async function loadBuildingTile(key, meshMode) {
-  const url = `${state.activeCity.files3d.buildingsTileBase}/${key}.json`;
-  const workerMesh = await buildTileMeshInWorker(key, url, meshMode);
-  if (workerMesh) {
-    setTileMesh(key, workerMesh, meshMode);
-    return;
-  }
-  const payload = await fetchJson(url);
-  const features = decodeBuildings(payload);
-  setTileMesh(key, createBuildingMesh(filterBuildingsForMesh(features, meshMode)), meshMode);
+  const buffer = await fetchMeshArrayBuffer(buildingTileUrl(key, meshMode));
+  setTileMesh(key, createBuildingMeshFromPacked(buffer), meshMode);
 }
 
 function requestRoadTile(key) {
@@ -1990,7 +1872,10 @@ function requestRoadTile(key) {
 function setTileMesh(key, mesh, meshMode) {
   if (!gl) return;
   const previous = state.tileMeshes.get(key);
-  if (previous) gl.deleteBuffer(previous.buffer);
+  if (previous) {
+    gl.deleteBuffer(previous.buffer);
+    if (previous.indexBuffer) gl.deleteBuffer(previous.indexBuffer);
+  }
   if (mesh) state.tileMeshes.set(key, mesh);
   else state.tileMeshes.delete(key);
   state.tileMeshModes.set(key, meshMode);
@@ -2002,11 +1887,6 @@ function desiredBuildingMeshMode() {
 
 function showNonResidentialBuildings() {
   return state.camera.scale >= state.camera.fitScale * MOBILE_NON_RESIDENTIAL_FACTOR;
-}
-
-function filterBuildingsForMesh(features, mode = desiredBuildingMeshMode()) {
-  if (mode === "full") return features;
-  return features.filter(isResidentialBuilding);
 }
 
 function visibleTileKeys() {
@@ -2223,46 +2103,6 @@ function stopSmoothZoom() {
 function stopCameraInertia() {
   if (state.cameraInertia?.frame) cancelAnimationFrame(state.cameraInertia.frame);
   state.cameraInertia = null;
-}
-
-function buildingWorker() {
-  if (typeof Worker === "undefined") return null;
-  if (state.buildingWorker) return state.buildingWorker;
-  try {
-    const worker = new Worker(`src/building-worker.js?v=${DATA_VERSION}`);
-    worker.addEventListener("message", (event) => {
-      const { id, ok, vertices, error } = event.data || {};
-      const request = state.workerRequests.get(id);
-      if (!request) return;
-      state.workerRequests.delete(id);
-      if (!ok) request.resolve(null);
-      else request.resolve(createBuildingMeshFromVertices(new Float32Array(vertices)));
-      if (error) console.error(error);
-    });
-    worker.addEventListener("error", (error) => {
-      console.error(error);
-      for (const request of state.workerRequests.values()) request.resolve(null);
-      state.workerRequests.clear();
-      state.buildingWorker = null;
-      worker.terminate();
-    });
-    state.buildingWorker = worker;
-  } catch (error) {
-    console.error(error);
-    state.buildingWorker = null;
-  }
-  return state.buildingWorker;
-}
-
-function buildTileMeshInWorker(key, url, meshMode) {
-  const worker = buildingWorker();
-  if (!worker) return Promise.resolve(null);
-  const id = `${key}:${meshMode}:${performance.now()}`;
-  const requestUrl = versionedDataUrl(url);
-  return new Promise((resolve) => {
-    state.workerRequests.set(id, { resolve });
-    worker.postMessage({ id, url: requestUrl, mode: meshMode });
-  });
 }
 
 function startPulse() {

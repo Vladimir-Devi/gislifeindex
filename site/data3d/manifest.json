@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T16:20:03.385Z",
+  "generatedAt": "2026-05-04T21:37:09.513Z",
   "tileCount": 8,
   "overviewAreaThreshold": 700,
   "cities": [
@@ -68,7 +68,7 @@
         "stops": "data3d/orel/stops.json",
         "dtp": "data3d/orel/dtp.json",
         "terrain": "data3d/orel/terrain.json",
-        "buildingsOverview": "data3d/orel/buildings-overview.json",
+        "buildingsOverviewBase": "data3d/orel/buildings-overview",
         "buildingsTileBase": "data3d/orel/buildings",
         "roadsAllTileBase": "data3d/orel/roads-all"
       },
@@ -257,7 +257,7 @@
         "stops": "data3d/tambov/stops.json",
         "dtp": "data3d/tambov/dtp.json",
         "terrain": "data3d/tambov/terrain.json",
-        "buildingsOverview": "data3d/tambov/buildings-overview.json",
+        "buildingsOverviewBase": "data3d/tambov/buildings-overview",
         "buildingsTileBase": "data3d/tambov/buildings",
         "roadsAllTileBase": "data3d/tambov/roads-all"
       },

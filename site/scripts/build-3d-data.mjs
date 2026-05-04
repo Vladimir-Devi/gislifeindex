@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { gzipSync } from "node:zlib";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,10 +11,15 @@ const sourceManifest = JSON.parse(readFileSync(path.join(siteDir, "data", "manif
 
 const TILE_COUNT = 8;
 const OVERVIEW_AREA_THRESHOLD = 700;
-const BUILDING_COORD_SCALE = 10;
 const TERRAIN_GRID_WIDTH = 128;
 const TERRAIN_HEIGHT_SCALE = 10;
 const TERRAIN_NODATA = -32768;
+const NON_MKD_HEIGHT_FACTOR = 0.48;
+const MESH_MAGIC = "LIM3";
+const MESH_HEADER_BYTES = 48;
+const PACKED_VERTEX_BYTES = 7;
+const MESH_XY_SCALE = 0.25;
+const MESH_Z_SCALE = 0.1;
 const sourceDirs = { orel: "Orel", tambov: "Tambov" };
 const gdalBinDirs = [
   process.env.GDAL_BIN,
@@ -272,48 +278,309 @@ function splitBuildings(buildings, cityDir, bbox) {
   const buildingDir = path.join(cityDir, "buildings");
   const available = [];
   for (const [key, features] of tiles) {
-    writeJson(path.join(buildingDir, `${key}.json`), compactBuildings(features));
+    writeBuildingMeshVariants(path.join(buildingDir, key), features);
     available.push(key);
   }
-  writeJson(path.join(cityDir, "buildings-overview.json"), compactBuildings(overview));
+  writeBuildingMeshVariants(path.join(cityDir, "buildings-overview"), overview);
   return { available: available.sort(), overview: overview.length, total: buildings.length };
 }
 
-function compactBuildings(features) {
+function writeBuildingMeshVariants(basePath, features) {
+  writeBuildingMesh(`${basePath}-full.bin`, features);
+  writeBuildingMesh(`${basePath}-residential.bin`, features.filter(isResidentialBuilding));
+}
+
+function writeBuildingMesh(filePath, features) {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  const buffer = packBuildingMesh(buildBuildingMesh(features));
+  writeFileSync(filePath, buffer);
+  writeFileSync(`${filePath}.gz`, gzipSync(buffer, { level: 9 }));
+}
+
+function buildBuildingMesh(features) {
+  const vertices = [];
+  const indices = [];
+  for (const feature of features) {
+    const ground = feature.g || 0;
+    const height = (feature.h || 8) * (feature.s === "mkd" ? 1 : NON_MKD_HEIGHT_FACTOR);
+    const styles = buildingStyles(feature);
+    for (const polygon of feature.polygons) {
+      const outer = openRing(polygon[0]);
+      if (outer.length < 3) continue;
+      for (let i = 0; i < outer.length; i += 1) {
+        const a = outer[i];
+        const b = outer[(i + 1) % outer.length];
+        pushWall(vertices, indices, a, b, ground, height, styles, wallShade(a, b));
+      }
+      const roofHeight = ground + height;
+      const roofIndexes = new Map();
+      const roofIndex = (point) => {
+        const key = `${point[0]}:${point[1]}`;
+        let index = roofIndexes.get(key);
+        if (index == null) {
+          index = pushVertex(vertices, point, roofHeight, styles.roof);
+          roofIndexes.set(key, index);
+        }
+        return index;
+      };
+      for (const triangle of triangulateRoof(outer)) {
+        indices.push(roofIndex(triangle[0]), roofIndex(triangle[1]), roofIndex(triangle[2]));
+      }
+    }
+  }
+  return { vertices, indices };
+}
+
+function packBuildingMesh(mesh) {
+  const { vertices, indices } = mesh;
+  const vertexCount = Math.floor(vertices.length / 4);
+  const indexCount = indices.length;
+  const indexBytes = vertexCount > 65535 ? 4 : 2;
+  const indexOffset = MESH_HEADER_BYTES + vertexCount * PACKED_VERTEX_BYTES;
+  const buffer = Buffer.alloc(indexOffset + indexCount * indexBytes);
+  buffer.write(MESH_MAGIC, 0, "ascii");
+  buffer.writeUInt32LE(vertexCount, 4);
+  buffer.writeUInt32LE(indexCount, 8);
+  buffer.writeUInt32LE(PACKED_VERTEX_BYTES, 32);
+  buffer.writeUInt32LE(indexBytes, 36);
+  buffer.writeUInt32LE(indexOffset, 40);
+  if (!vertexCount) {
+    buffer.writeFloatLE(0, 12);
+    buffer.writeFloatLE(0, 16);
+    buffer.writeFloatLE(0, 20);
+    buffer.writeFloatLE(MESH_XY_SCALE, 24);
+    buffer.writeFloatLE(MESH_Z_SCALE, 28);
+    return buffer;
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let minZ = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let maxZ = -Infinity;
+  for (let i = 0; i < vertices.length; i += 4) {
+    minX = Math.min(minX, vertices[i]);
+    minY = Math.min(minY, vertices[i + 1]);
+    minZ = Math.min(minZ, vertices[i + 2]);
+    maxX = Math.max(maxX, vertices[i]);
+    maxY = Math.max(maxY, vertices[i + 1]);
+    maxZ = Math.max(maxZ, vertices[i + 2]);
+  }
+
+  const originX = (minX + maxX) / 2;
+  const originY = (minY + maxY) / 2;
+  const originZ = (minZ + maxZ) / 2;
+  const xyScale = Math.max(MESH_XY_SCALE, (maxX - minX) / 65000, (maxY - minY) / 65000);
+  const zScale = Math.max(MESH_Z_SCALE, (maxZ - minZ) / 65000);
+  buffer.writeFloatLE(originX, 12);
+  buffer.writeFloatLE(originY, 16);
+  buffer.writeFloatLE(originZ, 20);
+  buffer.writeFloatLE(xyScale, 24);
+  buffer.writeFloatLE(zScale, 28);
+
+  let offset = MESH_HEADER_BYTES;
+  for (let i = 0; i < vertices.length; i += 4) {
+    buffer.writeInt16LE(clamp(Math.round((vertices[i] - originX) / xyScale), -32768, 32767), offset);
+    buffer.writeInt16LE(clamp(Math.round((vertices[i + 1] - originY) / xyScale), -32768, 32767), offset + 2);
+    buffer.writeInt16LE(clamp(Math.round((vertices[i + 2] - originZ) / zScale), -32768, 32767), offset + 4);
+    buffer.writeUInt8(vertices[i + 3], offset + 6);
+    offset += PACKED_VERTEX_BYTES;
+  }
+  offset = indexOffset;
+  for (const index of indices) {
+    if (indexBytes === 4) {
+      buffer.writeUInt32LE(index, offset);
+      offset += 4;
+    } else {
+      buffer.writeUInt16LE(index, offset);
+      offset += 2;
+    }
+  }
+  return buffer;
+}
+
+function buildingStyles(feature) {
+  const baseKind = isResidentialBuilding(feature) ? 0 : 3;
   return {
-    f: "b2",
-    s: BUILDING_COORD_SCALE,
-    b: features.map(compactBuilding)
+    roof: styleCode(baseKind, 1),
+    sideTop: baseKind + 1,
+    sideBottom: baseKind + 2
   };
 }
 
-function compactBuilding(feature) {
-  const rings = [];
-  for (const polygon of feature.polygons) {
-    if (!polygon[0] || polygon[0].length < 3) continue;
-    rings.push(compactRing(polygon[0]));
-  }
-  return [
-    Math.round(feature.h * BUILDING_COORD_SCALE),
-    feature.s === "mkd" ? 1 : 0,
-    feature.r ? 1 : 0,
-    Math.round((feature.g || 0) * BUILDING_COORD_SCALE),
-    ...rings
-  ];
+function styleCode(kind, shade) {
+  const shadeLevel = clamp(Math.round(((shade - 0.86) / 0.18) * 15), 0, 15);
+  return kind * 16 + shadeLevel;
 }
 
-function compactRing(ring) {
-  const open = ring.length > 1 && ring[0][0] === ring.at(-1)[0] && ring[0][1] === ring.at(-1)[1] ? ring.slice(0, -1) : ring;
-  let previousX = 0;
-  let previousY = 0;
-  return open.flatMap((point) => {
-    const x = Math.round(point[0] * BUILDING_COORD_SCALE);
-    const y = Math.round(point[1] * BUILDING_COORD_SCALE);
-    const delta = [x - previousX, y - previousY];
-    previousX = x;
-    previousY = y;
-    return delta;
-  });
+function isResidentialBuilding(feature) {
+  return feature.r === 1 || feature.r === true || feature.s === "mkd";
+}
+
+function wallShade(a, b) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const length = Math.hypot(dx, dy) || 1;
+  const nx = dy / length;
+  const ny = -dx / length;
+  const light = nx * -0.42 + ny * -0.9;
+  return clamp(0.94 + light * 0.08, 0.86, 1.04);
+}
+
+function openRing(ring) {
+  const last = ring[ring.length - 1];
+  if (ring.length > 1 && ring[0][0] === last[0] && ring[0][1] === last[1]) {
+    return ring.slice(0, -1);
+  }
+  return ring;
+}
+
+function triangulateRoof(ring) {
+  const points = cleanRoofRing(ring);
+  if (points.length < 3) return [];
+  const triangles = earClip(points);
+  if (triangles.length > 0) return triangles;
+  const reversedTriangles = earClip([...points].reverse());
+  if (reversedTriangles.length > 0) return reversedTriangles;
+  return fallbackRoofTriangles(points);
+}
+
+function cleanRoofRing(ring) {
+  const cleaned = [];
+  for (const point of ring) {
+    const last = cleaned[cleaned.length - 1];
+    if (!last || last[0] !== point[0] || last[1] !== point[1]) cleaned.push(point);
+  }
+  while (cleaned.length > 2) {
+    const first = cleaned[0];
+    const last = cleaned[cleaned.length - 1];
+    if (first[0] !== last[0] || first[1] !== last[1]) break;
+    cleaned.pop();
+  }
+  return removeCollinearPoints(cleaned);
+}
+
+function removeCollinearPoints(points) {
+  if (points.length < 4) return points;
+  const result = [];
+  for (let i = 0; i < points.length; i += 1) {
+    const prev = points[(i - 1 + points.length) % points.length];
+    const current = points[i];
+    const next = points[(i + 1) % points.length];
+    if (Math.abs(signedTriangleArea(prev, current, next)) > 0.001) result.push(current);
+  }
+  return result.length >= 3 ? result : points;
+}
+
+function earClip(points) {
+  const indexes = points.map((_, index) => index);
+  const triangles = [];
+  const orientation = polygonArea(points) >= 0 ? 1 : -1;
+  let guard = 0;
+  while (indexes.length > 3 && guard < points.length * points.length) {
+    guard += 1;
+    let clipped = false;
+    for (let i = 0; i < indexes.length; i += 1) {
+      const prevIndex = indexes[(i - 1 + indexes.length) % indexes.length];
+      const currentIndex = indexes[i];
+      const nextIndex = indexes[(i + 1) % indexes.length];
+      const prev = points[prevIndex];
+      const current = points[currentIndex];
+      const next = points[nextIndex];
+      if (!isConvexCorner(prev, current, next, orientation)) continue;
+      if (containsRoofPoint(points, indexes, prevIndex, currentIndex, nextIndex, prev, current, next)) continue;
+      triangles.push(orientation > 0 ? [prev, current, next] : [next, current, prev]);
+      indexes.splice(i, 1);
+      clipped = true;
+      break;
+    }
+    if (!clipped) break;
+  }
+  if (indexes.length === 3) {
+    const tri = [points[indexes[0]], points[indexes[1]], points[indexes[2]]];
+    triangles.push(orientation > 0 ? tri : [tri[2], tri[1], tri[0]]);
+  }
+  return indexes.length === 3 ? triangles : [];
+}
+
+function isConvexCorner(a, b, c, orientation) {
+  return signedTriangleArea(a, b, c) * orientation > 0.001;
+}
+
+function containsRoofPoint(points, indexes, aIndex, bIndex, cIndex, a, b, c) {
+  for (const index of indexes) {
+    if (index === aIndex || index === bIndex || index === cIndex) continue;
+    if (pointInTriangle(points[index], a, b, c)) return true;
+  }
+  return false;
+}
+
+function pointInTriangle(point, a, b, c) {
+  const area1 = signedTriangleArea(point, a, b);
+  const area2 = signedTriangleArea(point, b, c);
+  const area3 = signedTriangleArea(point, c, a);
+  const epsilon = 0.001;
+  const hasNegative = area1 < -epsilon || area2 < -epsilon || area3 < -epsilon;
+  const hasPositive = area1 > epsilon || area2 > epsilon || area3 > epsilon;
+  if (hasNegative && hasPositive) return false;
+  return Math.abs(area1) > epsilon && Math.abs(area2) > epsilon && Math.abs(area3) > epsilon;
+}
+
+function fallbackRoofTriangles(points) {
+  if (!isConvexPolygon(points)) return [];
+  const triangles = [];
+  const orientation = polygonArea(points) >= 0 ? 1 : -1;
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const triangle = [points[0], points[i], points[i + 1]];
+    triangles.push(orientation > 0 ? triangle : [triangle[2], triangle[1], triangle[0]]);
+  }
+  return triangles;
+}
+
+function isConvexPolygon(points) {
+  const orientation = polygonArea(points) >= 0 ? 1 : -1;
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[(i - 1 + points.length) % points.length];
+    const b = points[i];
+    const c = points[(i + 1) % points.length];
+    if (signedTriangleArea(a, b, c) * orientation < -0.001) return false;
+  }
+  return true;
+}
+
+function polygonArea(points) {
+  let area = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    area += a[0] * b[1] - b[0] * a[1];
+  }
+  return area / 2;
+}
+
+function signedTriangleArea(a, b, c) {
+  return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+}
+
+function pushWall(vertices, indices, a, b, ground, height, styles, shade) {
+  const top = styleCode(styles.sideTop, shade);
+  const bottom = styleCode(styles.sideBottom, shade);
+  const roof = ground + height;
+  const aBottom = pushVertex(vertices, a, ground, bottom);
+  const bBottom = pushVertex(vertices, b, ground, bottom);
+  const bTop = pushVertex(vertices, b, roof, top);
+  const aTop = pushVertex(vertices, a, roof, top);
+  indices.push(aBottom, bBottom, bTop, aBottom, bTop, aTop);
+}
+
+function pushVertex(target, point, z, style) {
+  target.push(point[0], point[1], z, style);
+  return target.length / 4 - 1;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function splitRoadSegments(collection, projection, cityDir, bbox) {
@@ -577,7 +844,7 @@ for (const city of sourceManifest.cities) {
       stops: `data3d/${city.slug}/stops.json`,
       dtp: `data3d/${city.slug}/dtp.json`,
       terrain: terrain ? `data3d/${city.slug}/terrain.json` : null,
-      buildingsOverview: `data3d/${city.slug}/buildings-overview.json`,
+      buildingsOverviewBase: `data3d/${city.slug}/buildings-overview`,
       buildingsTileBase: `data3d/${city.slug}/buildings`,
       roadsAllTileBase: `data3d/${city.slug}/roads-all`
     },

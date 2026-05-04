@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>3D-карта индекса качества городской среды</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="src/styles.css?v=20260504-0400" />
-    <link rel="stylesheet" href="src/map3d.css?v=20260504-0400" />
+    <link rel="stylesheet" href="src/styles.css?v=20260505-0100" />
+    <link rel="stylesheet" href="src/map3d.css?v=20260505-0100" />
   </head>
   <body>
     <div class="app">
@@ -59,6 +59,7 @@
           <canvas id="baseCanvas"></canvas>
           <canvas id="glCanvas"></canvas>
           <canvas id="overlayCanvas"></canvas>
+          <div class="loadingOverlay hidden" id="loadingOverlay"></div>
 
           <div class="mapControls">
             <div class="controlGroup controlPanel" id="scenarioControls"></div>
@@ -75,6 +76,6 @@
       </main>
     </div>
 
-    <script defer src="src/map3d.js?v=20260504-0400"></script>
+    <script defer src="src/map3d.js?v=20260505-0100"></script>
   </body>
 </html>
