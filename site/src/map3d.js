@@ -72,14 +72,18 @@ const GROUP_HELP = {
 
 const DETAIL_FACTOR = 4.75;
 const ROAD_DETAIL_FACTOR = 6.2;
+const ROAD_DETAIL_REQUEST_FACTOR = 5.55;
+const ROAD_DETAIL_FULL_FACTOR = 7.05;
+const ROAD_SURFACE_OFFSET = 0;
+const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-0700";
-const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
-const SMALL_NON_RESIDENTIAL_FACTOR = 12.5;
-const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15.7;
+const DATA_VERSION = "20260505-0800";
+const MOBILE_NON_RESIDENTIAL_FACTOR = 11.8;
+const SMALL_NON_RESIDENTIAL_FACTOR = 13.4;
+const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 16.2;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
 const THEME_STORAGE_KEY = "lifeindex.theme";
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
@@ -114,8 +118,8 @@ const CANVAS_THEMES = {
     greenFill: "rgba(53, 104, 66, 0.36)",
     greenStroke: "rgba(111, 158, 99, 0.2)",
     quarterStroke: "rgba(214, 218, 206, 0.24)",
-    roadDetail: (alpha) => `rgba(165, 174, 172, ${Math.min(0.34, alpha + 0.08)})`,
-    roadMain: (alpha) => `rgba(210, 216, 207, ${Math.min(0.56, alpha + 0.08)})`,
+    roadDetail: (alpha) => `rgba(82, 126, 145, ${Math.min(0.38, alpha + 0.08)})`,
+    roadMain: (alpha) => `rgba(118, 165, 184, ${Math.min(0.58, alpha + 0.08)})`,
     railway: (alpha) => `rgba(186, 181, 168, ${Math.min(0.62, alpha + 0.08)})`,
     railwayDash: (alpha) => `rgba(18, 24, 26, ${Math.min(0.82, alpha + 0.08)})`,
     selectedFill: "rgba(255, 222, 132, 0.12)",
@@ -730,6 +734,7 @@ function attachEvents() {
     const current = screenToWorldOnTerrain(...eventCanvasPoint(event));
     state.camera.center[0] += state.dragging.startWorld[0] - current[0];
     state.camera.center[1] += state.dragging.startWorld[1] - current[1];
+    clampCameraCenter();
     recordDragVelocity({
       center: [state.camera.center[0] - previousCenter[0], state.camera.center[1] - previousCenter[1]],
       bearing: 0,
@@ -870,6 +875,7 @@ function updatePinchGesture() {
   const after = screenToWorldOnTerrain(midpoint[0], midpoint[1]);
   state.camera.center[0] += state.pinchGesture.startWorld[0] - after[0];
   state.camera.center[1] += state.pinchGesture.startWorld[1] - after[1];
+  clampCameraCenter();
   const now = performance.now();
   const dt = Math.max(16, now - state.pinchGesture.lastTime);
   state.lastGestureVelocity = {
@@ -1182,6 +1188,7 @@ function resetView() {
   const scale = Math.min(usableWidth / extent.width, usableHeight / extent.height) * 0.8;
   state.camera.scale = scale;
   state.camera.fitScale = scale;
+  clampCameraCenter();
   draw();
 }
 
@@ -1191,6 +1198,19 @@ function cameraMinScale() {
 
 function cameraMaxScale() {
   return state.camera.fitScale * CAMERA_MAX_ZOOM_FACTOR;
+}
+
+function clampCameraCenter() {
+  if (!state.data?.bbox) return { x: false, y: false };
+  const [minX, minY, maxX, maxY] = state.data.bbox;
+  const previousX = state.camera.center[0];
+  const previousY = state.camera.center[1];
+  state.camera.center[0] = clamp(previousX, minX, maxX);
+  state.camera.center[1] = clamp(previousY, minY, maxY);
+  return {
+    x: state.camera.center[0] !== previousX,
+    y: state.camera.center[1] !== previousY
+  };
 }
 
 function smoothZoomAtCursor(cursor, deltaY) {
@@ -1226,6 +1246,7 @@ function tickSmoothZoom(time) {
   const after = screenToWorldOnTerrain(zoom.cursor[0], zoom.cursor[1]);
   state.camera.center[0] += zoom.anchor[0] - after[0];
   state.camera.center[1] += zoom.anchor[1] - after[1];
+  clampCameraCenter();
   draw();
   if (Math.abs(Math.log(zoom.targetScale / state.camera.scale)) > 0.002) {
     zoom.frame = requestAnimationFrame(tickSmoothZoom);
@@ -1235,6 +1256,7 @@ function tickSmoothZoom(time) {
   const finalAfter = screenToWorldOnTerrain(zoom.cursor[0], zoom.cursor[1]);
   state.camera.center[0] += zoom.anchor[0] - finalAfter[0];
   state.camera.center[1] += zoom.anchor[1] - finalAfter[1];
+  clampCameraCenter();
   state.smoothZoom = null;
   draw();
 }
@@ -1268,6 +1290,9 @@ function tickCameraInertia(time) {
   const velocity = inertia.velocity;
   state.camera.center[0] += velocity.center[0] * dt;
   state.camera.center[1] += velocity.center[1] * dt;
+  const clamped = clampCameraCenter();
+  if (clamped.x) velocity.center[0] = 0;
+  if (clamped.y) velocity.center[1] = 0;
   state.camera.bearing += velocity.bearing * dt;
   state.camera.pitch = clamp(state.camera.pitch + velocity.pitch * dt, CAMERA_MIN_PITCH, CAMERA_MAX_PITCH);
   if (velocity.scale) {
@@ -1358,6 +1383,7 @@ function screenToWorldOnTerrain(sx, sy, offset = 0) {
 
 function draw() {
   if (!state.data) return;
+  clampCameraCenter();
   renderLegend();
   renderSymbolLegend();
   drawBase();
@@ -1445,18 +1471,19 @@ function drawQuartals(ctx) {
 function drawRoads(ctx) {
   const colors = canvasTheme();
   const mainAlpha = zoomFade(0.13, 0.46, 2.7);
-  const detailAlpha = zoomFade(0.04, 0.22, 6.6);
+  const detailProgress = zoomRangeProgress(ROAD_DETAIL_FACTOR, ROAD_DETAIL_FULL_FACTOR);
+  const detailAlpha = (0.04 + 0.18 * detailProgress) * detailProgress;
   ctx.save();
-  if (state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_FACTOR) {
+  if (detailAlpha > 0.002 && state.roadTiles.size) {
     ctx.lineWidth = 0.72;
     ctx.strokeStyle = colors.roadDetail(detailAlpha);
     for (const tile of state.roadTiles.values()) {
-      for (const segment of tile.segments) drawLine(ctx, segment, 4);
+      for (const segment of tile.segments) drawLine(ctx, segment, ROAD_SURFACE_OFFSET);
     }
   }
   ctx.lineWidth = 1.28;
   ctx.strokeStyle = colors.roadMain(mainAlpha);
-  for (const line of state.data.roads) drawLine(ctx, line, 6);
+  for (const line of state.data.roads) drawLine(ctx, line, ROAD_SURFACE_OFFSET);
   ctx.restore();
 }
 
@@ -1467,11 +1494,11 @@ function drawRailways(ctx) {
   ctx.save();
   ctx.lineWidth = 2.1;
   ctx.strokeStyle = colors.railway(alpha);
-  for (const line of state.data.railways) drawLine(ctx, line, 7);
+  for (const line of state.data.railways) drawLine(ctx, line, RAILWAY_SURFACE_OFFSET);
   ctx.lineWidth = 1.05;
   ctx.setLineDash([7, 7]);
   ctx.strokeStyle = colors.railwayDash(alpha);
-  for (const line of state.data.railways) drawLine(ctx, line, 7.4);
+  for (const line of state.data.railways) drawLine(ctx, line, RAILWAY_SURFACE_OFFSET);
   ctx.restore();
 }
 
@@ -1483,6 +1510,11 @@ function zoomFade(minAlpha, maxAlpha, fullAtRatio) {
 function zoomProgress(fullAtRatio) {
   const ratio = state.camera.scale / (state.camera.fitScale || state.camera.scale || 1);
   return clamp((ratio - 0.7) / (fullAtRatio - 0.7), 0, 1);
+}
+
+function zoomRangeProgress(startRatio, fullRatio) {
+  const ratio = state.camera.scale / (state.camera.fitScale || state.camera.scale || 1);
+  return clamp((ratio - startRatio) / (fullRatio - startRatio || 1), 0, 1);
 }
 
 function canvasTheme() {
@@ -1817,7 +1849,7 @@ function initGl(glContext) {
     uniform float u_darkFactor;
     void main() {
       vec3 liftedColor = mix(v_color.rgb, vec3(0.92, 0.92, 0.88), u_lightenFactor * 0.48);
-      vec3 darkColor = mix(liftedColor, vec3(0.34, 0.37, 0.35), 0.78);
+      vec3 darkColor = mix(v_color.rgb * vec3(0.62, 0.64, 0.6), vec3(0.43, 0.47, 0.44), u_lightenFactor * 0.28);
       gl_FragColor = vec4(mix(liftedColor, darkColor, u_darkFactor), v_color.a * u_alphaFactor);
     }
   `;
@@ -1885,7 +1917,7 @@ function requestVisibleTiles() {
       requestBuildingTile(key, meshMode);
     }
     if (
-      state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_FACTOR &&
+      state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_REQUEST_FACTOR &&
       state.data.availableRoadTiles.has(key) &&
       !state.roadTiles.has(key)
     ) {
@@ -2156,6 +2188,7 @@ function animateCameraTo(targetCenter, targetScale, duration = 650) {
       startCenter[0] + (targetCenter[0] - startCenter[0]) * eased,
       startCenter[1] + (targetCenter[1] - startCenter[1]) * eased
     ];
+    clampCameraCenter();
     state.camera.scale = startScale + (targetScale - startScale) * eased;
     draw();
     if (t < 1) {
