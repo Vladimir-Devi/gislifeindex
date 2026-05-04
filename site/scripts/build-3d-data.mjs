@@ -14,6 +14,7 @@ const OVERVIEW_AREA_THRESHOLD = 700;
 const TERRAIN_GRID_WIDTH = 128;
 const TERRAIN_HEIGHT_SCALE = 10;
 const TERRAIN_NODATA = -32768;
+const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
 const MESH_MAGIC = "LIM4";
 const MESH_HEADER_BYTES = 32;
@@ -233,7 +234,7 @@ function prepareBuilding(feature, index, projection, terrain) {
   const area = Number(props.area) || 0;
   const isResidential = Number(props.residential) === 1 || props.source === "mkd" || Number(props.pop) > 0 || Number(props.floors) > 0;
   const bbox = bboxFromPolygons(polygons);
-  const ground = sampleTerrain(terrain, (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2);
+  const ground = sampleTerrain(terrain, (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2) * TERRAIN_VERTICAL_EXAGGERATION;
   return {
     id: String(props.id ?? feature.id ?? index + 1),
     bbox,

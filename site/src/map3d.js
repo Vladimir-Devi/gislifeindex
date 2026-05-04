@@ -71,11 +71,12 @@ const GROUP_HELP = {
 };
 
 const DETAIL_FACTOR = 4.75;
-const ROAD_DETAIL_FACTOR = 4.2;
+const ROAD_DETAIL_FACTOR = 6.2;
 const BUILDING_FADE_FACTOR = 5.35;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
-const DATA_VERSION = "20260505-0200";
+const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
+const DATA_VERSION = "20260505-0300";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
@@ -322,7 +323,7 @@ function decodeTerrain(payload) {
   if (!payload || !payload.width || !payload.height || !Array.isArray(payload.h)) return null;
   return {
     ...payload,
-    h: new Float32Array(payload.h.map((value) => value / (payload.scale || 1)))
+    h: new Float32Array(payload.h.map((value) => (value / (payload.scale || 1)) * TERRAIN_VERTICAL_EXAGGERATION))
   };
 }
 
@@ -1371,7 +1372,7 @@ function drawQuartals(ctx) {
 // @dist-split
 function drawRoads(ctx) {
   const mainAlpha = zoomFade(0.13, 0.46, 2.7);
-  const detailAlpha = zoomFade(0.05, 0.22, 4.4);
+  const detailAlpha = zoomFade(0.04, 0.22, 6.6);
   ctx.save();
   if (state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_FACTOR) {
     ctx.lineWidth = 0.72;
@@ -1798,7 +1799,11 @@ function requestVisibleTiles() {
     if (state.data.availableBuildingTiles.has(key) && state.tileMeshModes.get(key) !== meshMode) {
       requestBuildingTile(key, meshMode);
     }
-    if (state.data.availableRoadTiles.has(key) && !state.roadTiles.has(key)) {
+    if (
+      state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_FACTOR &&
+      state.data.availableRoadTiles.has(key) &&
+      !state.roadTiles.has(key)
+    ) {
       requestRoadTile(key);
     }
   }
