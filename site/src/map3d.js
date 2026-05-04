@@ -71,9 +71,12 @@ const GROUP_HELP = {
 };
 
 const DETAIL_FACTOR = 4.75;
-const ROAD_DETAIL_FACTOR = 6.2;
-const ROAD_DETAIL_REQUEST_FACTOR = 5.55;
-const ROAD_DETAIL_FULL_FACTOR = 7.05;
+const BUILDING_DETAIL_REQUEST_FACTOR = 4.25;
+const BUILDING_DETAIL_FADE_START_FACTOR = 4.55;
+const BUILDING_DETAIL_FADE_FULL_FACTOR = 5.25;
+const ROAD_DETAIL_FACTOR = 7.35;
+const ROAD_DETAIL_REQUEST_FACTOR = 7.1;
+const ROAD_DETAIL_FULL_FACTOR = 8.8;
 const ROAD_SURFACE_OFFSET = 0;
 const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
@@ -81,7 +84,7 @@ const SMALL_NON_RESIDENTIAL_FULL_FACTOR = 15;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-0900";
+const DATA_VERSION = "20260505-1000";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 11.8;
 const SMALL_NON_RESIDENTIAL_FACTOR = 13.4;
 const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15;
@@ -1542,6 +1545,11 @@ function smallBuildingAlphaFactor() {
   return t * t * (3 - 2 * t);
 }
 
+function buildingTileAlphaFactor() {
+  const t = zoomRangeProgress(BUILDING_DETAIL_FADE_START_FACTOR, BUILDING_DETAIL_FADE_FULL_FACTOR);
+  return t * t * (3 - 2 * t);
+}
+
 function drawPolygonLayer(ctx, features, fill, stroke, z = 0) {
   const view = worldViewBbox();
   for (const feature of features) {
@@ -1614,20 +1622,27 @@ function drawBuildings() {
     state.overviewMeshes.get("full") ||
     state.overviewMeshes.get("residential") ||
     state.overviewMesh;
+  const tileAlpha = buildingTileAlphaFactor();
+  const hasDetailTiles = state.tileMeshes.size > 0;
+  let needsFadeFrame = false;
 
-  if (state.camera.scale < state.camera.fitScale * DETAIL_FACTOR || state.tileMeshes.size === 0) {
-    drawMesh(overviewMesh);
-    if (!state.overviewMeshes.has(meshMode)) requestOverviewMesh(meshMode);
+  if (!state.overviewMeshes.has(meshMode)) requestOverviewMesh(meshMode);
+
+  const overviewAlpha = hasDetailTiles ? 1 - tileAlpha : 1;
+  if (overviewAlpha > 0.002) {
+    needsFadeFrame = drawMeshWithFade(overviewMesh, baseAlpha * overviewAlpha) || needsFadeFrame;
   }
-  if (state.camera.scale >= state.camera.fitScale * DETAIL_FACTOR) {
-    for (const mesh of state.tileMeshes.values()) drawMesh(mesh);
-    const smallAlpha = baseAlpha * smallBuildingAlphaFactor();
+  if (tileAlpha > 0.002 && hasDetailTiles) {
+    for (const mesh of state.tileMeshes.values()) needsFadeFrame = drawMeshWithFade(mesh, baseAlpha * tileAlpha) || needsFadeFrame;
+    const smallAlpha = baseAlpha * tileAlpha * smallBuildingAlphaFactor();
     if (smallAlpha > 0.002 && state.smallTileMeshes.size) {
-      gl.uniform1f(glState.uniforms.alphaFactor, smallAlpha);
-      for (const mesh of state.smallTileMeshes.values()) drawMesh(mesh);
+      for (const mesh of state.smallTileMeshes.values()) needsFadeFrame = drawMeshWithFade(mesh, smallAlpha) || needsFadeFrame;
       gl.uniform1f(glState.uniforms.alphaFactor, baseAlpha);
     }
   }
+  if (needsFadeFrame) requestAnimationFrame(() => {
+    if (state.data) draw();
+  });
 }
 
 function drawOverlay() {
@@ -1789,8 +1804,26 @@ function createBuildingMeshFromPacked(arrayBuffer) {
     count: vertexCount,
     stride,
     origin: [view.getFloat32(8, true), view.getFloat32(12, true), view.getFloat32(16, true)],
-    scale: [view.getFloat32(20, true), view.getFloat32(24, true)]
+    scale: [view.getFloat32(20, true), view.getFloat32(24, true)],
+    loadedAt: performance.now()
   };
+}
+
+function drawMeshWithFade(mesh, alpha) {
+  if (!mesh || mesh.count === 0) return false;
+  const loadedAlpha = meshLoadedAlpha(mesh);
+  const finalAlpha = alpha * loadedAlpha;
+  if (finalAlpha > 0.002) {
+    gl.uniform1f(glState.uniforms.alphaFactor, finalAlpha);
+    drawMesh(mesh);
+  }
+  return loadedAlpha < 1;
+}
+
+function meshLoadedAlpha(mesh) {
+  if (!mesh.loadedAt) return 1;
+  const t = clamp((performance.now() - mesh.loadedAt) / 650, 0, 1);
+  return t * t * (3 - 2 * t);
 }
 
 function drawMesh(mesh) {
@@ -1929,14 +1962,18 @@ function createShader(glContext, type, source) {
 }
 
 function requestVisibleTiles() {
-  if (!state.data || state.camera.scale < state.camera.fitScale * DETAIL_FACTOR) return;
+  if (!state.data) return;
+  const requestBuildings = state.camera.scale >= state.camera.fitScale * BUILDING_DETAIL_REQUEST_FACTOR;
+  const requestRoads = state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_REQUEST_FACTOR;
+  if (!requestBuildings && !requestRoads) return;
   const keys = visibleTileKeys();
   const meshMode = desiredBuildingMeshMode();
   for (const key of keys) {
-    if (state.data.availableBuildingTiles.has(key) && state.tileMeshModes.get(key) !== meshMode) {
+    if (requestBuildings && state.data.availableBuildingTiles.has(key) && state.tileMeshModes.get(key) !== meshMode) {
       requestBuildingTile(key, meshMode);
     }
     if (
+      requestBuildings &&
       smallBuildingAlphaFactor() > 0.002 &&
       state.data.availableBuildingTiles.has(key) &&
       !state.smallTileMeshes.has(key)
@@ -1944,7 +1981,7 @@ function requestVisibleTiles() {
       requestSmallBuildingTile(key);
     }
     if (
-      state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_REQUEST_FACTOR &&
+      requestRoads &&
       state.data.availableRoadTiles.has(key) &&
       !state.roadTiles.has(key)
     ) {
