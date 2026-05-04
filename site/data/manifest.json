@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T23:23:07.963Z",
+  "generatedAt": "2026-05-04T15:35:41.775Z",
   "source": "C:/institute/magic/Diser",
   "methodology": {
     "baseQuarterFormula": "mean(idx_housing, idx_infra, idx_transport, idx_work, idx_green, idx_commerce)",
@@ -41,12 +41,14 @@
         "quartals": 344,
         "buildings": 22422,
         "mkdMatched": 1836,
-        "mkdUnmatched": 60
+        "mkdUnmatched": 60,
+        "stops": 391,
+        "dtp": 250
       },
       "rank": 1,
       "index": 53.046462153443535,
       "indexNoWork": 65.27753958787675,
-      "population": 263590.70543756726,
+      "population": 282314,
       "areaHa": 3487.308598901367,
       "lowShare": 0.091932436869743,
       "midShare": 0.7019092284914329,
@@ -85,12 +87,14 @@
         "quartals": 391,
         "buildings": 50988,
         "mkdMatched": 1867,
-        "mkdUnmatched": 151
+        "mkdUnmatched": 151,
+        "stops": 384,
+        "dtp": 900
       },
       "rank": 2,
       "index": 48.22327015180169,
       "indexNoWork": 59.301730774037615,
-      "population": 243026.80968144347,
+      "population": 248808,
       "areaHa": 3027.338913256836,
       "lowShare": 0.10004251859734789,
       "midShare": 0.88568683954699,

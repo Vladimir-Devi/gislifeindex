@@ -267,10 +267,16 @@ function compactBuilding(feature) {
 
 function compactRing(ring) {
   const open = ring.length > 1 && ring[0][0] === ring.at(-1)[0] && ring[0][1] === ring.at(-1)[1] ? ring.slice(0, -1) : ring;
-  return open.flatMap((point) => [
-    Math.round(point[0] * BUILDING_COORD_SCALE),
-    Math.round(point[1] * BUILDING_COORD_SCALE)
-  ]);
+  let previousX = 0;
+  let previousY = 0;
+  return open.flatMap((point) => {
+    const x = Math.round(point[0] * BUILDING_COORD_SCALE);
+    const y = Math.round(point[1] * BUILDING_COORD_SCALE);
+    const delta = [x - previousX, y - previousY];
+    previousX = x;
+    previousY = y;
+    return delta;
+  });
 }
 
 function splitRoadSegments(collection, projection, cityDir, bbox) {

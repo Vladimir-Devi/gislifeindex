@@ -41,6 +41,65 @@
   z-index: 6;
 }
 
+.cameraTutorial {
+  position: absolute;
+  z-index: 7;
+  top: 16px;
+  left: 50%;
+  width: min(360px, calc(100vw - 32px));
+  padding: 13px 14px 12px;
+  border: 1px solid rgba(65, 66, 66, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow: 5px 5px 0 rgba(31, 35, 38, 0.14);
+  color: var(--ink);
+  transform: translateX(-50%);
+}
+
+.cameraTutorial strong {
+  display: block;
+  margin: 0 28px 9px 0;
+  font-size: 14px;
+}
+
+.tutorialGrid {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 5px 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.tutorialGrid span {
+  color: var(--ink);
+  font-weight: 760;
+}
+
+.tutorialGrid p {
+  margin: 0;
+}
+
+.tutorialClose {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid rgba(65, 66, 66, 0.14);
+  border-radius: 7px;
+  background: #fffaf1;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tutorialClose:hover {
+  color: var(--ink);
+  background: #fff4df;
+}
+
 .controlPanel {
   display: block;
   width: min(320px, calc(100vw - 32px));
@@ -175,5 +234,26 @@
 
   .mapShell3d .symbolLegend.legendOffset {
     bottom: calc(var(--sheet-peek) + 86px);
+  }
+
+  .cameraTutorial {
+    top: auto;
+    right: 10px;
+    bottom: calc(var(--sheet-peek) + 8px);
+    left: auto;
+    width: min(250px, calc(100vw - 20px));
+    padding: 10px 11px;
+    transform: none;
+  }
+
+  .cameraTutorial strong {
+    margin-bottom: 7px;
+    font-size: 13px;
+  }
+
+  .tutorialGrid {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 4px 8px;
+    font-size: 11px;
   }
 }

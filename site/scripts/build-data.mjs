@@ -18,6 +18,7 @@ const cities = [
   {
     slug: "orel",
     sourceDir: "Orel",
+    populationOverride: 282314,
     summaryName: "Орел",
     displayName: "Орёл",
     indexLayer: "kvartals_life_index_compare_site",
@@ -27,6 +28,7 @@ const cities = [
     greenLayer: "green_zone",
     waterLayer: "water_site",
     railwayLayer: "railway_site",
+    boundaryLayer: "boundary",
     roadLayer: "road_auto_site",
     roadAllLayer: "road_all_site",
     mkdLayer: "mkd",
@@ -42,6 +44,7 @@ const cities = [
   {
     slug: "tambov",
     sourceDir: "Tambov",
+    populationOverride: 248808,
     summaryName: "Тамбов",
     displayName: "Тамбов",
     indexLayer: "kvartals_life_index_compare_site",
@@ -51,6 +54,7 @@ const cities = [
     greenLayer: "green_zone",
     waterLayer: "water_site",
     railwayLayer: "railway_site",
+    boundaryLayer: "boundary",
     roadLayer: "road_auto_site",
     roadAllLayer: "road_all_site",
     mkdLayer: "mkd_plus",
@@ -469,6 +473,25 @@ function mergeFeatureCollections(collections) {
   };
 }
 
+function featureCollectionContainsPoint(collection, x, y) {
+  return (collection.features ?? []).some((feature) => {
+    const bbox = geometryBbox(feature.geometry);
+    if (!bbox || x < bbox[0] || x > bbox[2] || y < bbox[1] || y > bbox[3]) return false;
+    return geometryContainsPoint(feature.geometry, x, y);
+  });
+}
+
+function clipPointsToBoundary(collection, boundary) {
+  return {
+    type: "FeatureCollection",
+    features: (collection.features ?? []).filter((feature) => {
+      const coordinates = feature.geometry?.coordinates;
+      if (!Array.isArray(coordinates) || coordinates.length < 2) return false;
+      return featureCollectionContainsPoint(boundary, coordinates[0], coordinates[1]);
+    })
+  };
+}
+
 function makePopulationLookup(rows, cityName) {
   const lookup = new Map();
   for (const row of rows) {
@@ -517,6 +540,11 @@ function exportCity(city) {
     layer: city.railwayLayer
   });
   exportLayer({
+    output: path.join(rawBase, "boundary.geojson"),
+    input: path.join(sourceBase, "osnova.gpkg"),
+    layer: city.boundaryLayer
+  });
+  exportLayer({
     output: path.join(rawBase, "roads.geojson"),
     input: path.join(sourceBase, "road.gpkg"),
     layer: city.roadLayer
@@ -561,11 +589,14 @@ function prepareCity(city, populationRows) {
 
   const rawBuildings = readJson(path.join(rawBase, "buildings.geojson"));
   const rawMkd = readJson(path.join(rawBase, "mkd.geojson"));
+  const boundary = readJson(path.join(rawBase, "boundary.geojson"));
   const { buildings, unmatchedMkd } = buildBuildings(rawBuildings, rawMkd, city);
 
-  const stops = mergeFeatureCollections(
+  const stopsRaw = mergeFeatureCollections(
     city.stopLayers.map((layer) => pointCollection(readJson(path.join(rawBase, `${layer}.geojson`)), layer))
   );
+  const stops = clipPointsToBoundary(stopsRaw, boundary);
+  const dtp = clipPointsToBoundary(accidentCollection(readJson(path.join(rawBase, "dtp.geojson")), city.dtpAliases), boundary);
 
   writeJson(path.join(cityOut, "quartals.geojson"), { type: "FeatureCollection", features: quartals });
   writeJson(path.join(cityOut, "buildings.geojson"), { type: "FeatureCollection", features: buildings });
@@ -575,7 +606,7 @@ function prepareCity(city, populationRows) {
   writeJson(path.join(cityOut, "roads.geojson"), readJson(path.join(rawBase, "roads.geojson")));
   writeJson(path.join(cityOut, "roads-all.geojson"), readJson(path.join(rawBase, "roads-all.geojson")));
   writeJson(path.join(cityOut, "stops.geojson"), stops);
-  writeJson(path.join(cityOut, "dtp.geojson"), accidentCollection(readJson(path.join(rawBase, "dtp.geojson")), city.dtpAliases));
+  writeJson(path.join(cityOut, "dtp.geojson"), dtp);
   writeJson(path.join(cityOut, "mkd-unmatched.geojson"), { type: "FeatureCollection", features: unmatchedMkd });
 
   const mkdMatched = buildings.filter((feature) => feature.properties.source === "mkd").length;
@@ -583,6 +614,7 @@ function prepareCity(city, populationRows) {
     slug: city.slug,
     name: city.displayName,
     summaryName: city.summaryName,
+    populationOverride: city.populationOverride,
     bbox,
     files: {
       quartals: `data/${city.slug}/quartals.geojson`,
@@ -600,7 +632,9 @@ function prepareCity(city, populationRows) {
       quartals: quartals.length,
       buildings: buildings.length,
       mkdMatched,
-      mkdUnmatched: unmatchedMkd.length
+      mkdUnmatched: unmatchedMkd.length,
+      stops: stops.features.length,
+      dtp: dtp.features.length
     }
   };
 }
@@ -610,12 +644,13 @@ function enrichManifest(preparedCities) {
   const summaries = summaryLookup(summaryRows);
   const cityEntries = preparedCities.map((city, index) => {
     const summary = summaries.get(city.summaryName) ?? {};
+    const { populationOverride, ...cityData } = city;
     return {
-      ...city,
+      ...cityData,
       rank: index + 1,
       index: number(summary.idx_life_100),
       indexNoWork: number(summary.idx_life_no_work_100),
-      population: number(summary.population_est),
+      population: populationOverride ?? number(summary.population_est),
       areaHa: number(summary.area_ha),
       lowShare: number(summary.low_quality_pop_share),
       midShare: number(summary.mid_quality_pop_share),

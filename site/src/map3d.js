@@ -76,8 +76,11 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 1.33;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
-const DATA_VERSION = "20260504-0100";
+const DATA_VERSION = "20260504-0200";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
+const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
+const CAMERA_MIN_ZOOM_FACTOR = 0.58;
+const CAMERA_MAX_ZOOM_FACTOR = 16;
 
 const state = {
   manifest: null,
@@ -105,6 +108,8 @@ const state = {
   buildingWorker: null,
   workerRequests: new Map(),
   cameraAnimation: null,
+  smoothZoom: null,
+  cameraInertia: null,
   dragging: null,
   pulseFrame: null,
   overviewMesh: null,
@@ -118,6 +123,7 @@ const state = {
   sheetDrag: null,
   activePointers: new Map(),
   pinchGesture: null,
+  lastGestureVelocity: null,
   suppressHandleClickUntil: 0,
   tooltipTarget: null,
   tooltipNode: null,
@@ -152,7 +158,8 @@ const els = {
   infoPanel: document.getElementById("infoPanel"),
   legend: document.getElementById("legend"),
   symbolLegend: document.getElementById("symbolLegend"),
-  accidentPopup: document.getElementById("accidentPopup")
+  accidentPopup: document.getElementById("accidentPopup"),
+  cameraTutorial: document.getElementById("cameraTutorial")
 };
 
 let glState = null;
@@ -190,7 +197,7 @@ function fallbackManifest() {
         name: "Орёл",
         rank: 1,
         index: 50.15066088619108,
-        population: 285487.66757751553,
+        population: 282314,
         highShare: 0.13397297158400465,
         stats: { quartals: 344 },
         stats3d: { buildings: 22422, buildingsOverview: 3804 },
@@ -218,7 +225,7 @@ function fallbackManifest() {
         name: "Тамбов",
         rank: 2,
         index: 48.23832436250186,
-        population: 250331.00001539226,
+        population: 248808,
         highShare: 0.013464405380248049,
         stats: { quartals: 391 },
         stats3d: { buildings: 50988, buildingsOverview: 2014 },
@@ -313,8 +320,12 @@ function decodeBuilding(item, scale) {
 function decodeBuildingRing(values, scale) {
   if (!Array.isArray(values)) return [];
   const ring = [];
+  let x = 0;
+  let y = 0;
   for (let i = 0; i < values.length - 1; i += 2) {
-    ring.push([values[i] / scale, values[i + 1] / scale]);
+    x += values[i];
+    y += values[i + 1];
+    ring.push([x / scale, y / scale]);
   }
   return ring;
 }
@@ -481,6 +492,47 @@ function renderSymbolLegend() {
   els.symbolLegend.innerHTML = items.join("");
 }
 
+function renderCameraTutorial() {
+  if (!els.cameraTutorial) return;
+  if (safeLocalStorageGet(CAMERA_TUTORIAL_KEY) === "1") {
+    els.cameraTutorial.classList.add("hidden");
+    return;
+  }
+  els.cameraTutorial.classList.remove("hidden");
+  els.cameraTutorial.innerHTML = `
+    <button class="tutorialClose" type="button" aria-label="Закрыть обучение">×</button>
+    <strong>Управление картой</strong>
+    <div class="tutorialGrid">
+      <span>ЛКМ</span><p>двигать карту</p>
+      <span>ПКМ</span><p>поворот и наклон</p>
+      <span>Колесо</span><p>плавный зум</p>
+      <span>Сенсор</span><p>один палец двигает, два пальца масштабируют и вращают</p>
+    </div>
+  `;
+}
+
+function hideCameraTutorial(persist = true) {
+  if (!els.cameraTutorial) return;
+  els.cameraTutorial.classList.add("hidden");
+  if (persist) safeLocalStorageSet(CAMERA_TUTORIAL_KEY, "1");
+}
+
+function safeLocalStorageGet(key) {
+  try {
+    return window.localStorage?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function safeLocalStorageSet(key, value) {
+  try {
+    window.localStorage?.setItem(key, value);
+  } catch {
+    // localStorage can be blocked in some private browsing modes.
+  }
+}
+
 function initTooltip() {
   if (state.tooltipNode) return;
   const node = document.createElement("div");
@@ -532,6 +584,9 @@ function attachEvents() {
   overlayCanvas.addEventListener("contextmenu", (event) => event.preventDefault());
   els.backButton.addEventListener("click", showCityMenu);
   document.getElementById("resetView").addEventListener("click", resetView);
+  els.cameraTutorial?.addEventListener("click", (event) => {
+    if (event.target.closest(".tutorialClose")) hideCameraTutorial(true);
+  });
   els.infoPanel.addEventListener("pointerdown", startSheetDrag);
   els.infoPanel.addEventListener("pointermove", moveSheetDrag);
   els.infoPanel.addEventListener("pointerup", endSheetDrag);
@@ -571,9 +626,14 @@ function attachEvents() {
       mode,
       x: event.clientX,
       y: event.clientY,
-      startWorld: screenToWorld(event.offsetX, event.offsetY),
+      startWorld: screenToWorld(...eventCanvasPoint(event)),
       startBearing: state.camera.bearing,
-      startPitch: state.camera.pitch
+      startPitch: state.camera.pitch,
+      lastTime: performance.now(),
+      lastCenter: [...state.camera.center],
+      lastBearing: state.camera.bearing,
+      lastPitch: state.camera.pitch,
+      velocity: null
     };
   });
 
@@ -585,16 +645,29 @@ function attachEvents() {
     }
     if (!state.dragging) return;
     if (state.dragging.mode === "orbit") {
+      const previousBearing = state.camera.bearing;
+      const previousPitch = state.camera.pitch;
       const dx = event.clientX - state.dragging.x;
       const dy = event.clientY - state.dragging.y;
       state.camera.bearing = state.dragging.startBearing + dx * 0.006;
       state.camera.pitch = clamp(state.dragging.startPitch - dy * 0.004, 0.34, 1.18);
+      recordDragVelocity({
+        center: [0, 0],
+        bearing: state.camera.bearing - previousBearing,
+        pitch: state.camera.pitch - previousPitch
+      });
       draw();
       return;
     }
-    const current = screenToWorld(event.offsetX, event.offsetY);
+    const previousCenter = [...state.camera.center];
+    const current = screenToWorld(...eventCanvasPoint(event));
     state.camera.center[0] += state.dragging.startWorld[0] - current[0];
     state.camera.center[1] += state.dragging.startWorld[1] - current[1];
+    recordDragVelocity({
+      center: [state.camera.center[0] - previousCenter[0], state.camera.center[1] - previousCenter[1]],
+      bearing: 0,
+      pitch: 0
+    });
     draw();
   });
 
@@ -603,7 +676,11 @@ function attachEvents() {
     const wasPinching = Boolean(state.pinchGesture);
     forgetPointer(event.pointerId);
     if (wasPinching) {
-      if (state.activePointers.size < 2) state.pinchGesture = null;
+      if (state.activePointers.size < 2) {
+        state.pinchGesture = null;
+        startCameraInertia(state.lastGestureVelocity);
+        state.lastGestureVelocity = null;
+      }
       overlayCanvas.classList.remove("dragging");
       overlayCanvas.classList.remove("orbiting");
       state.dragging = null;
@@ -614,13 +691,16 @@ function attachEvents() {
     if (!state.dragging) return;
     const moved = Math.hypot(event.clientX - state.dragging.x, event.clientY - state.dragging.y) > 4;
     const wasPan = state.dragging.mode === "pan";
+    const drag = state.dragging;
     state.dragging = null;
     if (wasPan && !moved) pickFeature(event);
+    else if (moved) startCameraInertia(drag.velocity);
   });
 
   overlayCanvas.addEventListener("pointercancel", (event) => {
     forgetPointer(event.pointerId);
     state.pinchGesture = null;
+    state.lastGestureVelocity = null;
     overlayCanvas.classList.remove("dragging");
     overlayCanvas.classList.remove("orbiting");
     state.dragging = null;
@@ -630,17 +710,10 @@ function attachEvents() {
     "wheel",
     (event) => {
       if (!state.data) return;
-      stopCameraAnimation();
       event.preventDefault();
       const rect = overlayCanvas.getBoundingClientRect();
       const cursor = [event.clientX - rect.left, event.clientY - rect.top];
-      const before = screenToWorld(cursor[0], cursor[1]);
-      const factor = event.deltaY < 0 ? 1.18 : 0.84;
-      state.camera.scale = clamp(state.camera.scale * factor, state.camera.fitScale * 0.58, state.camera.fitScale * 16);
-      const after = screenToWorld(cursor[0], cursor[1]);
-      state.camera.center[0] += before[0] - after[0];
-      state.camera.center[1] += before[1] - after[1];
-      draw();
+      smoothZoomAtCursor(cursor, event.deltaY);
     },
     { passive: false }
   );
@@ -652,6 +725,28 @@ function rememberPointer(event) {
     x: event.clientX,
     y: event.clientY
   });
+}
+
+function eventCanvasPoint(event) {
+  const rect = overlayCanvas.getBoundingClientRect();
+  return [event.clientX - rect.left, event.clientY - rect.top];
+}
+
+function recordDragVelocity(delta) {
+  if (!state.dragging) return;
+  const now = performance.now();
+  const dt = Math.max(16, now - state.dragging.lastTime);
+  state.dragging.velocity = {
+    center: [delta.center[0] / dt, delta.center[1] / dt],
+    bearing: delta.bearing / dt,
+    pitch: delta.pitch / dt,
+    scale: 0,
+    time: now
+  };
+  state.dragging.lastTime = now;
+  state.dragging.lastCenter = [...state.camera.center];
+  state.dragging.lastBearing = state.camera.bearing;
+  state.dragging.lastPitch = state.camera.pitch;
 }
 
 function forgetPointer(pointerId) {
@@ -681,27 +776,43 @@ function beginPinchGesture() {
     startScale: state.camera.scale,
     startBearing: state.camera.bearing,
     startPitch: state.camera.pitch,
-    startWorld: screenToWorld(midpoint[0], midpoint[1])
+    startWorld: screenToWorld(midpoint[0], midpoint[1]),
+    lastTime: performance.now()
   };
+  state.lastGestureVelocity = null;
 }
 
 function updatePinchGesture() {
   const pointers = pinchPointers();
   if (!pointers || !state.pinchGesture) return;
+  const previousCenter = [...state.camera.center];
+  const previousScale = state.camera.scale;
+  const previousBearing = state.camera.bearing;
+  const previousPitch = state.camera.pitch;
   const midpoint = pinchMidpoint(pointers);
   const factor = pinchDistance(pointers) / state.pinchGesture.startDistance;
   const angleDelta = normalizeAngleDelta(pinchAngle(pointers) - state.pinchGesture.startAngle);
   const midpointDy = midpoint[1] - state.pinchGesture.startMidpoint[1];
   state.camera.scale = clamp(
     state.pinchGesture.startScale * factor,
-    state.camera.fitScale * 0.58,
-    state.camera.fitScale * 16
+    cameraMinScale(),
+    cameraMaxScale()
   );
   state.camera.bearing = state.pinchGesture.startBearing + angleDelta;
   state.camera.pitch = clamp(state.pinchGesture.startPitch - midpointDy * 0.0038, 0.34, 1.18);
   const after = screenToWorld(midpoint[0], midpoint[1]);
   state.camera.center[0] += state.pinchGesture.startWorld[0] - after[0];
   state.camera.center[1] += state.pinchGesture.startWorld[1] - after[1];
+  const now = performance.now();
+  const dt = Math.max(16, now - state.pinchGesture.lastTime);
+  state.lastGestureVelocity = {
+    center: [(state.camera.center[0] - previousCenter[0]) / dt, (state.camera.center[1] - previousCenter[1]) / dt],
+    bearing: normalizeAngleDelta(state.camera.bearing - previousBearing) / dt,
+    pitch: (state.camera.pitch - previousPitch) / dt,
+    scale: Math.log(Math.max(state.camera.scale, 0.0001) / Math.max(previousScale, 0.0001)) / dt,
+    time: now
+  };
+  state.pinchGesture.lastTime = now;
   draw();
 }
 
@@ -793,6 +904,7 @@ async function loadCity(slug) {
   els.cityMenu.classList.add("hidden");
   els.mapShell.classList.remove("hidden");
   els.backButton.classList.remove("hidden");
+  renderCameraTutorial();
   els.infoPanel.classList.remove("sheetExpanded");
   els.infoPanel.innerHTML = `<div class="muted">Загрузка 3D-данных</div>`;
 
@@ -871,6 +983,7 @@ function showCityMenu() {
   els.topMetric.textContent = "";
   els.mapShell.classList.add("hidden");
   els.backButton.classList.add("hidden");
+  els.cameraTutorial?.classList.add("hidden");
   els.cityMenu.classList.remove("hidden");
 }
 
@@ -926,6 +1039,7 @@ function canvasPixelRatio() {
 
 function resetView() {
   if (!state.data) return;
+  stopCameraAnimation();
   const [minX, minY, maxX, maxY] = state.data.bbox;
   state.camera.center = [(minX + maxX) / 2, (minY + maxY) / 2];
   state.camera.bearing = -0.66;
@@ -938,6 +1052,125 @@ function resetView() {
   state.camera.scale = scale;
   state.camera.fitScale = scale;
   draw();
+}
+
+function cameraMinScale() {
+  return state.camera.fitScale * CAMERA_MIN_ZOOM_FACTOR;
+}
+
+function cameraMaxScale() {
+  return state.camera.fitScale * CAMERA_MAX_ZOOM_FACTOR;
+}
+
+function smoothZoomAtCursor(cursor, deltaY) {
+  if (!state.data) return;
+  stopProgrammaticCameraAnimation();
+  stopCameraInertia();
+  const baseTarget = state.smoothZoom?.targetScale ?? state.camera.scale;
+  const factor = Math.exp(-clamp(deltaY, -260, 260) * 0.00145);
+  const targetScale = clamp(baseTarget * factor, cameraMinScale(), cameraMaxScale());
+  state.smoothZoom = {
+    cursor,
+    anchor: screenToWorld(cursor[0], cursor[1]),
+    targetScale,
+    lastTime: performance.now(),
+    frame: state.smoothZoom?.frame ?? null
+  };
+  if (!state.smoothZoom.frame) {
+    state.smoothZoom.frame = requestAnimationFrame(tickSmoothZoom);
+  }
+}
+
+function tickSmoothZoom(time) {
+  const zoom = state.smoothZoom;
+  if (!zoom || !state.data) {
+    state.smoothZoom = null;
+    return;
+  }
+  const dt = Math.min(48, Math.max(8, time - zoom.lastTime));
+  zoom.lastTime = time;
+  const eased = 1 - Math.exp(-dt / 135);
+  state.camera.scale += (zoom.targetScale - state.camera.scale) * eased;
+  state.camera.scale = clamp(state.camera.scale, cameraMinScale(), cameraMaxScale());
+  const after = screenToWorld(zoom.cursor[0], zoom.cursor[1]);
+  state.camera.center[0] += zoom.anchor[0] - after[0];
+  state.camera.center[1] += zoom.anchor[1] - after[1];
+  draw();
+  if (Math.abs(Math.log(zoom.targetScale / state.camera.scale)) > 0.002) {
+    zoom.frame = requestAnimationFrame(tickSmoothZoom);
+    return;
+  }
+  state.camera.scale = zoom.targetScale;
+  const finalAfter = screenToWorld(zoom.cursor[0], zoom.cursor[1]);
+  state.camera.center[0] += zoom.anchor[0] - finalAfter[0];
+  state.camera.center[1] += zoom.anchor[1] - finalAfter[1];
+  state.smoothZoom = null;
+  draw();
+}
+
+function startCameraInertia(velocity) {
+  if (!velocity || !state.data || !hasMeaningfulInertia(velocity)) return;
+  if (velocity.time && performance.now() - velocity.time > 140) return;
+  stopProgrammaticCameraAnimation();
+  stopSmoothZoom();
+  stopCameraInertia();
+  state.cameraInertia = {
+    velocity: {
+      center: limitVector([(velocity.center?.[0] || 0) * 0.55, (velocity.center?.[1] || 0) * 0.55], 24),
+      bearing: clamp((velocity.bearing || 0) * 0.62, -0.006, 0.006),
+      pitch: clamp((velocity.pitch || 0) * 0.62, -0.004, 0.004),
+      scale: clamp((velocity.scale || 0) * 0.5, -0.0035, 0.0035)
+    },
+    lastTime: performance.now(),
+    frame: requestAnimationFrame(tickCameraInertia)
+  };
+}
+
+function tickCameraInertia(time) {
+  const inertia = state.cameraInertia;
+  if (!inertia || !state.data) {
+    state.cameraInertia = null;
+    return;
+  }
+  const dt = Math.min(42, Math.max(8, time - inertia.lastTime));
+  inertia.lastTime = time;
+  const velocity = inertia.velocity;
+  state.camera.center[0] += velocity.center[0] * dt;
+  state.camera.center[1] += velocity.center[1] * dt;
+  state.camera.bearing += velocity.bearing * dt;
+  state.camera.pitch = clamp(state.camera.pitch + velocity.pitch * dt, 0.34, 1.18);
+  if (velocity.scale) {
+    state.camera.scale = clamp(state.camera.scale * Math.exp(velocity.scale * dt), cameraMinScale(), cameraMaxScale());
+  }
+  const decay = Math.exp(-dt / 260);
+  velocity.center[0] *= decay;
+  velocity.center[1] *= decay;
+  velocity.bearing *= decay;
+  velocity.pitch *= decay;
+  velocity.scale *= decay;
+  draw();
+  if (hasMeaningfulInertia(velocity)) {
+    inertia.frame = requestAnimationFrame(tickCameraInertia);
+  } else {
+    state.cameraInertia = null;
+  }
+}
+
+function hasMeaningfulInertia(velocity) {
+  const centerSpeed = Math.hypot(velocity.center?.[0] || 0, velocity.center?.[1] || 0);
+  return (
+    centerSpeed > 0.015 ||
+    Math.abs(velocity.bearing || 0) > 0.000015 ||
+    Math.abs(velocity.pitch || 0) > 0.000015 ||
+    Math.abs(velocity.scale || 0) > 0.000015
+  );
+}
+
+function limitVector(vector, maxLength) {
+  const length = Math.hypot(vector[0], vector[1]);
+  if (!Number.isFinite(length) || length <= maxLength) return vector;
+  const factor = maxLength / length;
+  return [vector[0] * factor, vector[1] * factor];
 }
 
 function projectedScreenExtent(bbox, center) {
@@ -1887,12 +2120,13 @@ function shouldZoomAccidentCluster(cluster) {
 }
 
 function zoomToAccidentCluster(cluster) {
-  const targetScale = Math.min(state.camera.scale * 2.35, state.camera.fitScale * 16);
+  const targetScale = Math.min(state.camera.scale * 2.35, cameraMaxScale());
   animateCameraTo(cluster.point, targetScale, 720);
 }
 
 function animateCameraTo(targetCenter, targetScale, duration = 650) {
   stopCameraAnimation();
+  targetScale = clamp(targetScale, cameraMinScale(), cameraMaxScale());
   const startCenter = [...state.camera.center];
   const startScale = state.camera.scale;
   const startTime = performance.now();
@@ -1915,8 +2149,24 @@ function animateCameraTo(targetCenter, targetScale, duration = 650) {
 }
 
 function stopCameraAnimation() {
+  stopProgrammaticCameraAnimation();
+  stopSmoothZoom();
+  stopCameraInertia();
+}
+
+function stopProgrammaticCameraAnimation() {
   if (state.cameraAnimation) cancelAnimationFrame(state.cameraAnimation);
   state.cameraAnimation = null;
+}
+
+function stopSmoothZoom() {
+  if (state.smoothZoom?.frame) cancelAnimationFrame(state.smoothZoom.frame);
+  state.smoothZoom = null;
+}
+
+function stopCameraInertia() {
+  if (state.cameraInertia?.frame) cancelAnimationFrame(state.cameraInertia.frame);
+  state.cameraInertia = null;
 }
 
 function buildingWorker() {
