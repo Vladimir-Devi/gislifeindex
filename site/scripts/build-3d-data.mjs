@@ -232,7 +232,7 @@ function prepareBuilding(feature, index, projection, terrain) {
   if (!polygons) return null;
   const props = feature.properties ?? {};
   const height = Math.max(2.5, Math.min(80, Number(props.height) || 8));
-  const area = Number(props.area) || 0;
+  const area = positiveNumber(props.area) || projectedPolygonArea(polygons);
   const isResidential = Number(props.residential) === 1 || props.source === "mkd" || Number(props.pop) > 0 || Number(props.floors) > 0;
   const bbox = bboxFromPolygons(polygons);
   const ground = sampleTerrain(terrain, (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2) * TERRAIN_VERTICAL_EXAGGERATION;
@@ -290,6 +290,7 @@ function splitBuildings(buildings, cityDir, bbox) {
 function writeBuildingMeshVariants(basePath, features) {
   writeBuildingMesh(`${basePath}-full.bin`, features);
   writeBuildingMesh(`${basePath}-standard.bin`, features.filter((feature) => !isSmallNonResidentialBuilding(feature)));
+  writeBuildingMesh(`${basePath}-small.bin`, features.filter(isSmallNonResidentialBuilding));
   writeBuildingMesh(`${basePath}-residential.bin`, features.filter(isResidentialBuilding));
 }
 
@@ -395,6 +396,23 @@ function isResidentialBuilding(feature) {
 
 function isSmallNonResidentialBuilding(feature) {
   return !isResidentialBuilding(feature) && (feature.a || 0) < SMALL_NON_RESIDENTIAL_AREA_THRESHOLD;
+}
+
+function positiveNumber(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+}
+
+function projectedPolygonArea(polygons) {
+  let area = 0;
+  for (const polygon of polygons) {
+    if (!polygon.length) continue;
+    area += Math.abs(polygonArea(openRing(polygon[0])));
+    for (let i = 1; i < polygon.length; i += 1) {
+      area -= Math.abs(polygonArea(openRing(polygon[i])));
+    }
+  }
+  return Math.max(0, area);
 }
 
 function wallShade(a, b) {

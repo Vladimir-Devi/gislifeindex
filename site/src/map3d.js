@@ -77,13 +77,15 @@ const ROAD_DETAIL_FULL_FACTOR = 7.05;
 const ROAD_SURFACE_OFFSET = 0;
 const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
+const SMALL_NON_RESIDENTIAL_FULL_FACTOR = 15;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-0800";
+const DATA_VERSION = "20260505-0900";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 11.8;
 const SMALL_NON_RESIDENTIAL_FACTOR = 13.4;
-const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 16.2;
+const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15;
+const MOBILE_SMALL_NON_RESIDENTIAL_FULL_FACTOR = 16;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
 const THEME_STORAGE_KEY = "lifeindex.theme";
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
@@ -118,8 +120,8 @@ const CANVAS_THEMES = {
     greenFill: "rgba(53, 104, 66, 0.36)",
     greenStroke: "rgba(111, 158, 99, 0.2)",
     quarterStroke: "rgba(214, 218, 206, 0.24)",
-    roadDetail: (alpha) => `rgba(82, 126, 145, ${Math.min(0.38, alpha + 0.08)})`,
-    roadMain: (alpha) => `rgba(118, 165, 184, ${Math.min(0.58, alpha + 0.08)})`,
+    roadDetail: (alpha) => `rgba(132, 129, 115, ${Math.min(0.38, alpha + 0.08)})`,
+    roadMain: (alpha) => `rgba(178, 164, 135, ${Math.min(0.58, alpha + 0.08)})`,
     railway: (alpha) => `rgba(186, 181, 168, ${Math.min(0.62, alpha + 0.08)})`,
     railwayDash: (alpha) => `rgba(18, 24, 26, ${Math.min(0.82, alpha + 0.08)})`,
     selectedFill: "rgba(255, 222, 132, 0.12)",
@@ -164,6 +166,7 @@ const state = {
   loadingOverviewMeshes: new Set(),
   tileMeshes: new Map(),
   tileMeshModes: new Map(),
+  smallTileMeshes: new Map(),
   roadTiles: new Map(),
   loadingTiles: new Set(),
   requestedTiles: new Set(),
@@ -1132,7 +1135,9 @@ function showCityMenu() {
 function clearMeshes() {
   stopCameraAnimation();
   if (gl) {
-    const meshes = new Set([...state.tileMeshes.values(), ...state.overviewMeshes.values(), state.overviewMesh].filter(Boolean));
+    const meshes = new Set(
+      [...state.tileMeshes.values(), ...state.smallTileMeshes.values(), ...state.overviewMeshes.values(), state.overviewMesh].filter(Boolean)
+    );
     for (const mesh of meshes) {
       if (mesh) gl.deleteBuffer(mesh.buffer);
     }
@@ -1142,6 +1147,7 @@ function clearMeshes() {
   state.loadingOverviewMeshes.clear();
   state.tileMeshes.clear();
   state.tileMeshModes.clear();
+  state.smallTileMeshes.clear();
   state.roadTiles.clear();
   state.loadingTiles.clear();
   state.requestedTiles.clear();
@@ -1529,6 +1535,13 @@ function buildingLightenFactor() {
   return 1 - zoomProgress(BUILDING_FADE_FACTOR);
 }
 
+function smallBuildingAlphaFactor() {
+  const start = isMobileLayout() ? MOBILE_SMALL_NON_RESIDENTIAL_FACTOR : SMALL_NON_RESIDENTIAL_FACTOR;
+  const full = isMobileLayout() ? MOBILE_SMALL_NON_RESIDENTIAL_FULL_FACTOR : SMALL_NON_RESIDENTIAL_FULL_FACTOR;
+  const t = zoomRangeProgress(start, full);
+  return t * t * (3 - 2 * t);
+}
+
 function drawPolygonLayer(ctx, features, fill, stroke, z = 0) {
   const view = worldViewBbox();
   for (const feature of features) {
@@ -1590,7 +1603,8 @@ function drawBuildings() {
   gl.uniform1f(glState.uniforms.pitchCos, Math.cos(state.camera.pitch));
   gl.uniform1f(glState.uniforms.pitchSin, Math.sin(state.camera.pitch));
   gl.uniform1f(glState.uniforms.heightScale, HEIGHT_EXAGGERATION);
-  gl.uniform1f(glState.uniforms.alphaFactor, buildingAlphaFactor());
+  const baseAlpha = buildingAlphaFactor();
+  gl.uniform1f(glState.uniforms.alphaFactor, baseAlpha);
   gl.uniform1f(glState.uniforms.lightenFactor, buildingLightenFactor());
   gl.uniform1f(glState.uniforms.darkFactor, state.theme === "dark" ? 1 : 0);
   gl.uniform1f(glState.uniforms.depthScale, 62000);
@@ -1607,6 +1621,12 @@ function drawBuildings() {
   }
   if (state.camera.scale >= state.camera.fitScale * DETAIL_FACTOR) {
     for (const mesh of state.tileMeshes.values()) drawMesh(mesh);
+    const smallAlpha = baseAlpha * smallBuildingAlphaFactor();
+    if (smallAlpha > 0.002 && state.smallTileMeshes.size) {
+      gl.uniform1f(glState.uniforms.alphaFactor, smallAlpha);
+      for (const mesh of state.smallTileMeshes.values()) drawMesh(mesh);
+      gl.uniform1f(glState.uniforms.alphaFactor, baseAlpha);
+    }
   }
 }
 
@@ -1917,6 +1937,13 @@ function requestVisibleTiles() {
       requestBuildingTile(key, meshMode);
     }
     if (
+      smallBuildingAlphaFactor() > 0.002 &&
+      state.data.availableBuildingTiles.has(key) &&
+      !state.smallTileMeshes.has(key)
+    ) {
+      requestSmallBuildingTile(key);
+    }
+    if (
       state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_REQUEST_FACTOR &&
       state.data.availableRoadTiles.has(key) &&
       !state.roadTiles.has(key)
@@ -1960,6 +1987,23 @@ async function loadBuildingTile(key, meshMode) {
   setTileMesh(key, createBuildingMeshFromPacked(buffer), meshMode);
 }
 
+function requestSmallBuildingTile(key) {
+  const requestKey = `bs:${key}`;
+  if (state.loadingTiles.has(requestKey)) return;
+  state.loadingTiles.add(requestKey);
+  loadSmallBuildingTile(key)
+    .catch((error) => console.error(error))
+    .finally(() => {
+      state.loadingTiles.delete(requestKey);
+      draw();
+    });
+}
+
+async function loadSmallBuildingTile(key) {
+  const buffer = await fetchMeshArrayBuffer(buildingTileUrl(key, "small"));
+  setSmallTileMesh(key, createBuildingMeshFromPacked(buffer));
+}
+
 function requestRoadTile(key) {
   const requestKey = `r:${key}`;
   if (state.loadingTiles.has(requestKey)) return;
@@ -1986,9 +2030,17 @@ function setTileMesh(key, mesh, meshMode) {
   state.tileMeshModes.set(key, meshMode);
 }
 
+function setSmallTileMesh(key, mesh) {
+  if (!gl) return;
+  const previous = state.smallTileMeshes.get(key);
+  if (previous) gl.deleteBuffer(previous.buffer);
+  if (mesh) state.smallTileMeshes.set(key, mesh);
+  else state.smallTileMeshes.delete(key);
+}
+
 function desiredBuildingMeshMode() {
   if (isMobileLayout() && !showNonResidentialBuildings()) return "residential";
-  return showSmallNonResidentialBuildings() ? "full" : "standard";
+  return "standard";
 }
 
 function initialBuildingMeshMode() {
@@ -2000,8 +2052,7 @@ function showNonResidentialBuildings() {
 }
 
 function showSmallNonResidentialBuildings() {
-  const factor = isMobileLayout() ? MOBILE_SMALL_NON_RESIDENTIAL_FACTOR : SMALL_NON_RESIDENTIAL_FACTOR;
-  return state.camera.scale >= state.camera.fitScale * factor;
+  return smallBuildingAlphaFactor() > 0.002;
 }
 
 function visibleTileKeys() {
@@ -2442,7 +2493,7 @@ function renderComparisonSwitch() {
       </button>
       <div class="comparisonLabels">
         <span class="comparisonLabel comparisonLabelTop ${isAll ? "active" : ""}">Общегородское</span>
-        <span class="comparisonShared">сравнение</span>
+        <span class="comparisonShared active">сравнение</span>
         <span class="comparisonLabel comparisonLabelBottom ${isAll ? "" : "active"}">Внутригородское</span>
       </div>
     </div>

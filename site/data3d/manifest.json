@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T22:22:48.939Z",
+  "generatedAt": "2026-05-04T23:32:04.085Z",
   "tileCount": 8,
   "overviewAreaThreshold": 700,
   "cities": [
@@ -375,7 +375,7 @@
       },
       "stats3d": {
         "buildings": 50988,
-        "buildingsOverview": 2014,
+        "buildingsOverview": 4132,
         "roadAllTiles": 54
       }
     }
