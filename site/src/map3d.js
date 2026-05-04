@@ -74,9 +74,9 @@ const DETAIL_FACTOR = 4.75;
 const BUILDING_DETAIL_REQUEST_FACTOR = 4.25;
 const BUILDING_DETAIL_FADE_START_FACTOR = 4.55;
 const BUILDING_DETAIL_FADE_FULL_FACTOR = 5.25;
-const ROAD_DETAIL_FACTOR = 7.35;
-const ROAD_DETAIL_REQUEST_FACTOR = 7.1;
-const ROAD_DETAIL_FULL_FACTOR = 8.8;
+const ROAD_DETAIL_FACTOR = 11.8;
+const ROAD_DETAIL_REQUEST_FACTOR = 11.4;
+const ROAD_DETAIL_FULL_FACTOR = 14;
 const ROAD_SURFACE_OFFSET = 0;
 const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
@@ -84,7 +84,7 @@ const SMALL_NON_RESIDENTIAL_FULL_FACTOR = 15;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-1000";
+const DATA_VERSION = "20260505-1100";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 11.8;
 const SMALL_NON_RESIDENTIAL_FACTOR = 13.4;
 const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15;
@@ -1623,20 +1623,25 @@ function drawBuildings() {
     state.overviewMeshes.get("residential") ||
     state.overviewMesh;
   const tileAlpha = buildingTileAlphaFactor();
-  const hasDetailTiles = state.tileMeshes.size > 0;
+  const detailKeys = visibleBuildingTileKeys();
+  const detailMeshes = detailKeys.map((key) => state.tileMeshes.get(key)).filter(Boolean);
+  const smallMeshes = detailKeys.map((key) => state.smallTileMeshes.get(key)).filter(Boolean);
+  const detailReady = detailKeys.length > 0 && detailMeshes.length === detailKeys.length;
+  const detailLoadedAlpha = detailReady ? Math.min(...detailMeshes.map(meshLoadedAlpha)) : 0;
   let needsFadeFrame = false;
 
   if (!state.overviewMeshes.has(meshMode)) requestOverviewMesh(meshMode);
 
-  const overviewAlpha = hasDetailTiles ? 1 - tileAlpha : 1;
+  const overviewAlpha = 1 - tileAlpha * detailLoadedAlpha;
   if (overviewAlpha > 0.002) {
     needsFadeFrame = drawMeshWithFade(overviewMesh, baseAlpha * overviewAlpha) || needsFadeFrame;
   }
-  if (tileAlpha > 0.002 && hasDetailTiles) {
-    for (const mesh of state.tileMeshes.values()) needsFadeFrame = drawMeshWithFade(mesh, baseAlpha * tileAlpha) || needsFadeFrame;
+  if (tileAlpha > 0.002 && detailMeshes.length) {
+    if (overviewAlpha > 0.002) gl.clear(gl.DEPTH_BUFFER_BIT);
+    for (const mesh of detailMeshes) needsFadeFrame = drawMeshWithFade(mesh, baseAlpha * tileAlpha) || needsFadeFrame;
     const smallAlpha = baseAlpha * tileAlpha * smallBuildingAlphaFactor();
-    if (smallAlpha > 0.002 && state.smallTileMeshes.size) {
-      for (const mesh of state.smallTileMeshes.values()) needsFadeFrame = drawMeshWithFade(mesh, smallAlpha) || needsFadeFrame;
+    if (smallAlpha > 0.002 && smallMeshes.length) {
+      for (const mesh of smallMeshes) needsFadeFrame = drawMeshWithFade(mesh, smallAlpha) || needsFadeFrame;
       gl.uniform1f(glState.uniforms.alphaFactor, baseAlpha);
     }
   }
@@ -2109,6 +2114,11 @@ function visibleTileKeys() {
     }
   }
   return keys;
+}
+
+function visibleBuildingTileKeys() {
+  if (!state.data || state.camera.scale < state.camera.fitScale * BUILDING_DETAIL_REQUEST_FACTOR) return [];
+  return visibleTileKeys().filter((key) => state.data.availableBuildingTiles.has(key));
 }
 
 function recomputeScores() {
