@@ -76,11 +76,13 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 1.33;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
-const DATA_VERSION = "20260504-0300";
+const DATA_VERSION = "20260504-0400";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
 const CAMERA_MAX_ZOOM_FACTOR = 16;
+const CAMERA_MIN_PITCH = 0.34;
+const CAMERA_MAX_PITCH = 1.46;
 
 const state = {
   manifest: null,
@@ -662,7 +664,7 @@ function attachEvents() {
       const dx = event.clientX - state.dragging.x;
       const dy = event.clientY - state.dragging.y;
       state.camera.bearing = state.dragging.startBearing + dx * 0.006;
-      state.camera.pitch = clamp(state.dragging.startPitch - dy * 0.004, 0.34, 1.18);
+      state.camera.pitch = clamp(state.dragging.startPitch - dy * 0.004, CAMERA_MIN_PITCH, CAMERA_MAX_PITCH);
       recordDragVelocity({
         center: [0, 0],
         bearing: state.camera.bearing - previousBearing,
@@ -811,7 +813,7 @@ function updatePinchGesture() {
     cameraMaxScale()
   );
   state.camera.bearing = state.pinchGesture.startBearing + angleDelta;
-  state.camera.pitch = clamp(state.pinchGesture.startPitch - midpointDy * 0.0038, 0.34, 1.18);
+  state.camera.pitch = clamp(state.pinchGesture.startPitch - midpointDy * 0.0038, CAMERA_MIN_PITCH, CAMERA_MAX_PITCH);
   const after = screenToWorldOnTerrain(midpoint[0], midpoint[1]);
   state.camera.center[0] += state.pinchGesture.startWorld[0] - after[0];
   state.camera.center[1] += state.pinchGesture.startWorld[1] - after[1];
@@ -1152,7 +1154,7 @@ function tickCameraInertia(time) {
   state.camera.center[0] += velocity.center[0] * dt;
   state.camera.center[1] += velocity.center[1] * dt;
   state.camera.bearing += velocity.bearing * dt;
-  state.camera.pitch = clamp(state.camera.pitch + velocity.pitch * dt, 0.34, 1.18);
+  state.camera.pitch = clamp(state.camera.pitch + velocity.pitch * dt, CAMERA_MIN_PITCH, CAMERA_MAX_PITCH);
   if (velocity.scale) {
     state.camera.scale = clamp(state.camera.scale * Math.exp(velocity.scale * dt), cameraMinScale(), cameraMaxScale());
   }
@@ -1255,7 +1257,6 @@ function drawBase() {
   baseCtx.clearRect(0, 0, rect.width, rect.height);
   baseCtx.fillStyle = "#e7e0d3";
   baseCtx.fillRect(0, 0, rect.width, rect.height);
-  drawTerrain(baseCtx);
   drawGrid(baseCtx, rect);
 
   drawPolygonLayer(baseCtx, state.data.water, "rgba(87, 145, 176, 0.44)", "rgba(54, 106, 138, 0.32)", 0);
@@ -1264,59 +1265,6 @@ function drawBase() {
   if (state.layers.buildings) drawBuildingFootprints(baseCtx);
   drawRailways(baseCtx);
   drawRoads(baseCtx);
-}
-
-function drawTerrain(ctx) {
-  const terrain = state.data?.terrain;
-  if (!terrain) return;
-  const view = worldViewBbox();
-  if (!bboxIntersects(terrain.bbox, view)) return;
-  const [minX, minY, maxX, maxY] = terrain.bbox;
-  const dx = (maxX - minX) / (terrain.width - 1 || 1);
-  const dy = (maxY - minY) / (terrain.height - 1 || 1);
-  const col0 = clamp(Math.floor((view[0] - minX) / dx) - 1, 0, terrain.width - 2);
-  const col1 = clamp(Math.ceil((view[2] - minX) / dx) + 1, 0, terrain.width - 2);
-  const row0 = clamp(Math.floor((maxY - view[3]) / dy) - 1, 0, terrain.height - 2);
-  const row1 = clamp(Math.ceil((maxY - view[1]) / dy) + 1, 0, terrain.height - 2);
-  ctx.save();
-  for (let row = row0; row <= row1; row += 1) {
-    for (let col = col0; col <= col1; col += 1) {
-      const x0 = minX + col * dx;
-      const x1 = minX + (col + 1) * dx;
-      const y0 = maxY - row * dy;
-      const y1 = maxY - (row + 1) * dy;
-      const z00 = terrainGridHeight(terrain, col, row);
-      const z10 = terrainGridHeight(terrain, col + 1, row);
-      const z11 = terrainGridHeight(terrain, col + 1, row + 1);
-      const z01 = terrainGridHeight(terrain, col, row + 1);
-      const avg = (z00 + z10 + z11 + z01) / 4;
-      const shade = clamp(0.5 + ((z00 + z10) - (z01 + z11)) * 0.006, 0.34, 0.68);
-      ctx.fillStyle = terrainColor(avg, terrain, shade);
-      ctx.beginPath();
-      moveTerrainPoint(ctx, x0, y0, z00, true);
-      moveTerrainPoint(ctx, x1, y0, z10);
-      moveTerrainPoint(ctx, x1, y1, z11);
-      moveTerrainPoint(ctx, x0, y1, z01);
-      ctx.closePath();
-      ctx.fill();
-    }
-  }
-  ctx.restore();
-}
-
-function moveTerrainPoint(ctx, x, y, z, first = false) {
-  const [sx, sy] = worldToScreen(x, y, z);
-  if (first) ctx.moveTo(sx, sy);
-  else ctx.lineTo(sx, sy);
-}
-
-function terrainColor(value, terrain, shade) {
-  const max = Math.max(1, (terrain.maxElevation || 0) - (terrain.minElevation || 0));
-  const t = clamp(value / max, 0, 1);
-  const r = Math.round(220 - t * 34 + shade * 18);
-  const g = Math.round(214 - t * 24 + shade * 16);
-  const b = Math.round(198 - t * 30 + shade * 12);
-  return `rgb(${clamp(r, 174, 232)}, ${clamp(g, 174, 226)}, ${clamp(b, 158, 216)})`;
 }
 
 function terrainGridHeight(terrain, col, row) {
