@@ -1,14 +1,26 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const siteDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const rootDir = path.resolve(siteDir, "..");
 const outDir = path.join(siteDir, "data3d");
 const sourceManifest = JSON.parse(readFileSync(path.join(siteDir, "data", "manifest.json"), "utf8"));
 
 const TILE_COUNT = 8;
 const OVERVIEW_AREA_THRESHOLD = 700;
 const BUILDING_COORD_SCALE = 10;
+const TERRAIN_GRID_WIDTH = 128;
+const TERRAIN_HEIGHT_SCALE = 10;
+const TERRAIN_NODATA = -32768;
+const sourceDirs = { orel: "Orel", tambov: "Tambov" };
+const gdalBinDirs = [
+  process.env.GDAL_BIN,
+  "C:/MyProgram/GIS/QGIS/bin",
+  "C:/MyProgram/GIS/Python310/Lib/site-packages/osgeo",
+  "C:/Program Files/PostgreSQL/16/bin"
+].filter(Boolean);
 
 function assertOutputPath(target) {
   const resolved = path.resolve(target);
@@ -24,6 +36,27 @@ function readJson(relativePath) {
 function writeJson(filePath, value, pretty = false) {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, JSON.stringify(value, null, pretty ? 2 : 0));
+}
+
+function gdalTool(name) {
+  for (const dir of gdalBinDirs) {
+    const candidate = path.join(dir, `${name}.exe`);
+    if (existsSync(candidate)) return candidate;
+  }
+  return name;
+}
+
+function runGdal(name, args) {
+  const qgisProj = "C:/MyProgram/GIS/QGIS/share/proj";
+  const qgisGdal = "C:/MyProgram/GIS/QGIS/share/gdal";
+  const env = { ...process.env };
+  if (existsSync(qgisProj)) env.PROJ_LIB = qgisProj;
+  if (existsSync(qgisGdal)) env.GDAL_DATA = qgisGdal;
+  const result = spawnSync(gdalTool(name), args, { cwd: rootDir, env, encoding: "utf8" });
+  if (result.status !== 0) {
+    throw new Error(`${name} failed:\n${result.stderr || result.stdout}`);
+  }
+  return result;
 }
 
 function makeProjection([centerLon, centerLat]) {
@@ -186,18 +219,21 @@ function prepareWater(feature, projection) {
   return { bbox: bboxFromPolygons(polygons), polygons };
 }
 
-function prepareBuilding(feature, index, projection) {
+function prepareBuilding(feature, index, projection, terrain) {
   const polygons = preparePolygonFeature(feature, projection, 0.35, false);
   if (!polygons) return null;
   const props = feature.properties ?? {};
   const height = Math.max(2.5, Math.min(80, Number(props.height) || 8));
   const area = Number(props.area) || 0;
   const isResidential = Number(props.residential) === 1 || props.source === "mkd" || Number(props.pop) > 0 || Number(props.floors) > 0;
+  const bbox = bboxFromPolygons(polygons);
+  const ground = sampleTerrain(terrain, (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2);
   return {
     id: String(props.id ?? feature.id ?? index + 1),
-    bbox: bboxFromPolygons(polygons),
+    bbox,
     polygons,
     h: round(height, 1),
+    g: round(ground, 1),
     a: round(area, 1),
     s: props.source === "mkd" ? "mkd" : "area",
     r: isResidential ? 1 : 0
@@ -245,7 +281,7 @@ function splitBuildings(buildings, cityDir, bbox) {
 
 function compactBuildings(features) {
   return {
-    f: "b1",
+    f: "b2",
     s: BUILDING_COORD_SCALE,
     b: features.map(compactBuilding)
   };
@@ -261,6 +297,7 @@ function compactBuilding(feature) {
     Math.round(feature.h * BUILDING_COORD_SCALE),
     feature.s === "mkd" ? 1 : 0,
     feature.r ? 1 : 0,
+    Math.round((feature.g || 0) * BUILDING_COORD_SCALE),
     ...rings
   ];
 }
@@ -313,6 +350,165 @@ function preparePoints(collection, projection) {
     .filter(Boolean);
 }
 
+function demPathForCity(city) {
+  const sourceDir = sourceDirs[city.slug];
+  return sourceDir ? path.join(rootDir, sourceDir, "GPKG", "dem.tif") : null;
+}
+
+function prepareTerrain(city, projection, cityDir) {
+  const demPath = demPathForCity(city);
+  if (!demPath || !existsSync(demPath)) return null;
+
+  const safeSlug = city.slug.replace(/[^a-z0-9_-]/gi, "");
+  const tempTif = path.join(cityDir, `_${safeSlug}_terrain_wgs.tif`);
+  const tempXyz = path.join(cityDir, `_${safeSlug}_terrain.xyz`);
+  for (const temp of [tempTif, tempXyz, `${tempTif}.aux.xml`]) rmSync(temp, { force: true });
+
+  runGdal("gdalwarp", [
+    "-overwrite",
+    "-t_srs",
+    "EPSG:4326",
+    "-ts",
+    String(TERRAIN_GRID_WIDTH),
+    "0",
+    "-r",
+    "bilinear",
+    "-srcnodata",
+    String(TERRAIN_NODATA),
+    "-dstnodata",
+    String(TERRAIN_NODATA),
+    demPath,
+    tempTif
+  ]);
+  runGdal("gdal_translate", ["-of", "XYZ", tempTif, tempXyz]);
+
+  const terrain = terrainFromXyz(tempXyz, projection);
+  rmSync(tempTif, { force: true });
+  rmSync(tempXyz, { force: true });
+  rmSync(`${tempTif}.aux.xml`, { force: true });
+  if (!terrain) return null;
+  writeJson(path.join(cityDir, "terrain.json"), terrain);
+  return terrain;
+}
+
+function terrainFromXyz(filePath, projection) {
+  const lines = readFileSync(filePath, "utf8").trim().split(/\r?\n/).filter(Boolean);
+  if (!lines.length) return null;
+
+  const rows = [];
+  let currentY = null;
+  let currentRow = [];
+  for (const line of lines) {
+    const [lonText, latText, elevationText] = line.trim().split(/\s+/);
+    const lon = Number(lonText);
+    const lat = Number(latText);
+    const elevation = Number(elevationText);
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+    if (currentY === null) currentY = lat;
+    if (Math.abs(lat - currentY) > 1e-10) {
+      rows.push(currentRow);
+      currentRow = [];
+      currentY = lat;
+    }
+    currentRow.push({ lon, lat, elevation });
+  }
+  if (currentRow.length) rows.push(currentRow);
+  const height = rows.length;
+  const width = rows[0]?.length ?? 0;
+  if (height < 2 || width < 2) return null;
+
+  const values = [];
+  const points = [];
+  let minElevation = Infinity;
+  let maxElevation = -Infinity;
+  for (const row of rows) {
+    for (const item of row) {
+      const point = projection([item.lon, item.lat]);
+      points.push(point);
+      const valid = Number.isFinite(item.elevation) && item.elevation !== TERRAIN_NODATA;
+      values.push(valid ? item.elevation : null);
+      if (valid) {
+        minElevation = Math.min(minElevation, item.elevation);
+        maxElevation = Math.max(maxElevation, item.elevation);
+      }
+    }
+  }
+  if (!Number.isFinite(minElevation) || !Number.isFinite(maxElevation)) return null;
+
+  const filled = fillMissingTerrain(values, width, height, minElevation);
+  const bbox = bboxFromPoints(points);
+  return {
+    width,
+    height,
+    bbox,
+    minElevation: round(minElevation, 2),
+    maxElevation: round(maxElevation, 2),
+    scale: TERRAIN_HEIGHT_SCALE,
+    h: filled.map((value) => Math.max(0, Math.round((value - minElevation) * TERRAIN_HEIGHT_SCALE)))
+  };
+}
+
+function fillMissingTerrain(values, width, height, fallback) {
+  let filled = values.slice();
+  let missing = filled.reduce((count, value) => count + (Number.isFinite(value) ? 0 : 1), 0);
+  let guard = 0;
+  while (missing > 0 && guard < width + height) {
+    guard += 1;
+    const next = filled.slice();
+    let changed = 0;
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const index = y * width + x;
+        if (Number.isFinite(filled[index])) continue;
+        let sum = 0;
+        let count = 0;
+        for (let dy = -1; dy <= 1; dy += 1) {
+          for (let dx = -1; dx <= 1; dx += 1) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+            const value = filled[ny * width + nx];
+            if (!Number.isFinite(value)) continue;
+            sum += value;
+            count += 1;
+          }
+        }
+        if (count > 0) {
+          next[index] = sum / count;
+          changed += 1;
+        }
+      }
+    }
+    filled = next;
+    missing -= changed;
+    if (changed === 0) break;
+  }
+  if (missing > 0) {
+    filled = filled.map((value) => (Number.isFinite(value) ? value : fallback));
+  }
+  return filled;
+}
+
+function sampleTerrain(terrain, x, y) {
+  if (!terrain || !terrain.h?.length) return 0;
+  const [minX, minY, maxX, maxY] = terrain.bbox;
+  if (x < minX || x > maxX || y < minY || y > maxY) return 0;
+  const col = ((x - minX) / (maxX - minX || 1)) * (terrain.width - 1);
+  const row = ((maxY - y) / (maxY - minY || 1)) * (terrain.height - 1);
+  const x0 = Math.floor(col);
+  const y0 = Math.floor(row);
+  const x1 = Math.min(terrain.width - 1, x0 + 1);
+  const y1 = Math.min(terrain.height - 1, y0 + 1);
+  const tx = col - x0;
+  const ty = row - y0;
+  const scale = terrain.scale || 1;
+  const valueAt = (cx, cy) => (terrain.h[cy * terrain.width + cx] || 0) / scale;
+  const top = valueAt(x0, y0) * (1 - tx) + valueAt(x1, y0) * tx;
+  const bottom = valueAt(x0, y1) * (1 - tx) + valueAt(x1, y1) * tx;
+  return top * (1 - ty) + bottom * ty;
+}
+
 assertOutputPath(outDir);
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
@@ -331,6 +527,7 @@ for (const city of sourceManifest.cities) {
   const center = [(city.bbox[0] + city.bbox[2]) / 2, (city.bbox[1] + city.bbox[3]) / 2];
   const projection = makeProjection(center);
   const projectedBbox = projectBbox(city.bbox, projection);
+  const terrain = prepareTerrain(city, projection, cityDir);
 
   const quartals = readJson(city.files.quartals).features
     .map((feature, index) => prepareQuarter(feature, index, projection))
@@ -342,7 +539,7 @@ for (const city of sourceManifest.cities) {
     .map((feature) => prepareWater(feature, projection))
     .filter(Boolean);
   const buildings = readJson(city.files.buildings).features
-    .map((feature, index) => prepareBuilding(feature, index, projection))
+    .map((feature, index) => prepareBuilding(feature, index, projection, terrain))
     .filter(Boolean);
   const roads = readJson(city.files.roads).features
     .flatMap((feature) => prepareMajorRoad(feature, projection));
@@ -379,6 +576,7 @@ for (const city of sourceManifest.cities) {
       railways: `data3d/${city.slug}/railways.json`,
       stops: `data3d/${city.slug}/stops.json`,
       dtp: `data3d/${city.slug}/dtp.json`,
+      terrain: terrain ? `data3d/${city.slug}/terrain.json` : null,
       buildingsOverview: `data3d/${city.slug}/buildings-overview.json`,
       buildingsTileBase: `data3d/${city.slug}/buildings`,
       roadsAllTileBase: `data3d/${city.slug}/roads-all`

@@ -76,7 +76,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const FLOATS_PER_VERTEX = 7;
 const HEIGHT_EXAGGERATION = 1.33;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
-const DATA_VERSION = "20260504-0200";
+const DATA_VERSION = "20260504-0300";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
@@ -209,6 +209,7 @@ function fallbackManifest() {
           water: "data3d/orel/water.json",
           roads: "data3d/orel/roads.json",
           railways: "data3d/orel/railways.json",
+          terrain: "data3d/orel/terrain.json",
           stops: "data3d/orel/stops.json",
           dtp: "data3d/orel/dtp.json",
           buildingsOverview: "data3d/orel/buildings-overview.json",
@@ -237,6 +238,7 @@ function fallbackManifest() {
           water: "data3d/tambov/water.json",
           roads: "data3d/tambov/roads.json",
           railways: "data3d/tambov/railways.json",
+          terrain: "data3d/tambov/terrain.json",
           stops: "data3d/tambov/stops.json",
           dtp: "data3d/tambov/dtp.json",
           buildingsOverview: "data3d/tambov/buildings-overview.json",
@@ -293,17 +295,18 @@ async function fetchJson(url) {
 
 function decodeBuildings(payload) {
   if (payload && Array.isArray(payload.features)) return payload.features;
-  if (!payload || payload.f !== "b1" || !Array.isArray(payload.b)) return [];
+  if (!payload || !["b1", "b2"].includes(payload.f) || !Array.isArray(payload.b)) return [];
   const scale = payload.s || 10;
   return payload.b
-    .map((item) => decodeBuilding(item, scale))
+    .map((item) => decodeBuilding(item, scale, payload.f))
     .filter(Boolean);
 }
 
-function decodeBuilding(item, scale) {
+function decodeBuilding(item, scale, format = "b1") {
   if (!Array.isArray(item) || item.length < 4) return null;
   const polygons = [];
-  for (let i = 3; i < item.length; i += 1) {
+  const ringStart = format === "b2" ? 4 : 3;
+  for (let i = ringStart; i < item.length; i += 1) {
     const ring = decodeBuildingRing(item[i], scale);
     if (ring.length >= 3) polygons.push([ring]);
   }
@@ -313,7 +316,8 @@ function decodeBuilding(item, scale) {
     polygons,
     h: item[0] / scale,
     s: item[1] ? "mkd" : "area",
-    r: item[2] ? 1 : 0
+    r: item[2] ? 1 : 0,
+    g: format === "b2" ? item[3] / scale : 0
   };
 }
 
@@ -328,6 +332,14 @@ function decodeBuildingRing(values, scale) {
     ring.push([x / scale, y / scale]);
   }
   return ring;
+}
+
+function decodeTerrain(payload) {
+  if (!payload || !payload.width || !payload.height || !Array.isArray(payload.h)) return null;
+  return {
+    ...payload,
+    h: new Float32Array(payload.h.map((value) => value / (payload.scale || 1)))
+  };
 }
 
 function renderCityMenu() {
@@ -626,7 +638,7 @@ function attachEvents() {
       mode,
       x: event.clientX,
       y: event.clientY,
-      startWorld: screenToWorld(...eventCanvasPoint(event)),
+      startWorld: screenToWorldOnTerrain(...eventCanvasPoint(event)),
       startBearing: state.camera.bearing,
       startPitch: state.camera.pitch,
       lastTime: performance.now(),
@@ -660,7 +672,7 @@ function attachEvents() {
       return;
     }
     const previousCenter = [...state.camera.center];
-    const current = screenToWorld(...eventCanvasPoint(event));
+    const current = screenToWorldOnTerrain(...eventCanvasPoint(event));
     state.camera.center[0] += state.dragging.startWorld[0] - current[0];
     state.camera.center[1] += state.dragging.startWorld[1] - current[1];
     recordDragVelocity({
@@ -776,7 +788,7 @@ function beginPinchGesture() {
     startScale: state.camera.scale,
     startBearing: state.camera.bearing,
     startPitch: state.camera.pitch,
-    startWorld: screenToWorld(midpoint[0], midpoint[1]),
+    startWorld: screenToWorldOnTerrain(midpoint[0], midpoint[1]),
     lastTime: performance.now()
   };
   state.lastGestureVelocity = null;
@@ -800,7 +812,7 @@ function updatePinchGesture() {
   );
   state.camera.bearing = state.pinchGesture.startBearing + angleDelta;
   state.camera.pitch = clamp(state.pinchGesture.startPitch - midpointDy * 0.0038, 0.34, 1.18);
-  const after = screenToWorld(midpoint[0], midpoint[1]);
+  const after = screenToWorldOnTerrain(midpoint[0], midpoint[1]);
   state.camera.center[0] += state.pinchGesture.startWorld[0] - after[0];
   state.camera.center[1] += state.pinchGesture.startWorld[1] - after[1];
   const now = performance.now();
@@ -908,12 +920,13 @@ async function loadCity(slug) {
   els.infoPanel.classList.remove("sheetExpanded");
   els.infoPanel.innerHTML = `<div class="muted">Загрузка 3D-данных</div>`;
 
-  const [quartals, green, water, roads, railways, overview] = await Promise.all([
+  const [quartals, green, water, roads, railways, terrain, overview] = await Promise.all([
     fetchJson(city.files3d.quartals),
     fetchJson(city.files3d.green),
     fetchJson(city.files3d.water),
     fetchJson(city.files3d.roads),
     fetchJson(city.files3d.railways),
+    city.files3d.terrain ? fetchJson(city.files3d.terrain).catch(() => null) : Promise.resolve(null),
     fetchJson(city.files3d.buildingsOverview)
   ]);
   if (token !== state.renderToken) return;
@@ -930,6 +943,7 @@ async function loadCity(slug) {
     water: water.features.map(withCenter),
     roads: roads.lines,
     railways: railways.lines,
+    terrain: decodeTerrain(terrain),
     points: { stops: [], dtp: [] },
     pointLayersLoaded: { stops: false, dtp: false },
     overviewBuildings
@@ -1071,7 +1085,7 @@ function smoothZoomAtCursor(cursor, deltaY) {
   const targetScale = clamp(baseTarget * factor, cameraMinScale(), cameraMaxScale());
   state.smoothZoom = {
     cursor,
-    anchor: screenToWorld(cursor[0], cursor[1]),
+    anchor: screenToWorldOnTerrain(cursor[0], cursor[1]),
     targetScale,
     lastTime: performance.now(),
     frame: state.smoothZoom?.frame ?? null
@@ -1092,7 +1106,7 @@ function tickSmoothZoom(time) {
   const eased = 1 - Math.exp(-dt / 135);
   state.camera.scale += (zoom.targetScale - state.camera.scale) * eased;
   state.camera.scale = clamp(state.camera.scale, cameraMinScale(), cameraMaxScale());
-  const after = screenToWorld(zoom.cursor[0], zoom.cursor[1]);
+  const after = screenToWorldOnTerrain(zoom.cursor[0], zoom.cursor[1]);
   state.camera.center[0] += zoom.anchor[0] - after[0];
   state.camera.center[1] += zoom.anchor[1] - after[1];
   draw();
@@ -1101,7 +1115,7 @@ function tickSmoothZoom(time) {
     return;
   }
   state.camera.scale = zoom.targetScale;
-  const finalAfter = screenToWorld(zoom.cursor[0], zoom.cursor[1]);
+  const finalAfter = screenToWorldOnTerrain(zoom.cursor[0], zoom.cursor[1]);
   state.camera.center[0] += zoom.anchor[0] - finalAfter[0];
   state.camera.center[1] += zoom.anchor[1] - finalAfter[1];
   state.smoothZoom = null;
@@ -1193,7 +1207,8 @@ function transformWorld(x, y, z = 0, center = state.camera.center) {
   const ry = dx * sin + dy * cos;
   const pitchCos = Math.cos(state.camera.pitch);
   const pitchSin = Math.sin(state.camera.pitch);
-  return [rx, ry * pitchCos + z * pitchSin, ry * pitchSin - z * pitchCos];
+  const visualZ = z * HEIGHT_EXAGGERATION;
+  return [rx, ry * pitchCos + visualZ * pitchSin, ry * pitchSin - visualZ * pitchCos];
 }
 
 function worldToScreen(x, y, z = 0) {
@@ -1202,16 +1217,26 @@ function worldToScreen(x, y, z = 0) {
   return [rect.width / 2 + tx * state.camera.scale, rect.height / 2 - ty * state.camera.scale];
 }
 
-function screenToWorld(sx, sy) {
+function screenToWorld(sx, sy, z = 0) {
   const rect = overlayCanvas.getBoundingClientRect();
   const rx = (sx - rect.width / 2) / state.camera.scale;
-  const ry = -((sy - rect.height / 2) / state.camera.scale) / Math.cos(state.camera.pitch);
+  const projectedY = -((sy - rect.height / 2) / state.camera.scale);
+  const visualZ = z * HEIGHT_EXAGGERATION;
+  const ry = (projectedY - visualZ * Math.sin(state.camera.pitch)) / Math.cos(state.camera.pitch);
   const cos = Math.cos(state.camera.bearing);
   const sin = Math.sin(state.camera.bearing);
   return [
     state.camera.center[0] + rx * cos + ry * sin,
     state.camera.center[1] - rx * sin + ry * cos
   ];
+}
+
+function screenToWorldOnTerrain(sx, sy, offset = 0) {
+  let world = screenToWorld(sx, sy, 0);
+  for (let i = 0; i < 3; i += 1) {
+    world = screenToWorld(sx, sy, terrainHeightAt(world[0], world[1]) + offset);
+  }
+  return world;
 }
 
 function draw() {
@@ -1230,6 +1255,7 @@ function drawBase() {
   baseCtx.clearRect(0, 0, rect.width, rect.height);
   baseCtx.fillStyle = "#e7e0d3";
   baseCtx.fillRect(0, 0, rect.width, rect.height);
+  drawTerrain(baseCtx);
   drawGrid(baseCtx, rect);
 
   drawPolygonLayer(baseCtx, state.data.water, "rgba(87, 145, 176, 0.44)", "rgba(54, 106, 138, 0.32)", 0);
@@ -1238,6 +1264,82 @@ function drawBase() {
   if (state.layers.buildings) drawBuildingFootprints(baseCtx);
   drawRailways(baseCtx);
   drawRoads(baseCtx);
+}
+
+function drawTerrain(ctx) {
+  const terrain = state.data?.terrain;
+  if (!terrain) return;
+  const view = worldViewBbox();
+  if (!bboxIntersects(terrain.bbox, view)) return;
+  const [minX, minY, maxX, maxY] = terrain.bbox;
+  const dx = (maxX - minX) / (terrain.width - 1 || 1);
+  const dy = (maxY - minY) / (terrain.height - 1 || 1);
+  const col0 = clamp(Math.floor((view[0] - minX) / dx) - 1, 0, terrain.width - 2);
+  const col1 = clamp(Math.ceil((view[2] - minX) / dx) + 1, 0, terrain.width - 2);
+  const row0 = clamp(Math.floor((maxY - view[3]) / dy) - 1, 0, terrain.height - 2);
+  const row1 = clamp(Math.ceil((maxY - view[1]) / dy) + 1, 0, terrain.height - 2);
+  ctx.save();
+  for (let row = row0; row <= row1; row += 1) {
+    for (let col = col0; col <= col1; col += 1) {
+      const x0 = minX + col * dx;
+      const x1 = minX + (col + 1) * dx;
+      const y0 = maxY - row * dy;
+      const y1 = maxY - (row + 1) * dy;
+      const z00 = terrainGridHeight(terrain, col, row);
+      const z10 = terrainGridHeight(terrain, col + 1, row);
+      const z11 = terrainGridHeight(terrain, col + 1, row + 1);
+      const z01 = terrainGridHeight(terrain, col, row + 1);
+      const avg = (z00 + z10 + z11 + z01) / 4;
+      const shade = clamp(0.5 + ((z00 + z10) - (z01 + z11)) * 0.006, 0.34, 0.68);
+      ctx.fillStyle = terrainColor(avg, terrain, shade);
+      ctx.beginPath();
+      moveTerrainPoint(ctx, x0, y0, z00, true);
+      moveTerrainPoint(ctx, x1, y0, z10);
+      moveTerrainPoint(ctx, x1, y1, z11);
+      moveTerrainPoint(ctx, x0, y1, z01);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function moveTerrainPoint(ctx, x, y, z, first = false) {
+  const [sx, sy] = worldToScreen(x, y, z);
+  if (first) ctx.moveTo(sx, sy);
+  else ctx.lineTo(sx, sy);
+}
+
+function terrainColor(value, terrain, shade) {
+  const max = Math.max(1, (terrain.maxElevation || 0) - (terrain.minElevation || 0));
+  const t = clamp(value / max, 0, 1);
+  const r = Math.round(220 - t * 34 + shade * 18);
+  const g = Math.round(214 - t * 24 + shade * 16);
+  const b = Math.round(198 - t * 30 + shade * 12);
+  return `rgb(${clamp(r, 174, 232)}, ${clamp(g, 174, 226)}, ${clamp(b, 158, 216)})`;
+}
+
+function terrainGridHeight(terrain, col, row) {
+  if (!terrain || col < 0 || row < 0 || col >= terrain.width || row >= terrain.height) return 0;
+  return terrain.h[row * terrain.width + col] || 0;
+}
+
+function terrainHeightAt(x, y) {
+  const terrain = state.data?.terrain;
+  if (!terrain || !terrain.h?.length) return 0;
+  const [minX, minY, maxX, maxY] = terrain.bbox;
+  if (x < minX || x > maxX || y < minY || y > maxY) return 0;
+  const col = ((x - minX) / (maxX - minX || 1)) * (terrain.width - 1);
+  const row = ((maxY - y) / (maxY - minY || 1)) * (terrain.height - 1);
+  const x0 = clamp(Math.floor(col), 0, terrain.width - 1);
+  const y0 = clamp(Math.floor(row), 0, terrain.height - 1);
+  const x1 = Math.min(terrain.width - 1, x0 + 1);
+  const y1 = Math.min(terrain.height - 1, y0 + 1);
+  const tx = col - x0;
+  const ty = row - y0;
+  const top = terrainGridHeight(terrain, x0, y0) * (1 - tx) + terrainGridHeight(terrain, x1, y0) * tx;
+  const bottom = terrainGridHeight(terrain, x0, y1) * (1 - tx) + terrainGridHeight(terrain, x1, y1) * tx;
+  return top * (1 - ty) + bottom * ty;
 }
 
 function drawGrid(ctx, rect) {
@@ -1368,7 +1470,7 @@ function drawLine(ctx, line, z = 0) {
   if (!line.length) return;
   ctx.beginPath();
   line.forEach(([x, y], index) => {
-    const [sx, sy] = worldToScreen(x, y, z);
+    const [sx, sy] = worldToScreen(x, y, surfaceZ(x, y, z));
     if (index === 0) ctx.moveTo(sx, sy);
     else ctx.lineTo(sx, sy);
   });
@@ -1380,13 +1482,17 @@ function drawPath(ctx, polygons, z) {
   for (const polygon of polygons) {
     for (const ring of polygon) {
       ring.forEach(([x, y], index) => {
-        const [sx, sy] = worldToScreen(x, y, z);
+        const [sx, sy] = worldToScreen(x, y, surfaceZ(x, y, z));
         if (index === 0) ctx.moveTo(sx, sy);
         else ctx.lineTo(sx, sy);
       });
       ctx.closePath();
     }
   }
+}
+
+function surfaceZ(x, y, offset = 0) {
+  return terrainHeightAt(x, y) + offset;
 }
 
 function drawBuildings() {
@@ -1448,7 +1554,7 @@ function drawStops() {
   overlayCtx.strokeStyle = "#ffffff";
   overlayCtx.lineWidth = 1;
   for (const item of state.data.points.stops) {
-    const [sx, sy] = worldToScreen(item.point[0], item.point[1], 12);
+    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 12));
     const isTram = item.properties.source === "tram_stop";
     overlayCtx.fillStyle = isTram ? "#b64c3f" : "#316a9c";
     overlayCtx.beginPath();
@@ -1470,7 +1576,7 @@ function drawAccidents() {
   overlayCtx.font = "700 11px system-ui, sans-serif";
   for (const item of state.accidentDisplayItems) {
     const radius = accidentRadius(item);
-    const [sx, sy] = worldToScreen(item.point[0], item.point[1], 15);
+    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 15));
     overlayCtx.fillStyle = item.items ? "#893a35" : "#b64c3f";
     overlayCtx.beginPath();
     overlayCtx.arc(sx, sy, radius, 0, Math.PI * 2);
@@ -1499,7 +1605,7 @@ function buildAccidentDisplayItems() {
   const clusterDistance = accidentClusterDistance();
   const clusters = [];
   for (const item of state.data.points.dtp) {
-    const [sx, sy] = worldToScreen(item.point[0], item.point[1], 15);
+    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 15));
     let cluster = null;
     for (const candidate of clusters) {
       if (Math.hypot(candidate.sx - sx, candidate.sy - sy) <= clusterDistance) {
@@ -1544,6 +1650,7 @@ function createBuildingMesh(features) {
   if (!gl || !features || !features.length) return null;
   const vertices = [];
   for (const feature of features) {
+    const ground = feature.g || 0;
     const height = (feature.h || 8) * (feature.s === "mkd" ? 1 : NON_MKD_HEIGHT_FACTOR);
     const colors = buildingColors(feature);
     for (const polygon of feature.polygons) {
@@ -1552,9 +1659,9 @@ function createBuildingMesh(features) {
       for (let i = 0; i < outer.length; i += 1) {
         const a = outer[i];
         const b = outer[(i + 1) % outer.length];
-        pushWall(vertices, a, b, height, colors, wallShade(a, b));
+        pushWall(vertices, a, b, ground, height, colors, wallShade(a, b));
       }
-      const roofHeight = height;
+      const roofHeight = ground + height;
       for (const triangle of triangulateRoof(outer)) {
         pushTriangle(vertices, triangle[0], roofHeight, triangle[1], roofHeight, triangle[2], roofHeight, colors.roof);
       }
@@ -1746,15 +1853,16 @@ function pushTriangle(target, a, za, b, zb, c, zc, color) {
   pushVertex(target, c, zc, color);
 }
 
-function pushWall(target, a, b, height, colors, shade) {
+function pushWall(target, a, b, ground, height, colors, shade) {
   const top = scaleColor(colors.sideTop, shade);
   const bottom = scaleColor(colors.sideBottom, shade);
-  pushVertex(target, a, 0, bottom);
-  pushVertex(target, b, 0, bottom);
-  pushVertex(target, b, height, top);
-  pushVertex(target, a, 0, bottom);
-  pushVertex(target, b, height, top);
-  pushVertex(target, a, height, top);
+  const roof = ground + height;
+  pushVertex(target, a, ground, bottom);
+  pushVertex(target, b, ground, bottom);
+  pushVertex(target, b, roof, top);
+  pushVertex(target, a, ground, bottom);
+  pushVertex(target, b, roof, top);
+  pushVertex(target, a, roof, top);
 }
 
 function pushVertex(target, point, z, color) {
@@ -2086,7 +2194,7 @@ function pickFeature(event) {
     return;
   }
   state.accidentPopup = null;
-  const world = screenToWorld(screen[0], screen[1]);
+  const world = screenToWorldOnTerrain(screen[0], screen[1]);
   const hit = [...state.data.quartals]
     .sort((a, b) => depthOf(b) - depthOf(a))
     .find((feature) => pointInFeature(feature, world));
@@ -2104,7 +2212,7 @@ function pickAccident(screenX, screenY) {
   let bestDistance = Infinity;
   const items = state.accidentDisplayItems.length ? state.accidentDisplayItems : buildAccidentDisplayItems();
   for (const item of items) {
-    const [sx, sy] = worldToScreen(item.point[0], item.point[1], 15);
+    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 15));
     const radius = accidentRadius(item) + 5;
     const distance = Math.hypot(screenX - sx, screenY - sy);
     if (distance <= radius && distance < bestDistance) {
@@ -2233,7 +2341,7 @@ function renderAccidentPopup() {
     return;
   }
   const item = state.accidentPopup;
-  const [sx, sy] = worldToScreen(item.point[0], item.point[1], 30);
+  const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 30));
   const props = item.properties;
   if (item.items) {
     const rows = item.items.slice(0, 8).map((accident) => {

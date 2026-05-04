@@ -18,15 +18,16 @@ self.addEventListener("message", async (event) => {
 
 function decodeBuildings(payload) {
   if (payload && Array.isArray(payload.features)) return payload.features;
-  if (!payload || payload.f !== "b1" || !Array.isArray(payload.b)) return [];
+  if (!payload || !["b1", "b2"].includes(payload.f) || !Array.isArray(payload.b)) return [];
   const scale = payload.s || 10;
-  return payload.b.map((item) => decodeBuilding(item, scale)).filter(Boolean);
+  return payload.b.map((item) => decodeBuilding(item, scale, payload.f)).filter(Boolean);
 }
 
-function decodeBuilding(item, scale) {
+function decodeBuilding(item, scale, format = "b1") {
   if (!Array.isArray(item) || item.length < 4) return null;
   const polygons = [];
-  for (let i = 3; i < item.length; i += 1) {
+  const ringStart = format === "b2" ? 4 : 3;
+  for (let i = ringStart; i < item.length; i += 1) {
     const ring = decodeBuildingRing(item[i], scale);
     if (ring.length >= 3) polygons.push([ring]);
   }
@@ -35,7 +36,8 @@ function decodeBuilding(item, scale) {
     polygons,
     h: item[0] / scale,
     s: item[1] ? "mkd" : "area",
-    r: item[2] ? 1 : 0
+    r: item[2] ? 1 : 0,
+    g: format === "b2" ? item[3] / scale : 0
   };
 }
 
@@ -55,6 +57,7 @@ function decodeBuildingRing(values, scale) {
 function buildVertices(features) {
   const vertices = [];
   for (const feature of features) {
+    const ground = feature.g || 0;
     const height = (feature.h || 8) * (feature.s === "mkd" ? 1 : NON_MKD_HEIGHT_FACTOR);
     const colors = buildingColors(feature);
     for (const polygon of feature.polygons) {
@@ -63,10 +66,11 @@ function buildVertices(features) {
       for (let i = 0; i < outer.length; i += 1) {
         const a = outer[i];
         const b = outer[(i + 1) % outer.length];
-        pushWall(vertices, a, b, height, colors, wallShade(a, b));
+        pushWall(vertices, a, b, ground, height, colors, wallShade(a, b));
       }
       for (const triangle of triangulateRoof(outer)) {
-        pushTriangle(vertices, triangle[0], height, triangle[1], height, triangle[2], height, colors.roof);
+        const roof = ground + height;
+        pushTriangle(vertices, triangle[0], roof, triangle[1], roof, triangle[2], roof, colors.roof);
       }
     }
   }
@@ -92,11 +96,12 @@ function isResidentialBuilding(feature) {
   return feature.r === 1 || feature.r === true || feature.s === "mkd";
 }
 
-function pushWall(vertices, a, b, height, colors, shade) {
+function pushWall(vertices, a, b, ground, height, colors, shade) {
   const top = colors.sideTop.map((value, index) => (index < 3 ? value * shade : value));
   const bottom = colors.sideBottom.map((value, index) => (index < 3 ? value * shade : value));
-  pushTriangle(vertices, a, 0, b, 0, b, height, bottom, bottom, top);
-  pushTriangle(vertices, a, 0, b, height, a, height, bottom, top, top);
+  const roof = ground + height;
+  pushTriangle(vertices, a, ground, b, ground, b, roof, bottom, bottom, top);
+  pushTriangle(vertices, a, ground, b, roof, a, roof, bottom, top, top);
 }
 
 function pushTriangle(vertices, a, za, b, zb, c, zc, colorA, colorB = colorA, colorC = colorA) {
