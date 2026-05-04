@@ -48,16 +48,16 @@
   display: grid;
   place-items: center;
   pointer-events: none;
-  background: rgba(231, 224, 211, 0.38);
+  background: var(--loading-overlay);
   backdrop-filter: blur(2px);
 }
 
 .loadingCard {
   width: min(330px, calc(100vw - 32px));
   padding: 15px 16px 14px;
-  border: 1px solid rgba(65, 66, 66, 0.16);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background: rgba(255, 253, 248, 0.96);
+  background: var(--panel-soft);
   box-shadow: 5px 5px 0 rgba(31, 35, 38, 0.16);
 }
 
@@ -85,9 +85,9 @@
 .loadingStep span {
   width: 9px;
   height: 9px;
-  border: 1px solid rgba(65, 66, 66, 0.28);
+  border: 1px solid var(--line-soft);
   border-radius: 50%;
-  background: #fffaf1;
+  background: var(--button-bg);
 }
 
 .loadingStep p {
@@ -125,9 +125,9 @@
   left: 50%;
   width: min(360px, calc(100vw - 32px));
   padding: 13px 14px 12px;
-  border: 1px solid rgba(65, 66, 66, 0.16);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background: rgba(255, 253, 248, 0.96);
+  background: var(--panel-soft);
   box-shadow: 5px 5px 0 rgba(31, 35, 38, 0.14);
   color: var(--ink);
   transform: translateX(-50%);
@@ -165,16 +165,16 @@
   width: 24px;
   height: 24px;
   place-items: center;
-  border: 1px solid rgba(65, 66, 66, 0.14);
+  border: 1px solid var(--line-soft);
   border-radius: 7px;
-  background: #fffaf1;
+  background: var(--button-bg);
   color: var(--muted);
   cursor: pointer;
 }
 
 .tutorialClose:hover {
   color: var(--ink);
-  background: #fff4df;
+  background: var(--button-hover);
 }
 
 .controlPanel {
@@ -220,7 +220,7 @@
 }
 
 .controlPanel:not(.collapsed) .controlPanelTitle {
-  border-bottom: 1px solid rgba(65, 66, 66, 0.12);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .controlPanelBody {

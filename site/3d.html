@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>3D-карта индекса качества городской среды</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="src/styles.css?v=20260505-0500" />
-    <link rel="stylesheet" href="src/map3d.css?v=20260505-0500" />
+    <script>
+      try {
+        if (localStorage.getItem("lifeindex.theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch (error) {}
+    </script>
+    <link rel="stylesheet" href="src/styles.css?v=20260505-0600" />
+    <link rel="stylesheet" href="src/map3d.css?v=20260505-0600" />
   </head>
   <body>
     <div class="app">
@@ -17,6 +22,7 @@
           <h1 id="pageTitle">Города исследования</h1>
         </div>
         <div class="topbarMetric" id="topMetric"></div>
+        <button class="icon-button themeToggle" id="themeToggle" type="button" title="Ночная тема" aria-label="Ночная тема" aria-pressed="false">◐</button>
       </header>
 
       <main>
@@ -76,6 +82,6 @@
       </main>
     </div>
 
-    <script defer src="src/map3d.js?v=20260505-0500"></script>
+    <script defer src="src/map3d.js?v=20260505-0600"></script>
   </body>
 </html>

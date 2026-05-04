@@ -76,20 +76,61 @@ const BUILDING_FADE_FACTOR = 5.35;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-0500";
+const DATA_VERSION = "20260505-0600";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
 const SMALL_NON_RESIDENTIAL_FACTOR = 12.5;
 const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15.7;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
+const THEME_STORAGE_KEY = "lifeindex.theme";
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
 const CAMERA_MAX_ZOOM_FACTOR = 16;
 const CAMERA_MIN_PITCH = 0.34;
 const CAMERA_MAX_PITCH = 1.46;
 
+const CANVAS_THEMES = {
+  light: {
+    mapBg: "#e7e0d3",
+    grid: "rgba(94, 91, 84, 0.085)",
+    waterFill: "rgba(87, 145, 176, 0.44)",
+    waterStroke: "rgba(54, 106, 138, 0.32)",
+    greenFill: "rgba(80, 130, 78, 0.34)",
+    greenStroke: "rgba(61, 92, 58, 0.2)",
+    quarterStroke: "rgba(64, 66, 62, 0.42)",
+    roadDetail: (alpha) => `rgba(91, 96, 96, ${alpha})`,
+    roadMain: (alpha) => `rgba(47, 54, 55, ${alpha})`,
+    railway: (alpha) => `rgba(62, 61, 58, ${alpha})`,
+    railwayDash: (alpha) => `rgba(244, 238, 226, ${Math.min(0.72, alpha + 0.18)})`,
+    selectedFill: "rgba(255, 246, 199, 0.16)",
+    selectedOuter: "rgba(30, 37, 40, 0.42)",
+    selectedInner: "#1e2528",
+    pointStroke: "#ffffff",
+    accidentText: "#fffaf1"
+  },
+  dark: {
+    mapBg: "#101617",
+    grid: "rgba(220, 225, 213, 0.055)",
+    waterFill: "rgba(55, 103, 128, 0.42)",
+    waterStroke: "rgba(94, 152, 181, 0.28)",
+    greenFill: "rgba(53, 104, 66, 0.36)",
+    greenStroke: "rgba(111, 158, 99, 0.2)",
+    quarterStroke: "rgba(214, 218, 206, 0.24)",
+    roadDetail: (alpha) => `rgba(165, 174, 172, ${Math.min(0.34, alpha + 0.08)})`,
+    roadMain: (alpha) => `rgba(210, 216, 207, ${Math.min(0.56, alpha + 0.08)})`,
+    railway: (alpha) => `rgba(186, 181, 168, ${Math.min(0.62, alpha + 0.08)})`,
+    railwayDash: (alpha) => `rgba(18, 24, 26, ${Math.min(0.82, alpha + 0.08)})`,
+    selectedFill: "rgba(255, 222, 132, 0.12)",
+    selectedOuter: "rgba(255, 238, 176, 0.36)",
+    selectedInner: "#fff2bd",
+    pointStroke: "#111719",
+    accidentText: "#fffaf1"
+  }
+};
+
 const state = {
   manifest: null,
   activeCity: null,
   data: null,
+  theme: "light",
   comparisonMode: "city",
   activeBlocks: new Set(BLOCKS.map((block) => block.key)),
   layers: {
@@ -164,7 +205,8 @@ const els = {
   symbolLegend: document.getElementById("symbolLegend"),
   accidentPopup: document.getElementById("accidentPopup"),
   cameraTutorial: document.getElementById("cameraTutorial"),
-  loadingOverlay: document.getElementById("loadingOverlay")
+  loadingOverlay: document.getElementById("loadingOverlay"),
+  themeToggle: document.getElementById("themeToggle")
 };
 
 let glState = null;
@@ -172,6 +214,7 @@ let glState = null;
 // @dist-split
 async function init() {
   state.manifest = fallbackManifest();
+  initTheme();
   renderCityMenu();
   renderControls();
   renderLegend();
@@ -532,6 +575,30 @@ function safeLocalStorageSet(key, value) {
   }
 }
 
+function initTheme() {
+  setTheme(safeLocalStorageGet(THEME_STORAGE_KEY) === "dark" ? "dark" : "light", false);
+}
+
+function setTheme(theme, persist = true) {
+  const nextTheme = theme === "dark" ? "dark" : "light";
+  state.theme = nextTheme;
+  if (nextTheme === "dark") document.documentElement.dataset.theme = "dark";
+  else delete document.documentElement.dataset.theme;
+  if (els.themeToggle) {
+    const isDark = nextTheme === "dark";
+    els.themeToggle.setAttribute("aria-pressed", String(isDark));
+    els.themeToggle.setAttribute("aria-label", isDark ? "Светлая тема" : "Ночная тема");
+    els.themeToggle.title = isDark ? "Светлая тема" : "Ночная тема";
+    els.themeToggle.textContent = isDark ? "☼" : "◐";
+  }
+  if (persist) safeLocalStorageSet(THEME_STORAGE_KEY, nextTheme);
+  if (state.data) draw();
+}
+
+function toggleTheme() {
+  setTheme(state.theme === "dark" ? "light" : "dark");
+}
+
 function initTooltip() {
   if (state.tooltipNode) return;
   const node = document.createElement("div");
@@ -582,6 +649,7 @@ function attachEvents() {
   window.addEventListener("resize", resizeCanvases);
   overlayCanvas.addEventListener("contextmenu", (event) => event.preventDefault());
   els.backButton.addEventListener("click", showCityMenu);
+  els.themeToggle?.addEventListener("click", toggleTheme);
   document.getElementById("resetView").addEventListener("click", resetView);
   els.cameraTutorial?.addEventListener("click", (event) => {
     if (event.target.closest(".tutorialClose")) hideCameraTutorial(true);
@@ -1301,13 +1369,14 @@ function draw() {
 
 function drawBase() {
   const rect = overlayCanvas.getBoundingClientRect();
+  const colors = canvasTheme();
   baseCtx.clearRect(0, 0, rect.width, rect.height);
-  baseCtx.fillStyle = "#e7e0d3";
+  baseCtx.fillStyle = colors.mapBg;
   baseCtx.fillRect(0, 0, rect.width, rect.height);
-  drawGrid(baseCtx, rect);
+  drawGrid(baseCtx, rect, colors);
 
-  drawPolygonLayer(baseCtx, state.data.water, "rgba(87, 145, 176, 0.44)", "rgba(54, 106, 138, 0.32)", 0);
-  drawPolygonLayer(baseCtx, state.data.green, "rgba(80, 130, 78, 0.34)", "rgba(61, 92, 58, 0.2)", 0);
+  drawPolygonLayer(baseCtx, state.data.water, colors.waterFill, colors.waterStroke, 0);
+  drawPolygonLayer(baseCtx, state.data.green, colors.greenFill, colors.greenStroke, 0);
   if (state.layers.quartals) drawQuartals(baseCtx);
   drawRailways(baseCtx);
   drawRoads(baseCtx);
@@ -1336,9 +1405,9 @@ function terrainHeightAt(x, y) {
   return top * (1 - ty) + bottom * ty;
 }
 
-function drawGrid(ctx, rect) {
+function drawGrid(ctx, rect, colors = canvasTheme()) {
   ctx.save();
-  ctx.strokeStyle = "rgba(94, 91, 84, 0.085)";
+  ctx.strokeStyle = colors.grid;
   ctx.lineWidth = 1;
   const step = 72;
   for (let x = 0; x < rect.width; x += step) {
@@ -1358,6 +1427,7 @@ function drawGrid(ctx, rect) {
 
 // @dist-split
 function drawQuartals(ctx) {
+  const colors = canvasTheme();
   const view = worldViewBbox();
   for (const feature of state.data.quartals) {
     if (!bboxIntersects(feature.bbox, view)) continue;
@@ -1365,7 +1435,7 @@ function drawQuartals(ctx) {
     drawPath(ctx, feature.polygons, 0);
     ctx.fillStyle = scoreColor(score, 0.82);
     ctx.fill("evenodd");
-    ctx.strokeStyle = "rgba(64, 66, 62, 0.42)";
+    ctx.strokeStyle = colors.quarterStroke;
     ctx.lineWidth = 0.36;
     ctx.stroke();
   }
@@ -1373,32 +1443,34 @@ function drawQuartals(ctx) {
 
 // @dist-split
 function drawRoads(ctx) {
+  const colors = canvasTheme();
   const mainAlpha = zoomFade(0.13, 0.46, 2.7);
   const detailAlpha = zoomFade(0.04, 0.22, 6.6);
   ctx.save();
   if (state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_FACTOR) {
     ctx.lineWidth = 0.72;
-    ctx.strokeStyle = `rgba(91, 96, 96, ${detailAlpha})`;
+    ctx.strokeStyle = colors.roadDetail(detailAlpha);
     for (const tile of state.roadTiles.values()) {
       for (const segment of tile.segments) drawLine(ctx, segment, 4);
     }
   }
   ctx.lineWidth = 1.28;
-  ctx.strokeStyle = `rgba(47, 54, 55, ${mainAlpha})`;
+  ctx.strokeStyle = colors.roadMain(mainAlpha);
   for (const line of state.data.roads) drawLine(ctx, line, 6);
   ctx.restore();
 }
 
 function drawRailways(ctx) {
   if (!state.data.railways || !state.data.railways.length) return;
+  const colors = canvasTheme();
   const alpha = zoomFade(0.18, 0.54, 3.2);
   ctx.save();
   ctx.lineWidth = 2.1;
-  ctx.strokeStyle = `rgba(62, 61, 58, ${alpha})`;
+  ctx.strokeStyle = colors.railway(alpha);
   for (const line of state.data.railways) drawLine(ctx, line, 7);
   ctx.lineWidth = 1.05;
   ctx.setLineDash([7, 7]);
-  ctx.strokeStyle = `rgba(244, 238, 226, ${Math.min(0.72, alpha + 0.18)})`;
+  ctx.strokeStyle = colors.railwayDash(alpha);
   for (const line of state.data.railways) drawLine(ctx, line, 7.4);
   ctx.restore();
 }
@@ -1411,6 +1483,10 @@ function zoomFade(minAlpha, maxAlpha, fullAtRatio) {
 function zoomProgress(fullAtRatio) {
   const ratio = state.camera.scale / (state.camera.fitScale || state.camera.scale || 1);
   return clamp((ratio - 0.7) / (fullAtRatio - 0.7), 0, 1);
+}
+
+function canvasTheme() {
+  return CANVAS_THEMES[state.theme] || CANVAS_THEMES.light;
 }
 
 function buildingAlphaFactor() {
@@ -1484,6 +1560,7 @@ function drawBuildings() {
   gl.uniform1f(glState.uniforms.heightScale, HEIGHT_EXAGGERATION);
   gl.uniform1f(glState.uniforms.alphaFactor, buildingAlphaFactor());
   gl.uniform1f(glState.uniforms.lightenFactor, buildingLightenFactor());
+  gl.uniform1f(glState.uniforms.darkFactor, state.theme === "dark" ? 1 : 0);
   gl.uniform1f(glState.uniforms.depthScale, 62000);
   const meshMode = desiredBuildingMeshMode();
   const overviewMesh =
@@ -1510,23 +1587,25 @@ function drawOverlay() {
 }
 
 function drawSelected() {
+  const colors = canvasTheme();
   const phase = performance.now() / 1450;
   const z = 10 + (Math.sin(phase) + 1) * 7;
   drawPath(overlayCtx, state.selected.polygons, z);
-  overlayCtx.fillStyle = "rgba(255, 246, 199, 0.16)";
+  overlayCtx.fillStyle = colors.selectedFill;
   overlayCtx.fill("evenodd");
-  overlayCtx.strokeStyle = "rgba(30, 37, 40, 0.42)";
+  overlayCtx.strokeStyle = colors.selectedOuter;
   overlayCtx.lineWidth = 6;
   overlayCtx.stroke();
   drawPath(overlayCtx, state.selected.polygons, z);
-  overlayCtx.strokeStyle = "#1e2528";
+  overlayCtx.strokeStyle = colors.selectedInner;
   overlayCtx.lineWidth = 2.4;
   overlayCtx.stroke();
 }
 
 function drawStops() {
+  const colors = canvasTheme();
   overlayCtx.save();
-  overlayCtx.strokeStyle = "#ffffff";
+  overlayCtx.strokeStyle = colors.pointStroke;
   overlayCtx.lineWidth = 1;
   for (const item of state.data.points.stops) {
     const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 12));
@@ -1542,9 +1621,10 @@ function drawStops() {
 }
 
 function drawAccidents() {
+  const colors = canvasTheme();
   state.accidentDisplayItems = buildAccidentDisplayItems();
   overlayCtx.save();
-  overlayCtx.strokeStyle = "#ffffff";
+  overlayCtx.strokeStyle = colors.pointStroke;
   overlayCtx.lineWidth = 1;
   overlayCtx.textAlign = "center";
   overlayCtx.textBaseline = "middle";
@@ -1558,7 +1638,7 @@ function drawAccidents() {
     overlayCtx.fill();
     overlayCtx.stroke();
     if (item.items) {
-      overlayCtx.fillStyle = "#fffaf1";
+      overlayCtx.fillStyle = colors.accidentText;
       overlayCtx.fillText(String(item.items.length), sx, sy + 0.5);
     }
   }
@@ -1734,9 +1814,11 @@ function initGl(glContext) {
     varying vec4 v_color;
     uniform float u_alphaFactor;
     uniform float u_lightenFactor;
+    uniform float u_darkFactor;
     void main() {
       vec3 liftedColor = mix(v_color.rgb, vec3(0.92, 0.92, 0.88), u_lightenFactor * 0.48);
-      gl_FragColor = vec4(liftedColor, v_color.a * u_alphaFactor);
+      vec3 darkColor = mix(liftedColor, vec3(0.34, 0.37, 0.35), 0.78);
+      gl_FragColor = vec4(mix(liftedColor, darkColor, u_darkFactor), v_color.a * u_alphaFactor);
     }
   `;
 
@@ -1762,6 +1844,7 @@ function initGl(glContext) {
       heightScale: glContext.getUniformLocation(program, "u_heightScale"),
       alphaFactor: glContext.getUniformLocation(program, "u_alphaFactor"),
       lightenFactor: glContext.getUniformLocation(program, "u_lightenFactor"),
+      darkFactor: glContext.getUniformLocation(program, "u_darkFactor"),
       depthScale: glContext.getUniformLocation(program, "u_depthScale"),
       meshOrigin: glContext.getUniformLocation(program, "u_meshOrigin"),
       meshScale: glContext.getUniformLocation(program, "u_meshScale")
@@ -2325,8 +2408,9 @@ function renderComparisonSwitch() {
         <span></span>
       </button>
       <div class="comparisonLabels">
-        <span class="${isAll ? "active" : ""}">Общегородское сравнение</span>
-        <span class="${isAll ? "" : "active"}">Внутригородское сравнение</span>
+        <span class="comparisonLabel ${isAll ? "active" : ""}">Общегородское</span>
+        <span class="comparisonShared">сравнение</span>
+        <span class="comparisonLabel ${isAll ? "" : "active"}">Внутригородское</span>
       </div>
     </div>
   `;
@@ -2499,7 +2583,8 @@ function scoreColor(score, alpha = 1) {
   }
   const t = (value - left[0]) / (right[0] - left[0] || 1);
   const rgb = left[1].map((channel, index) => Math.round(channel + (right[1][index] - channel) * t));
-  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+  const toned = state.theme === "dark" ? rgb.map((channel) => Math.round(channel * 0.66)) : rgb;
+  return `rgba(${toned[0]}, ${toned[1]}, ${toned[2]}, ${alpha})`;
 }
 
 function formatNumber(value, digits = 1) {
