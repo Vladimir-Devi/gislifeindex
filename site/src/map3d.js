@@ -76,7 +76,7 @@ const BUILDING_FADE_FACTOR = 5.35;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-0600";
+const DATA_VERSION = "20260505-0700";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 14.5;
 const SMALL_NON_RESIDENTIAL_FACTOR = 12.5;
 const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15.7;
@@ -2408,9 +2408,9 @@ function renderComparisonSwitch() {
         <span></span>
       </button>
       <div class="comparisonLabels">
-        <span class="comparisonLabel ${isAll ? "active" : ""}">Общегородское</span>
+        <span class="comparisonLabel comparisonLabelTop ${isAll ? "active" : ""}">Общегородское</span>
         <span class="comparisonShared">сравнение</span>
-        <span class="comparisonLabel ${isAll ? "" : "active"}">Внутригородское</span>
+        <span class="comparisonLabel comparisonLabelBottom ${isAll ? "" : "active"}">Внутригородское</span>
       </div>
     </div>
   `;
