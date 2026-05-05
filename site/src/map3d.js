@@ -213,6 +213,7 @@ const els = {
 };
 
 let glState = null;
+let activeDataVersion = DATA_VERSION;
 
 function createWebGlContext(canvas) {
   const mobile = isMobileLayout();
@@ -340,16 +341,19 @@ function allTileKeys(count) {
 }
 
 async function loadManifest() {
+  const refreshKey = Date.now().toString(36);
   const candidates = [
-    `data3d/manifest.json?v=${DATA_VERSION}`,
-    `/data3d/manifest.json?v=${DATA_VERSION}`,
-    "data3d/manifest.json",
-    "/data3d/manifest.json"
+    `data3d/manifest.json?v=${DATA_VERSION}&r=${refreshKey}`,
+    `/data3d/manifest.json?v=${DATA_VERSION}&r=${refreshKey}`,
+    `data3d/manifest.json?r=${refreshKey}`,
+    `/data3d/manifest.json?r=${refreshKey}`
   ];
   let lastError = null;
   for (const url of candidates) {
     try {
-      return await fetchJson(url);
+      const manifest = await fetchJson(url);
+      activeDataVersion = dataVersionFromManifest(manifest) || DATA_VERSION;
+      return manifest;
     } catch (error) {
       lastError = error;
     }
@@ -357,10 +361,15 @@ async function loadManifest() {
   throw lastError;
 }
 
+function dataVersionFromManifest(manifest) {
+  const generatedAt = String(manifest?.generatedAt || "");
+  return generatedAt.replace(/\D/g, "").slice(0, 14);
+}
+
 function versionedDataUrl(url) {
   if (!url || url.includes("?") || /^(https?:|data:|blob:)/.test(url)) return url;
   const [path, hash = ""] = url.split("#");
-  return `${path}?v=${DATA_VERSION}${hash ? `#${hash}` : ""}`;
+  return `${path}?v=${activeDataVersion}${hash ? `#${hash}` : ""}`;
 }
 
 async function fetchJson(url) {

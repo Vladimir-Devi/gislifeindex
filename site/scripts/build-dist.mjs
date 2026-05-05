@@ -40,12 +40,35 @@ function copyDir(source, target, shouldSkip = () => false) {
   }
 }
 
+function dataVersionFromManifest() {
+  const fallback = Date.now().toString();
+  const manifestPath = path.join(siteDir, "data3d", "manifest.json");
+  if (!existsSync(manifestPath)) return fallback;
+
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    const generatedAt = String(manifest.generatedAt || "");
+    const version = generatedAt.replace(/\D/g, "").slice(0, 14);
+    return version || fallback;
+  } catch (error) {
+    console.warn(`Unable to read data version from ${manifestPath}:`, error);
+    return fallback;
+  }
+}
+
 function bundleMap3dScript() {
   const sourcePath = path.join(distDir, "src", "map3d.js");
   const source = readFileSync(sourcePath, "utf8");
-  const version = source.match(/const DATA_VERSION = "([^"]+)"/)?.[1] ?? Date.now().toString();
+  const version = dataVersionFromManifest();
+  const versionedSource = source.replace(
+    /const DATA_VERSION = "[^"]+";/,
+    `const DATA_VERSION = "${version}";`
+  );
+  if (versionedSource === source) {
+    throw new Error("Unable to replace DATA_VERSION in map3d.js");
+  }
   const bundlePath = `src/map3d.bundle.js?v=${version}`;
-  writeFileSync(path.join(distDir, "src", "map3d.bundle.js"), source, "utf8");
+  writeFileSync(path.join(distDir, "src", "map3d.bundle.js"), versionedSource, "utf8");
 
   const loader = `(() => {
   const version = "${version}";
