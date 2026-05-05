@@ -81,11 +81,13 @@ const ROAD_DETAIL_FULL_FACTOR = 14;
 const ROAD_SURFACE_OFFSET = 0;
 const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
+const MOBILE_BUILDING_FADE_FACTOR = 3.8;
+const MOBILE_BUILDING_MIN_ALPHA = 0.08;
 const SMALL_NON_RESIDENTIAL_FULL_FACTOR = 15;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-1115";
+const DATA_VERSION = "20260505-1130";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 11.8;
 const SMALL_NON_RESIDENTIAL_FACTOR = 13.4;
 const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15;
@@ -877,7 +879,7 @@ function updatePinchGesture() {
     cameraMinScale(),
     cameraMaxScale()
   );
-  state.camera.bearing = state.pinchGesture.startBearing + angleDelta;
+  state.camera.bearing = state.pinchGesture.startBearing - angleDelta;
   state.camera.pitch = clamp(state.pinchGesture.startPitch - midpointDy * 0.0038, CAMERA_MIN_PITCH, CAMERA_MAX_PITCH);
   const after = screenToWorldOnTerrain(midpoint[0], midpoint[1]);
   state.camera.center[0] += state.pinchGesture.startWorld[0] - after[0];
@@ -1482,7 +1484,7 @@ function drawRoads(ctx) {
   const colors = canvasTheme();
   const mainAlpha = zoomFade(0.13, 0.46, 2.7);
   const detailProgress = zoomRangeProgress(ROAD_DETAIL_FACTOR, ROAD_DETAIL_FULL_FACTOR);
-  const detailAlpha = (0.04 + 0.18 * detailProgress) * detailProgress;
+  const detailAlpha = isMobileLayout() ? 0 : (0.04 + 0.18 * detailProgress) * detailProgress;
   ctx.save();
   if (detailAlpha > 0.002 && state.roadTiles.size) {
     ctx.lineWidth = 0.72;
@@ -1532,6 +1534,7 @@ function canvasTheme() {
 }
 
 function buildingAlphaFactor() {
+  if (isMobileLayout()) return zoomFade(MOBILE_BUILDING_MIN_ALPHA, 1, MOBILE_BUILDING_FADE_FACTOR);
   return zoomFade(0.015, 1, BUILDING_FADE_FACTOR);
 }
 
@@ -1976,7 +1979,7 @@ function createShader(glContext, type, source) {
 function requestVisibleTiles() {
   if (!state.data) return;
   const requestBuildings = state.camera.scale >= state.camera.fitScale * BUILDING_DETAIL_REQUEST_FACTOR;
-  const requestRoads = state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_REQUEST_FACTOR;
+  const requestRoads = !isMobileLayout() && state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_REQUEST_FACTOR;
   if (!requestBuildings && !requestRoads) return;
   const keys = visibleTileKeys();
   const meshMode = desiredBuildingMeshMode();
