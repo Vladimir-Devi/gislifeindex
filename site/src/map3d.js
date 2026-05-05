@@ -81,13 +81,13 @@ const ROAD_DETAIL_FULL_FACTOR = 14;
 const ROAD_SURFACE_OFFSET = 0;
 const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
-const MOBILE_BUILDING_FADE_FACTOR = 3.8;
-const MOBILE_BUILDING_MIN_ALPHA = 0.08;
+const MOBILE_BUILDING_FADE_FACTOR = 2.7;
+const MOBILE_BUILDING_MIN_ALPHA = 0.58;
 const SMALL_NON_RESIDENTIAL_FULL_FACTOR = 15;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-1130";
+const DATA_VERSION = "20260505-1145";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 11.8;
 const SMALL_NON_RESIDENTIAL_FACTOR = 13.4;
 const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15;
@@ -193,17 +193,7 @@ const glCanvas = document.getElementById("glCanvas");
 const baseCtx = baseCanvas.getContext("2d");
 const overlayCtx = overlayCanvas.getContext("2d");
 let gl = null;
-try {
-  const glOptions = {
-    alpha: true,
-    antialias: true,
-    preserveDrawingBuffer: true,
-    premultipliedAlpha: false
-  };
-  gl = glCanvas.getContext("webgl2", glOptions) || glCanvas.getContext("webgl", glOptions);
-} catch (error) {
-  console.error(error);
-}
+gl = createWebGlContext(glCanvas);
 
 const els = {
   title: document.getElementById("pageTitle"),
@@ -223,6 +213,32 @@ const els = {
 };
 
 let glState = null;
+
+function createWebGlContext(canvas) {
+  const mobile = isMobileLayout();
+  const optionSets = mobile
+    ? [
+        { alpha: true, antialias: false, depth: true, stencil: false, preserveDrawingBuffer: false, premultipliedAlpha: false, powerPreference: "default" },
+        { alpha: true, antialias: false, preserveDrawingBuffer: false, premultipliedAlpha: false },
+        { alpha: true, antialias: false }
+      ]
+    : [
+        { alpha: true, antialias: true, depth: true, stencil: false, preserveDrawingBuffer: false, premultipliedAlpha: false, powerPreference: "high-performance" },
+        { alpha: true, antialias: false, depth: true, stencil: false, preserveDrawingBuffer: false, premultipliedAlpha: false },
+        { alpha: true, antialias: false }
+      ];
+  for (const options of optionSets) {
+    for (const type of ["webgl2", "webgl", "experimental-webgl"]) {
+      try {
+        const context = canvas.getContext(type, options);
+        if (context) return context;
+      } catch (error) {
+        console.warn(error);
+      }
+    }
+  }
+  return null;
+}
 
 // @dist-split
 async function init() {
@@ -1539,6 +1555,7 @@ function buildingAlphaFactor() {
 }
 
 function buildingLightenFactor() {
+  if (isMobileLayout()) return (1 - zoomProgress(MOBILE_BUILDING_FADE_FACTOR)) * 0.42;
   return 1 - zoomProgress(BUILDING_FADE_FACTOR);
 }
 
