@@ -87,7 +87,7 @@ const SMALL_NON_RESIDENTIAL_FULL_FACTOR = 15;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-1145";
+const DATA_VERSION = "20260505-1200";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 11.8;
 const SMALL_NON_RESIDENTIAL_FACTOR = 13.4;
 const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15;
@@ -1161,7 +1161,7 @@ function clearMeshes() {
       [...state.tileMeshes.values(), ...state.smallTileMeshes.values(), ...state.overviewMeshes.values(), state.overviewMesh].filter(Boolean)
     );
     for (const mesh of meshes) {
-      if (mesh) gl.deleteBuffer(mesh.buffer);
+      if (mesh?.buffer) gl.deleteBuffer(mesh.buffer);
     }
   }
   state.overviewMesh = null;
@@ -1619,6 +1619,15 @@ function surfaceZ(x, y, offset = 0) {
 }
 
 function drawBuildings() {
+  if (isMobileLayout()) {
+    if (gl && glState) {
+      gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    }
+    drawCanvasBuildings(baseCtx);
+    return;
+  }
   if (!gl || !glState) return;
   const ratio = window.devicePixelRatio || 1;
   const rect = overlayCanvas.getBoundingClientRect();
@@ -1675,6 +1684,72 @@ function drawBuildings() {
   if (needsFadeFrame) requestAnimationFrame(() => {
     if (state.data) draw();
   });
+}
+
+function drawCanvasBuildings(ctx) {
+  if (!state.layers.buildings) return;
+  const meshMode = desiredBuildingMeshMode();
+  const mesh =
+    state.overviewMeshes.get(meshMode) ||
+    state.overviewMeshes.get("residential") ||
+    state.overviewMeshes.get("standard") ||
+    state.overviewMeshes.get("full") ||
+    state.overviewMesh;
+  if (!state.overviewMeshes.has(meshMode)) requestOverviewMesh(meshMode);
+  if (!mesh?.canvasVertices?.length) return;
+
+  const rect = overlayCanvas.getBoundingClientRect();
+  const alpha = buildingAlphaFactor();
+  const vertices = mesh.canvasVertices;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  for (let i = 0; i < vertices.length; i += 12) {
+    const p0 = worldToScreen(vertices[i], vertices[i + 1], vertices[i + 2]);
+    const p1 = worldToScreen(vertices[i + 4], vertices[i + 5], vertices[i + 6]);
+    const p2 = worldToScreen(vertices[i + 8], vertices[i + 9], vertices[i + 10]);
+    const minX = Math.min(p0[0], p1[0], p2[0]);
+    const maxX = Math.max(p0[0], p1[0], p2[0]);
+    const minY = Math.min(p0[1], p1[1], p2[1]);
+    const maxY = Math.max(p0[1], p1[1], p2[1]);
+    if (maxX < -24 || minX > rect.width + 24 || maxY < -24 || minY > rect.height + 24) continue;
+    ctx.fillStyle = canvasBuildingFill(vertices[i + 3]);
+    ctx.beginPath();
+    ctx.moveTo(p0[0], p0[1]);
+    ctx.lineTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function canvasBuildingFill(style) {
+  const shadeKey = Math.round(buildingLightenFactor() * 20);
+  const key = `${state.theme}:${shadeKey}:${Math.round(style)}`;
+  if (canvasBuildingFill.cache.has(key)) return canvasBuildingFill.cache.get(key);
+  const color = buildingStyleRgb(style, shadeKey / 20);
+  const value = `rgb(${color.map((channel) => Math.round(channel * 255)).join(", ")})`;
+  canvasBuildingFill.cache.set(key, value);
+  return value;
+}
+canvasBuildingFill.cache = new Map();
+
+function buildingStyleRgb(style, lightenFactor = 0) {
+  const kind = Math.floor((style + 0.5) / 16);
+  const shadeLevel = (style + 0.5) % 16;
+  const shade = 0.86 + shadeLevel * 0.012;
+  let base = [0.78, 0.78, 0.74];
+  if (kind > 0.5 && kind < 1.5) base = [0.75, 0.75, 0.71];
+  else if (kind > 1.5 && kind < 2.5) base = [0.69, 0.69, 0.65];
+  else if (kind > 2.5 && kind < 3.5) base = [0.68, 0.68, 0.65];
+  else if (kind > 3.5 && kind < 4.5) base = [0.65, 0.65, 0.62];
+  else if (kind > 4.5) base = [0.6, 0.6, 0.57];
+  let color = base.map((value) => clamp(value * shade, 0, 1));
+  color = color.map((value, index) => value + ([0.92, 0.92, 0.88][index] - value) * lightenFactor * 0.34);
+  if (state.theme === "dark") {
+    color = color.map((value, index) => value * [0.62, 0.64, 0.6][index] + [0.43, 0.47, 0.44][index] * 0.2);
+  }
+  return color.map((value) => clamp(value, 0, 1));
 }
 
 function drawOverlay() {
@@ -1801,7 +1876,7 @@ function accidentClusterDistance() {
 
 // @dist-split
 async function loadOverviewMeshForCity(city, mode) {
-  if (!gl || !city?.files3d) return null;
+  if (!city?.files3d) return null;
   const buffer = await fetchMeshArrayBuffer(buildingOverviewUrl(city, mode));
   return createBuildingMeshFromPacked(buffer);
 }
@@ -1816,7 +1891,7 @@ function buildingTileUrl(key, mode) {
 }
 
 function createBuildingMeshFromPacked(arrayBuffer) {
-  if (!gl || !arrayBuffer || arrayBuffer.byteLength < 32) return null;
+  if (!arrayBuffer || arrayBuffer.byteLength < 32) return null;
   const view = new DataView(arrayBuffer);
   const magic = String.fromCharCode(
     view.getUint8(0),
@@ -1828,10 +1903,14 @@ function createBuildingMeshFromPacked(arrayBuffer) {
   const vertexCount = view.getUint32(4, true);
   const stride = view.getUint32(28, true) || PACKED_VERTEX_BYTES;
   if (!vertexCount) return null;
-  const vertexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(arrayBuffer, 32, vertexCount * stride), gl.STATIC_DRAW);
-  return {
+  const packedBytes = new Uint8Array(arrayBuffer, 32, vertexCount * stride);
+  let vertexBuffer = null;
+  if (gl) {
+    vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, packedBytes, gl.STATIC_DRAW);
+  }
+  const mesh = {
     buffer: vertexBuffer,
     count: vertexCount,
     stride,
@@ -1839,6 +1918,21 @@ function createBuildingMeshFromPacked(arrayBuffer) {
     scale: [view.getFloat32(20, true), view.getFloat32(24, true)],
     loadedAt: performance.now()
   };
+  if (isMobileLayout() || !gl) mesh.canvasVertices = unpackCanvasVertices(packedBytes, mesh);
+  return mesh;
+}
+
+function unpackCanvasVertices(bytes, mesh) {
+  const stride = mesh.stride || PACKED_VERTEX_BYTES;
+  const result = new Float32Array(mesh.count * 4);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  for (let source = 0, target = 0; source < mesh.count * stride; source += stride, target += 4) {
+    result[target] = mesh.origin[0] + view.getInt16(source, true) * mesh.scale[0];
+    result[target + 1] = mesh.origin[1] + view.getInt16(source + 2, true) * mesh.scale[0];
+    result[target + 2] = mesh.origin[2] + view.getInt16(source + 4, true) * mesh.scale[1];
+    result[target + 3] = view.getUint8(source + 6);
+  }
+  return result;
 }
 
 function drawMeshWithFade(mesh, alpha) {
@@ -1859,7 +1953,7 @@ function meshLoadedAlpha(mesh) {
 }
 
 function drawMesh(mesh) {
-  if (!mesh || mesh.count === 0) return;
+  if (!mesh || mesh.count === 0 || !mesh.buffer) return;
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
   gl.enableVertexAttribArray(glState.attributes.position);
   gl.enableVertexAttribArray(glState.attributes.style);
@@ -1995,7 +2089,7 @@ function createShader(glContext, type, source) {
 
 function requestVisibleTiles() {
   if (!state.data) return;
-  const requestBuildings = state.camera.scale >= state.camera.fitScale * BUILDING_DETAIL_REQUEST_FACTOR;
+  const requestBuildings = !isMobileLayout() && state.camera.scale >= state.camera.fitScale * BUILDING_DETAIL_REQUEST_FACTOR;
   const requestRoads = !isMobileLayout() && state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_REQUEST_FACTOR;
   if (!requestBuildings && !requestRoads) return;
   const keys = visibleTileKeys();
@@ -2092,7 +2186,7 @@ function setTileMesh(key, mesh, meshMode) {
   if (!gl) return;
   const previous = state.tileMeshes.get(key);
   if (previous) {
-    gl.deleteBuffer(previous.buffer);
+    if (previous.buffer) gl.deleteBuffer(previous.buffer);
   }
   if (mesh) state.tileMeshes.set(key, mesh);
   else state.tileMeshes.delete(key);
@@ -2102,7 +2196,7 @@ function setTileMesh(key, mesh, meshMode) {
 function setSmallTileMesh(key, mesh) {
   if (!gl) return;
   const previous = state.smallTileMeshes.get(key);
-  if (previous) gl.deleteBuffer(previous.buffer);
+  if (previous?.buffer) gl.deleteBuffer(previous.buffer);
   if (mesh) state.smallTileMeshes.set(key, mesh);
   else state.smallTileMeshes.delete(key);
 }
