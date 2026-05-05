@@ -74,6 +74,7 @@ const DETAIL_FACTOR = 4.75;
 const BUILDING_DETAIL_REQUEST_FACTOR = 4.25;
 const BUILDING_DETAIL_FADE_START_FACTOR = 4.55;
 const BUILDING_DETAIL_FADE_FULL_FACTOR = 5.25;
+const BUILDING_OVERVIEW_FADE_DELAY = 0.18;
 const ROAD_DETAIL_FACTOR = 11.8;
 const ROAD_DETAIL_REQUEST_FACTOR = 11.4;
 const ROAD_DETAIL_FULL_FACTOR = 14;
@@ -84,7 +85,7 @@ const SMALL_NON_RESIDENTIAL_FULL_FACTOR = 15;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-1100";
+const DATA_VERSION = "20260505-1115";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 11.8;
 const SMALL_NON_RESIDENTIAL_FACTOR = 13.4;
 const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15;
@@ -1550,6 +1551,11 @@ function buildingTileAlphaFactor() {
   return t * t * (3 - 2 * t);
 }
 
+function overviewFadeFromDetailAlpha(detailAlpha) {
+  const t = clamp((detailAlpha - BUILDING_OVERVIEW_FADE_DELAY) / (1 - BUILDING_OVERVIEW_FADE_DELAY), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
 function drawPolygonLayer(ctx, features, fill, stroke, z = 0) {
   const view = worldViewBbox();
   for (const feature of features) {
@@ -1632,7 +1638,8 @@ function drawBuildings() {
 
   if (!state.overviewMeshes.has(meshMode)) requestOverviewMesh(meshMode);
 
-  const overviewAlpha = 1 - tileAlpha * detailLoadedAlpha;
+  const detailAlpha = tileAlpha * detailLoadedAlpha;
+  const overviewAlpha = 1 - overviewFadeFromDetailAlpha(detailAlpha);
   if (overviewAlpha > 0.002) {
     needsFadeFrame = drawMeshWithFade(overviewMesh, baseAlpha * overviewAlpha) || needsFadeFrame;
   }
