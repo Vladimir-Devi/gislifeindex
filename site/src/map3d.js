@@ -81,13 +81,13 @@ const ROAD_DETAIL_FULL_FACTOR = 14;
 const ROAD_SURFACE_OFFSET = 0;
 const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
-const MOBILE_BUILDING_FADE_FACTOR = 2.7;
-const MOBILE_BUILDING_MIN_ALPHA = 0.58;
+const MOBILE_BUILDING_FADE_FACTOR = 3.8;
+const MOBILE_BUILDING_MIN_ALPHA = 0.08;
 const SMALL_NON_RESIDENTIAL_FULL_FACTOR = 15;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
-const DATA_VERSION = "20260505-1200";
+const DATA_VERSION = "20260505-1215";
 const MOBILE_NON_RESIDENTIAL_FACTOR = 11.8;
 const SMALL_NON_RESIDENTIAL_FACTOR = 13.4;
 const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15;
@@ -1555,7 +1555,6 @@ function buildingAlphaFactor() {
 }
 
 function buildingLightenFactor() {
-  if (isMobileLayout()) return (1 - zoomProgress(MOBILE_BUILDING_FADE_FACTOR)) * 0.42;
   return 1 - zoomProgress(BUILDING_FADE_FACTOR);
 }
 
@@ -1689,17 +1688,49 @@ function drawBuildings() {
 function drawCanvasBuildings(ctx) {
   if (!state.layers.buildings) return;
   const meshMode = desiredBuildingMeshMode();
-  const mesh =
+  const overviewMesh =
     state.overviewMeshes.get(meshMode) ||
     state.overviewMeshes.get("residential") ||
     state.overviewMeshes.get("standard") ||
     state.overviewMeshes.get("full") ||
     state.overviewMesh;
   if (!state.overviewMeshes.has(meshMode)) requestOverviewMesh(meshMode);
-  if (!mesh?.canvasVertices?.length) return;
 
+  const tileAlpha = buildingTileAlphaFactor();
+  const detailKeys = visibleBuildingTileKeys();
+  const detailMeshes = detailKeys
+    .map((key) => state.tileMeshes.get(key))
+    .filter((mesh) => mesh?.canvasVertices?.length);
+  const detailReady = detailKeys.length > 0 && detailMeshes.length === detailKeys.length;
+  const detailLoadedAlpha = detailReady ? Math.min(...detailMeshes.map(meshLoadedAlpha)) : 0;
+  const detailAlpha = tileAlpha * detailLoadedAlpha;
+  const overviewAlpha = overviewMesh ? 1 - overviewFadeFromDetailAlpha(detailAlpha) : 0;
+  const baseAlpha = buildingAlphaFactor();
+  let needsFadeFrame = false;
+
+  if (overviewAlpha > 0.002) {
+    needsFadeFrame = drawCanvasMeshWithFade(ctx, overviewMesh, baseAlpha * overviewAlpha) || needsFadeFrame;
+  }
+  if (tileAlpha > 0.002 && detailMeshes.length) {
+    for (const mesh of detailMeshes) {
+      needsFadeFrame = drawCanvasMeshWithFade(ctx, mesh, baseAlpha * tileAlpha) || needsFadeFrame;
+    }
+  }
+  if (needsFadeFrame) requestAnimationFrame(() => {
+    if (state.data) draw();
+  });
+}
+
+function drawCanvasMeshWithFade(ctx, mesh, alpha) {
+  if (!mesh?.canvasVertices?.length) return false;
+  const loadedAlpha = meshLoadedAlpha(mesh);
+  const finalAlpha = alpha * loadedAlpha;
+  if (finalAlpha > 0.002) drawCanvasMesh(ctx, mesh, finalAlpha);
+  return loadedAlpha < 1;
+}
+
+function drawCanvasMesh(ctx, mesh, alpha) {
   const rect = overlayCanvas.getBoundingClientRect();
-  const alpha = buildingAlphaFactor();
   const vertices = mesh.canvasVertices;
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -2089,7 +2120,7 @@ function createShader(glContext, type, source) {
 
 function requestVisibleTiles() {
   if (!state.data) return;
-  const requestBuildings = !isMobileLayout() && state.camera.scale >= state.camera.fitScale * BUILDING_DETAIL_REQUEST_FACTOR;
+  const requestBuildings = state.camera.scale >= state.camera.fitScale * BUILDING_DETAIL_REQUEST_FACTOR;
   const requestRoads = !isMobileLayout() && state.camera.scale >= state.camera.fitScale * ROAD_DETAIL_REQUEST_FACTOR;
   if (!requestBuildings && !requestRoads) return;
   const keys = visibleTileKeys();
@@ -2100,6 +2131,7 @@ function requestVisibleTiles() {
     }
     if (
       requestBuildings &&
+      !isMobileLayout() &&
       smallBuildingAlphaFactor() > 0.002 &&
       state.data.availableBuildingTiles.has(key) &&
       !state.smallTileMeshes.has(key)
@@ -2183,10 +2215,9 @@ function requestRoadTile(key) {
 }
 
 function setTileMesh(key, mesh, meshMode) {
-  if (!gl) return;
   const previous = state.tileMeshes.get(key);
   if (previous) {
-    if (previous.buffer) gl.deleteBuffer(previous.buffer);
+    if (gl && previous.buffer) gl.deleteBuffer(previous.buffer);
   }
   if (mesh) state.tileMeshes.set(key, mesh);
   else state.tileMeshes.delete(key);
@@ -2194,15 +2225,14 @@ function setTileMesh(key, mesh, meshMode) {
 }
 
 function setSmallTileMesh(key, mesh) {
-  if (!gl) return;
   const previous = state.smallTileMeshes.get(key);
-  if (previous?.buffer) gl.deleteBuffer(previous.buffer);
+  if (gl && previous?.buffer) gl.deleteBuffer(previous.buffer);
   if (mesh) state.smallTileMeshes.set(key, mesh);
   else state.smallTileMeshes.delete(key);
 }
 
 function desiredBuildingMeshMode() {
-  if (isMobileLayout() && !showNonResidentialBuildings()) return "residential";
+  if (isMobileLayout()) return "residential";
   return "standard";
 }
 
