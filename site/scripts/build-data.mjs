@@ -197,6 +197,36 @@ function firstText(properties, names) {
   return "";
 }
 
+const quarterPopulationFields = ["pop_sum", "population", "population_est", "pop"];
+
+function hasAnyProperty(properties, names) {
+  return names.some((name) => Object.prototype.hasOwnProperty.call(properties, name));
+}
+
+function layerPopulationStats(features, city) {
+  let sum = 0;
+  let withPopulation = 0;
+  let withField = 0;
+
+  for (const feature of features) {
+    const props = cleanProperties(feature.properties);
+    if (hasAnyProperty(props, quarterPopulationFields)) withField += 1;
+    const value = firstNumber(props, quarterPopulationFields);
+    if (value !== null) {
+      sum += value;
+      if (value > 0) withPopulation += 1;
+    }
+  }
+
+  const total = features.length || 1;
+  const coverage = withPopulation / total;
+  const target = city.populationOverride;
+  const relativeDiff = target ? Math.abs(sum - target) / target : 0;
+  const authoritative = withField > 0 && coverage >= 0.75 && (!target || relativeDiff <= 0.02);
+
+  return { sum, withPopulation, withField, coverage, authoritative };
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -283,7 +313,7 @@ function pickIndicators(properties) {
   return indicators;
 }
 
-function quarterFeature(feature, city, populationByFid, index) {
+function quarterFeature(feature, city, populationByFid, index, populationOptions) {
   const props = cleanProperties(feature.properties);
   const fid = String(props.source_fid ?? props.fid ?? feature.id ?? index + 1);
   const compare = {
@@ -291,8 +321,11 @@ function quarterFeature(feature, city, populationByFid, index) {
     all: comparisonValues(props, "all")
   };
   const blocks = compare.city.blocks;
-  const layerPopulation = firstNumber(props, ["pop_sum", "population", "population_est", "pop"]);
-  const population = layerPopulation !== null ? layerPopulation : populationByFid.get(fid) ?? null;
+  const hasLayerPopulationField = hasAnyProperty(props, quarterPopulationFields);
+  const layerPopulation = firstNumber(props, quarterPopulationFields);
+  const population = populationOptions.authoritative && hasLayerPopulationField
+    ? layerPopulation ?? 0
+    : layerPopulation ?? populationByFid.get(fid) ?? null;
   return {
     type: "Feature",
     id: fid,
@@ -582,9 +615,14 @@ function prepareCity(city, populationRows) {
 
   const populationByFid = makePopulationLookup(populationRows, city.summaryName);
   const rawQuartals = readJson(path.join(rawBase, "quartals.geojson"));
+  const populationOptions = layerPopulationStats(rawQuartals.features.filter((feature) => feature.geometry), city);
+  console.log(
+    `${city.slug}: quarter population source ${populationOptions.authoritative ? "layer" : "fallback"}, ` +
+      `layer sum ${Math.round(populationOptions.sum)}, coverage ${(populationOptions.coverage * 100).toFixed(1)}%`
+  );
   const quartals = rawQuartals.features
     .filter((feature) => feature.geometry)
-    .map((feature, index) => quarterFeature(feature, city, populationByFid, index));
+    .map((feature, index) => quarterFeature(feature, city, populationByFid, index, populationOptions));
   const bbox = quartals.reduce((acc, feature) => combineBbox(acc, geometryBbox(feature.geometry)), null);
 
   const rawBuildings = readJson(path.join(rawBase, "buildings.geojson"));
