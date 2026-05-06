@@ -7,6 +7,7 @@
     "build:data": "node scripts/build-data.mjs",
     "build:3d": "node scripts/build-3d-data.mjs",
     "build:dist": "node scripts/build-dist.mjs",
+    "check:published": "node scripts/check-published.mjs",
     "serve": "node scripts/serve.mjs",
     "serve:dist": "node scripts/serve.mjs ../site_dist"
   }
