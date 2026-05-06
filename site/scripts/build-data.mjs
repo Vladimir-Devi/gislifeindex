@@ -623,6 +623,7 @@ function prepareCity(city, populationRows) {
   const quartals = rawQuartals.features
     .filter((feature) => feature.geometry)
     .map((feature, index) => quarterFeature(feature, city, populationByFid, index, populationOptions));
+  const quarterPopulationSum = quartals.reduce((sum, feature) => sum + (number(feature.properties.population) ?? 0), 0);
   const bbox = quartals.reduce((acc, feature) => combineBbox(acc, geometryBbox(feature.geometry)), null);
 
   const rawBuildings = readJson(path.join(rawBase, "buildings.geojson"));
@@ -672,7 +673,9 @@ function prepareCity(city, populationRows) {
       mkdMatched,
       mkdUnmatched: unmatchedMkd.length,
       stops: stops.features.length,
-      dtp: dtp.features.length
+      dtp: dtp.features.length,
+      quarterPopulationSum: Math.round(quarterPopulationSum),
+      quarterPopulationSource: populationOptions.authoritative ? "layer" : "fallback"
     }
   };
 }

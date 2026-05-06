@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T22:24:58.983Z",
+  "generatedAt": "2026-05-06T22:39:41.894Z",
   "source": "C:/institute/magic/Diser",
   "methodology": {
     "baseQuarterFormula": "mean(idx_housing, idx_infra, idx_transport, idx_work, idx_green, idx_commerce)",
@@ -43,7 +43,9 @@
         "mkdMatched": 1836,
         "mkdUnmatched": 60,
         "stops": 391,
-        "dtp": 250
+        "dtp": 250,
+        "quarterPopulationSum": 282314,
+        "quarterPopulationSource": "layer"
       },
       "rank": 1,
       "index": 42.82309293228197,
@@ -89,7 +91,9 @@
         "mkdMatched": 1867,
         "mkdUnmatched": 151,
         "stops": 384,
-        "dtp": 900
+        "dtp": 900,
+        "quarterPopulationSum": 243995,
+        "quarterPopulationSource": "layer"
       },
       "rank": 2,
       "index": 34.50289837275928,

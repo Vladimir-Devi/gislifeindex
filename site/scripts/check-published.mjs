@@ -112,6 +112,12 @@ function compareCities(remoteManifest) {
     assertEqual(`${localCity.slug} rank`, remoteCity.rank, localCity.rank);
     assertEqual(`${localCity.slug} population`, remoteCity.population, localCity.population);
     assertEqual(`${localCity.slug} quarters`, remoteCity.stats?.quartals, localCity.stats?.quartals);
+    assertEqual(`${localCity.slug} quarter population sum`, remoteCity.stats?.quarterPopulationSum, localCity.stats?.quarterPopulationSum);
+    assertEqual(
+      `${localCity.slug} quarter population source`,
+      remoteCity.stats?.quarterPopulationSource,
+      localCity.stats?.quarterPopulationSource
+    );
     assertEqual(`${localCity.slug} building count`, remoteCity.stats3d?.buildings, localCity.stats3d?.buildings);
     assertClose(`${localCity.slug} lowShare`, remoteCity.lowShare, localCity.lowShare, 3);
     assertClose(`${localCity.slug} midShare`, remoteCity.midShare, localCity.midShare, 3);
@@ -122,7 +128,7 @@ function compareCities(remoteManifest) {
     }
 
     console.log(
-      `  ${localCity.slug}: index ${round(remoteCity.index)}, shares ${share(remoteCity.lowShare)}/${share(remoteCity.midShare)}/${share(remoteCity.highShare)}`
+      `  ${localCity.slug}: index ${round(remoteCity.index)}, quarterPop ${remoteCity.stats?.quarterPopulationSum}, shares ${share(remoteCity.lowShare)}/${share(remoteCity.midShare)}/${share(remoteCity.highShare)}`
     );
   }
 }
