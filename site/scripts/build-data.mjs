@@ -22,6 +22,7 @@ const cities = [
     summaryName: "Орел",
     displayName: "Орёл",
     indexLayer: "kvartals_life_index_compare_site",
+    quarterPopulationFields: ["pop_sum_2"],
     buildingsLayer: "building_all_site",
     buildingSelect: ["area", "Тип дома", "Тип дома_2", "Тип помещения (блока)", "Тип помещения (блока)_2", "pop", "pop_2", "pop_formula", "pop_formula_2", "zhil_area", "zhil_area_2"],
     buildingWhere: "area >= 25",
@@ -48,6 +49,7 @@ const cities = [
     summaryName: "Тамбов",
     displayName: "Тамбов",
     indexLayer: "kvartals_life_index_compare_site",
+    quarterPopulationFields: ["pop_sum"],
     buildingsLayer: "building_site",
     buildingSelect: ["area", "Тип дома", "Тип дома_2", "Тип помещения (блока)", "Тип помещения (блока)_2", "pop", "pop_2", "floor", "floor_2", "build_type", "build_type_2"],
     buildingWhere: "area IS NULL OR area >= 21",
@@ -197,21 +199,26 @@ function firstText(properties, names) {
   return "";
 }
 
-const quarterPopulationFields = ["pop_sum", "population", "population_est", "pop"];
+const defaultQuarterPopulationFields = ["pop_sum", "population", "population_est", "pop"];
 
 function hasAnyProperty(properties, names) {
   return names.some((name) => Object.prototype.hasOwnProperty.call(properties, name));
 }
 
+function layerPopulationFields(city) {
+  return city.quarterPopulationFields?.length ? city.quarterPopulationFields : defaultQuarterPopulationFields;
+}
+
 function layerPopulationStats(features, city) {
+  const fields = layerPopulationFields(city);
   let sum = 0;
   let withPopulation = 0;
   let withField = 0;
 
   for (const feature of features) {
     const props = cleanProperties(feature.properties);
-    if (hasAnyProperty(props, quarterPopulationFields)) withField += 1;
-    const value = firstNumber(props, quarterPopulationFields);
+    if (hasAnyProperty(props, fields)) withField += 1;
+    const value = firstNumber(props, fields);
     if (value !== null) {
       sum += value;
       if (value > 0) withPopulation += 1;
@@ -222,9 +229,9 @@ function layerPopulationStats(features, city) {
   const coverage = withPopulation / total;
   const target = city.populationOverride;
   const relativeDiff = target ? Math.abs(sum - target) / target : 0;
-  const authoritative = withField > 0 && coverage >= 0.75 && (!target || relativeDiff <= 0.02);
+  const authoritative = withField > 0 && coverage >= 0.75 && (!target || relativeDiff <= 0.05);
 
-  return { sum, withPopulation, withField, coverage, authoritative };
+  return { sum, withPopulation, withField, coverage, authoritative, fields };
 }
 
 function clamp(value, min, max) {
@@ -321,8 +328,8 @@ function quarterFeature(feature, city, populationByFid, index, populationOptions
     all: comparisonValues(props, "all")
   };
   const blocks = compare.city.blocks;
-  const hasLayerPopulationField = hasAnyProperty(props, quarterPopulationFields);
-  const layerPopulation = firstNumber(props, quarterPopulationFields);
+  const hasLayerPopulationField = hasAnyProperty(props, populationOptions.fields);
+  const layerPopulation = firstNumber(props, populationOptions.fields);
   const population = populationOptions.authoritative && hasLayerPopulationField
     ? layerPopulation ?? 0
     : layerPopulation ?? populationByFid.get(fid) ?? null;
@@ -675,7 +682,8 @@ function prepareCity(city, populationRows) {
       stops: stops.features.length,
       dtp: dtp.features.length,
       quarterPopulationSum: Math.round(quarterPopulationSum),
-      quarterPopulationSource: populationOptions.authoritative ? "layer" : "fallback"
+      quarterPopulationSource: populationOptions.authoritative ? "layer" : "fallback",
+      quarterPopulationField: populationOptions.authoritative ? populationOptions.fields.join(",") : "city_common_quartals.csv"
     }
   };
 }

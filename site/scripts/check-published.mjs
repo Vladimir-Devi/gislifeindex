@@ -118,6 +118,11 @@ function compareCities(remoteManifest) {
       remoteCity.stats?.quarterPopulationSource,
       localCity.stats?.quarterPopulationSource
     );
+    assertEqual(
+      `${localCity.slug} quarter population field`,
+      remoteCity.stats?.quarterPopulationField,
+      localCity.stats?.quarterPopulationField
+    );
     assertEqual(`${localCity.slug} building count`, remoteCity.stats3d?.buildings, localCity.stats3d?.buildings);
     assertClose(`${localCity.slug} lowShare`, remoteCity.lowShare, localCity.lowShare, 3);
     assertClose(`${localCity.slug} midShare`, remoteCity.midShare, localCity.midShare, 3);
@@ -128,9 +133,27 @@ function compareCities(remoteManifest) {
     }
 
     console.log(
-      `  ${localCity.slug}: index ${round(remoteCity.index)}, quarterPop ${remoteCity.stats?.quarterPopulationSum}, shares ${share(remoteCity.lowShare)}/${share(remoteCity.midShare)}/${share(remoteCity.highShare)}`
+      `  ${localCity.slug}: index ${round(remoteCity.index)}, quarterPop ${remoteCity.stats?.quarterPopulationSum} (${remoteCity.stats?.quarterPopulationField}), shares ${share(remoteCity.lowShare)}/${share(remoteCity.midShare)}/${share(remoteCity.highShare)}`
     );
   }
+}
+
+async function compareQuarterFiles(origin, remoteManifest, bundleDataVersion) {
+  for (const localCity of localManifest.cities) {
+    const remoteCity = remoteManifest.cities.find((city) => city.slug === localCity.slug);
+    const localQuartals = JSON.parse(readFileSync(path.join(siteDir, "data3d", localCity.slug, "quartals.json"), "utf8"));
+    const remoteUrl = `${origin}/${remoteCity.files3d.quartals}?v=${bundleDataVersion}&r=${Date.now()}`;
+    const { body: remoteQuartals } = await fetchJson(remoteUrl);
+    const localSum = quarterPopulationSum(localQuartals);
+    const remoteSum = quarterPopulationSum(remoteQuartals);
+    assertEqual(`${localCity.slug} published quarter file population sum`, remoteSum, localSum);
+  }
+}
+
+function quarterPopulationSum(quartals) {
+  return Math.round(
+    (quartals.features || []).reduce((sum, feature) => sum + (Number(feature.properties?.population || 0) || 0), 0)
+  );
 }
 
 async function checkTarget(target) {
@@ -159,6 +182,7 @@ async function checkTarget(target) {
   console.log(`  manifest generatedAt: ${remoteManifest.generatedAt}`);
 
   compareCities(remoteManifest);
+  await compareQuarterFiles(origin, remoteManifest, bundleDataVersion);
 
   const cacheControl = headers["cache-control"] || "";
   if (/immutable/i.test(cacheControl)) {

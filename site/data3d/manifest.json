@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T22:39:51.210Z",
+  "generatedAt": "2026-05-06T22:49:25.673Z",
   "tileCount": 8,
   "overviewAreaThreshold": 700,
   "cities": [
@@ -32,8 +32,9 @@
         "mkdUnmatched": 60,
         "stops": 391,
         "dtp": 250,
-        "quarterPopulationSum": 282314,
-        "quarterPopulationSource": "layer"
+        "quarterPopulationSum": 271866,
+        "quarterPopulationSource": "layer",
+        "quarterPopulationField": "pop_sum_2"
       },
       "rank": 1,
       "index": 42.82309293228197,
@@ -224,7 +225,8 @@
         "stops": 384,
         "dtp": 900,
         "quarterPopulationSum": 243995,
-        "quarterPopulationSource": "layer"
+        "quarterPopulationSource": "layer",
+        "quarterPopulationField": "pop_sum"
       },
       "rank": 2,
       "index": 34.50289837275928,

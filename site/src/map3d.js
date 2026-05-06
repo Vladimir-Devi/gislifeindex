@@ -369,7 +369,9 @@ function dataVersionFromManifest(manifest) {
 function versionedDataUrl(url) {
   if (!url || url.includes("?") || /^(https?:|data:|blob:)/.test(url)) return url;
   const [path, hash = ""] = url.split("#");
-  return `${path}?v=${activeDataVersion}${hash ? `#${hash}` : ""}`;
+  const params = new URLSearchParams({ v: activeDataVersion });
+  if (/\/quartals\.json$/.test(path)) params.set("r", Date.now().toString(36));
+  return `${path}?${params.toString()}${hash ? `#${hash}` : ""}`;
 }
 
 async function fetchJson(url) {
