@@ -138,22 +138,16 @@ function compareCities(remoteManifest) {
   }
 }
 
-async function compareQuarterFiles(origin, remoteManifest, bundleDataVersion) {
+async function compareQuarterMeta(origin, remoteManifest, bundleDataVersion) {
   for (const localCity of localManifest.cities) {
     const remoteCity = remoteManifest.cities.find((city) => city.slug === localCity.slug);
-    const localQuartals = JSON.parse(readFileSync(path.join(siteDir, "data3d", localCity.slug, "quartals.json"), "utf8"));
-    const remoteUrl = `${origin}/${remoteCity.files3d.quartals}?v=${bundleDataVersion}&r=${Date.now()}`;
-    const { body: remoteQuartals } = await fetchJson(remoteUrl);
-    const localSum = quarterPopulationSum(localQuartals);
-    const remoteSum = quarterPopulationSum(remoteQuartals);
-    assertEqual(`${localCity.slug} published quarter file population sum`, remoteSum, localSum);
+    const localMeta = JSON.parse(readFileSync(path.join(siteDir, "data3d", localCity.slug, "quartals-meta.json"), "utf8"));
+    const remoteUrl = `${origin}/${remoteCity.files3d.quartalsMeta}?v=${bundleDataVersion}&r=${Date.now()}`;
+    const { body: remoteMeta } = await fetchJson(remoteUrl);
+    assertEqual(`${localCity.slug} published quarter meta count`, remoteMeta.count, localMeta.count);
+    assertEqual(`${localCity.slug} published quarter meta population sum`, remoteMeta.populationSum, localMeta.populationSum);
+    assertEqual(`${localCity.slug} published quarter meta population field`, remoteMeta.populationField, localMeta.populationField);
   }
-}
-
-function quarterPopulationSum(quartals) {
-  return Math.round(
-    (quartals.features || []).reduce((sum, feature) => sum + (Number(feature.properties?.population || 0) || 0), 0)
-  );
 }
 
 async function checkTarget(target) {
@@ -182,7 +176,7 @@ async function checkTarget(target) {
   console.log(`  manifest generatedAt: ${remoteManifest.generatedAt}`);
 
   compareCities(remoteManifest);
-  await compareQuarterFiles(origin, remoteManifest, bundleDataVersion);
+  await compareQuarterMeta(origin, remoteManifest, bundleDataVersion);
 
   const cacheControl = headers["cache-control"] || "";
   if (/immutable/i.test(cacheControl)) {

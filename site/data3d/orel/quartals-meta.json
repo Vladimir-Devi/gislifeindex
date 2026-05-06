@@ -1,0 +1,57 @@
+{
+  "city": "orel",
+  "count": 344,
+  "populationSum": 271866,
+  "populationField": "pop_sum_2",
+  "populationSource": "layer",
+  "samples": [
+    {
+      "id": "1",
+      "population": 414
+    },
+    {
+      "id": "2",
+      "population": 4733
+    },
+    {
+      "id": "3",
+      "population": 6746
+    },
+    {
+      "id": "4",
+      "population": 1089
+    },
+    {
+      "id": "5",
+      "population": 2820
+    },
+    {
+      "id": "6",
+      "population": 4178
+    },
+    {
+      "id": "7",
+      "population": 653
+    },
+    {
+      "id": "8",
+      "population": 5306
+    },
+    {
+      "id": "9",
+      "population": 5090
+    },
+    {
+      "id": "10",
+      "population": 3109
+    },
+    {
+      "id": "11",
+      "population": 3996
+    },
+    {
+      "id": "12",
+      "population": 92
+    }
+  ]
+}

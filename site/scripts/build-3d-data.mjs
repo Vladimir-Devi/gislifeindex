@@ -779,6 +779,23 @@ function sampleTerrain(terrain, x, y) {
   return top * (1 - ty) + bottom * ty;
 }
 
+function quarterMeta(quartals, city) {
+  const populationSum = Math.round(
+    quartals.reduce((sum, feature) => sum + (Number(feature.properties?.population || 0) || 0), 0)
+  );
+  return {
+    city: city.slug,
+    count: quartals.length,
+    populationSum,
+    populationField: city.stats?.quarterPopulationField ?? null,
+    populationSource: city.stats?.quarterPopulationSource ?? null,
+    samples: quartals.slice(0, 12).map((feature) => ({
+      id: feature.id,
+      population: feature.properties?.population ?? null
+    }))
+  };
+}
+
 assertOutputPath(outDir);
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
@@ -826,6 +843,7 @@ for (const city of sourceManifest.cities) {
   const availableRoadTiles = splitRoadSegments(roadsAll, projection, cityDir, projectedBbox);
 
   writeJson(path.join(cityDir, "quartals.json"), { features: quartals });
+  writeJson(path.join(cityDir, "quartals-meta.json"), quarterMeta(quartals, city), true);
   writeJson(path.join(cityDir, "green.json"), { features: green });
   writeJson(path.join(cityDir, "water.json"), { features: water });
   writeJson(path.join(cityDir, "roads.json"), { lines: roads });
@@ -840,6 +858,7 @@ for (const city of sourceManifest.cities) {
     tileCount: TILE_COUNT,
     files3d: {
       quartals: `data3d/${city.slug}/quartals.json`,
+      quartalsMeta: `data3d/${city.slug}/quartals-meta.json`,
       green: `data3d/${city.slug}/green.json`,
       water: `data3d/${city.slug}/water.json`,
       roads: `data3d/${city.slug}/roads.json`,

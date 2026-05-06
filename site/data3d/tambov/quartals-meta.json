@@ -1,0 +1,57 @@
+{
+  "city": "tambov",
+  "count": 391,
+  "populationSum": 243995,
+  "populationField": "pop_sum",
+  "populationSource": "layer",
+  "samples": [
+    {
+      "id": "9",
+      "population": 457
+    },
+    {
+      "id": "18",
+      "population": 981
+    },
+    {
+      "id": "87",
+      "population": 19
+    },
+    {
+      "id": "89",
+      "population": 45
+    },
+    {
+      "id": "98",
+      "population": 69
+    },
+    {
+      "id": "191",
+      "population": 194
+    },
+    {
+      "id": "224",
+      "population": 110
+    },
+    {
+      "id": "244",
+      "population": 330
+    },
+    {
+      "id": "256",
+      "population": 67
+    },
+    {
+      "id": "269",
+      "population": 1025
+    },
+    {
+      "id": "289",
+      "population": 54
+    },
+    {
+      "id": "290",
+      "population": 98
+    }
+  ]
+}

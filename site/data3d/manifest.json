@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T22:49:25.673Z",
+  "generatedAt": "2026-05-06T23:02:46.248Z",
   "tileCount": 8,
   "overviewAreaThreshold": 700,
   "cities": [
@@ -64,6 +64,7 @@
       "tileCount": 8,
       "files3d": {
         "quartals": "data3d/orel/quartals.json",
+        "quartalsMeta": "data3d/orel/quartals-meta.json",
         "green": "data3d/orel/green.json",
         "water": "data3d/orel/water.json",
         "roads": "data3d/orel/roads.json",
@@ -256,6 +257,7 @@
       "tileCount": 8,
       "files3d": {
         "quartals": "data3d/tambov/quartals.json",
+        "quartalsMeta": "data3d/tambov/quartals-meta.json",
         "green": "data3d/tambov/green.json",
         "water": "data3d/tambov/water.json",
         "roads": "data3d/tambov/roads.json",
