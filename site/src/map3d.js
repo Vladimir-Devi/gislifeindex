@@ -1430,7 +1430,7 @@ function resetView() {
   const mobile = isMobileLayout();
   const usableWidth = Math.max(320, rect.width - (mobile ? 24 : 420));
   const usableHeight = Math.max(320, rect.height - (mobile ? 190 : 80));
-  const fitFactor = mobile ? 1.55 : 0.8;
+  const fitFactor = mobile ? 1.55 : 1.08;
   const scale = Math.min(usableWidth / extent.width, usableHeight / extent.height) * fitFactor;
   state.camera.scale = scale;
   state.camera.fitScale = scale;
