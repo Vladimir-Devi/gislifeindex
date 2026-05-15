@@ -79,8 +79,10 @@ const ROAD_DETAIL_FACTOR = 11.8;
 const ROAD_DETAIL_REQUEST_FACTOR = 11.4;
 const ROAD_DETAIL_FULL_FACTOR = 14;
 const ROAD_SURFACE_OFFSET = 0;
-const ROAD_LABEL_START_FACTOR = 3.4;
-const ROAD_LABEL_FULL_FACTOR = 5.8;
+const ROAD_LABEL_START_FACTOR = 6.2;
+const ROAD_LABEL_FULL_FACTOR = 8.4;
+const ROAD_LABEL_PITCH_FADE_START = 1.08;
+const ROAD_LABEL_PITCH_FADE_END = 1.32;
 const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
 const MOBILE_BUILDING_FADE_FACTOR = 3.8;
@@ -2023,9 +2025,10 @@ function drawOverlay() {
 function drawRoadLabels() {
   const labels = state.data?.roadLabels;
   if (!labels?.length) return;
-  const start = isMobileLayout() ? ROAD_LABEL_START_FACTOR + 1.2 : ROAD_LABEL_START_FACTOR;
-  const full = isMobileLayout() ? ROAD_LABEL_FULL_FACTOR + 1.8 : ROAD_LABEL_FULL_FACTOR;
-  const progress = smoothStep(zoomRangeProgress(start, full));
+  const mobile = isMobileLayout();
+  const start = mobile ? ROAD_LABEL_START_FACTOR + 1.5 : ROAD_LABEL_START_FACTOR;
+  const full = mobile ? ROAD_LABEL_FULL_FACTOR + 2 : ROAD_LABEL_FULL_FACTOR;
+  const progress = smoothStep(zoomRangeProgress(start, full)) * roadLabelPitchAlpha();
   if (progress <= 0.01) return;
 
   const rect = overlayCanvas.getBoundingClientRect();
@@ -2033,8 +2036,9 @@ function drawRoadLabels() {
   const view = worldViewBbox();
   const centerX = rect.width / 2;
   const centerY = rect.height / 2;
-  const fontSize = isMobileLayout() ? 11 : 12 + zoomRangeProgress(full, full + 3) * 1.5;
-  const maxLabels = isMobileLayout() ? 34 : 92;
+  const fontSize = roadLabelFontSize(full);
+  const letterSpacing = mobile ? 0.15 : 0.25;
+  const maxLabels = mobile ? 24 : 78;
   const placed = [];
   let drawn = 0;
 
@@ -2049,37 +2053,46 @@ function drawRoadLabels() {
     .map((label) => {
       const [sx, sy] = worldToScreen(label.point[0], label.point[1], surfaceZ(label.point[0], label.point[1], 2));
       const distance = Math.hypot(sx - centerX, sy - centerY);
-      return { label, sx, sy, distance };
+      const path = readableRoadLabelPath(label);
+      if (!path) return null;
+      const metrics = screenPathMetrics(path);
+      if (metrics.total < fontSize * Math.max(5, Array.from(label.text).length * 0.58)) return null;
+      return { label, sx, sy, distance, path, metrics };
     })
+    .filter(Boolean)
     .filter(({ sx, sy }) => sx > -120 && sx < rect.width + 120 && sy > -90 && sy < rect.height + 90)
     .sort((a, b) => (b.label.priority || 0) - (a.label.priority || 0) || b.label.length - a.label.length || a.distance - b.distance);
 
   for (const item of candidates) {
     if (drawn >= maxLabels) break;
-    const { label, sx, sy } = item;
+    const { label, path, metrics } = item;
     const text = label.text;
-    const width = overlayCtx.measureText(text).width;
-    const projectedLength = (label.length || 0) * state.camera.scale;
-    if (projectedLength && width > projectedLength * 1.35 && progress < 0.9) continue;
+    const glyphs = measureRoadLabelGlyphs(text, letterSpacing);
+    if (glyphs.total > metrics.total * 0.82) continue;
+    const placement = roadLabelPlacement(path, metrics, glyphs, fontSize);
+    if (!placement || roadLabelCurveRange(placement) > 1.75) continue;
 
-    const angle = screenRoadLabelAngle(label);
-    const bounds = rotatedLabelBounds(sx, sy, width + 14, fontSize + 8, angle);
+    const bounds = curvedLabelBounds(placement, fontSize);
     if (placed.some((box) => boxesOverlap(box, bounds, 5))) continue;
 
     placed.push(bounds);
-    overlayCtx.save();
-    overlayCtx.translate(sx, sy);
-    overlayCtx.rotate(angle);
-    overlayCtx.globalAlpha = progress;
-    overlayCtx.lineWidth = 4.4;
-    overlayCtx.strokeStyle = colors.roadLabelHalo(0.82);
-    overlayCtx.strokeText(text, 0, 0);
-    overlayCtx.fillStyle = colors.roadLabel(0.95);
-    overlayCtx.fillText(text, 0, 0);
-    overlayCtx.restore();
+    drawCurvedRoadLabel(placement, progress, colors);
     drawn += 1;
   }
   overlayCtx.restore();
+}
+
+function roadLabelPitchAlpha() {
+  const t = clamp((state.camera.pitch - ROAD_LABEL_PITCH_FADE_START) / (ROAD_LABEL_PITCH_FADE_END - ROAD_LABEL_PITCH_FADE_START), 0, 1);
+  return 1 - smoothStep(t);
+}
+
+function roadLabelFontSize(fullRatio) {
+  const ratio = state.camera.scale / (state.camera.fitScale || state.camera.scale || 1);
+  const t = smoothStep(clamp((ratio - fullRatio) / 8, 0, 1));
+  const max = isMobileLayout() ? 11 : 12.7;
+  const min = isMobileLayout() ? 9.8 : 10.9;
+  return max + (min - max) * t;
 }
 
 function labelPointBbox(label) {
@@ -2091,32 +2104,128 @@ function smoothStep(t) {
   return t * t * (3 - 2 * t);
 }
 
-function screenRoadLabelAngle(label) {
+function readableRoadLabelPath(label) {
+  const source = label.line?.length > 1 ? label.line : roadLabelFallbackLine(label);
+  if (!source || source.length < 2) return null;
+  let path = source.map(([x, y]) => worldToScreen(x, y, surfaceZ(x, y, 2))).filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+  if (path.length < 2) return null;
+  let metrics = screenPathMetrics(path);
+  const middle = pointOnScreenPath(path, metrics, metrics.total / 2);
+  if (middle && (middle.angle > Math.PI / 2 || middle.angle < -Math.PI / 2)) {
+    path = [...path].reverse();
+  }
+  return path;
+}
+
+function roadLabelFallbackLine(label) {
   const point = label.point;
-  const distance = Math.max(24, Math.min(80, (label.length || 120) * 0.22));
+  if (!point) return null;
+  const distance = Math.max(40, Math.min(120, (label.length || 160) * 0.18));
   const ux = Math.cos(label.angle || 0);
   const uy = Math.sin(label.angle || 0);
-  const a = [point[0] - ux * distance, point[1] - uy * distance];
-  const b = [point[0] + ux * distance, point[1] + uy * distance];
-  const p0 = worldToScreen(a[0], a[1], surfaceZ(a[0], a[1], 2));
-  const p1 = worldToScreen(b[0], b[1], surfaceZ(b[0], b[1], 2));
-  return readableAngle(Math.atan2(p1[1] - p0[1], p1[0] - p0[0]));
+  return [
+    [point[0] - ux * distance, point[1] - uy * distance],
+    [point[0] + ux * distance, point[1] + uy * distance]
+  ];
 }
 
-function readableAngle(angle) {
-  while (angle <= -Math.PI) angle += Math.PI * 2;
-  while (angle > Math.PI) angle -= Math.PI * 2;
-  if (angle > Math.PI / 2) angle -= Math.PI;
-  if (angle < -Math.PI / 2) angle += Math.PI;
-  return angle;
+function screenPathMetrics(path) {
+  const distances = [0];
+  let total = 0;
+  for (let i = 1; i < path.length; i += 1) {
+    total += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]);
+    distances.push(total);
+  }
+  return { distances, total };
 }
 
-function rotatedLabelBounds(x, y, width, height, angle) {
-  const cos = Math.abs(Math.cos(angle));
-  const sin = Math.abs(Math.sin(angle));
-  const boxWidth = width * cos + height * sin;
-  const boxHeight = width * sin + height * cos;
-  return [x - boxWidth / 2, y - boxHeight / 2, x + boxWidth / 2, y + boxHeight / 2];
+function pointOnScreenPath(path, metrics, distance) {
+  const target = clamp(distance, 0, metrics.total);
+  for (let i = 1; i < path.length; i += 1) {
+    if (metrics.distances[i] < target) continue;
+    const a = path[i - 1];
+    const b = path[i];
+    const start = metrics.distances[i - 1];
+    const length = metrics.distances[i] - start || 1;
+    const t = clamp((target - start) / length, 0, 1);
+    return {
+      x: a[0] + (b[0] - a[0]) * t,
+      y: a[1] + (b[1] - a[1]) * t,
+      angle: Math.atan2(b[1] - a[1], b[0] - a[0])
+    };
+  }
+  const a = path.at(-2);
+  const b = path.at(-1);
+  return b && a ? { x: b[0], y: b[1], angle: Math.atan2(b[1] - a[1], b[0] - a[0]) } : null;
+}
+
+function measureRoadLabelGlyphs(text, letterSpacing) {
+  const chars = Array.from(text);
+  const widths = chars.map((char) => overlayCtx.measureText(char).width);
+  const total = widths.reduce((sum, width) => sum + width, 0) + Math.max(0, chars.length - 1) * letterSpacing;
+  return { chars, widths, letterSpacing, total };
+}
+
+function roadLabelPlacement(path, metrics, glyphs, fontSize) {
+  const start = metrics.total / 2 - glyphs.total / 2;
+  if (start < fontSize * 0.8 || start + glyphs.total > metrics.total - fontSize * 0.8) return null;
+  const placement = [];
+  let cursor = start;
+  for (let i = 0; i < glyphs.chars.length; i += 1) {
+    const width = glyphs.widths[i];
+    const point = pointOnScreenPath(path, metrics, cursor + width / 2);
+    if (!point) return null;
+    placement.push({ char: glyphs.chars[i], x: point.x, y: point.y, angle: point.angle, width });
+    cursor += width + glyphs.letterSpacing;
+  }
+  return placement;
+}
+
+function roadLabelCurveRange(placement) {
+  if (placement.length < 2) return 0;
+  let previous = placement[0].angle;
+  let range = 0;
+  for (const item of placement.slice(1)) {
+    let delta = item.angle - previous;
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+    range += Math.abs(delta);
+    previous = item.angle;
+  }
+  return range;
+}
+
+function curvedLabelBounds(placement, fontSize) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const item of placement) {
+    minX = Math.min(minX, item.x);
+    minY = Math.min(minY, item.y);
+    maxX = Math.max(maxX, item.x);
+    maxY = Math.max(maxY, item.y);
+  }
+  const padding = fontSize * 1.35;
+  return [minX - padding, minY - padding, maxX + padding, maxY + padding];
+}
+
+function drawCurvedRoadLabel(placement, alpha, colors) {
+  overlayCtx.save();
+  overlayCtx.globalAlpha = alpha;
+  overlayCtx.lineWidth = 4.4;
+  overlayCtx.strokeStyle = colors.roadLabelHalo(0.82);
+  overlayCtx.fillStyle = colors.roadLabel(0.95);
+  for (const item of placement) {
+    if (item.char === " ") continue;
+    overlayCtx.save();
+    overlayCtx.translate(item.x, item.y);
+    overlayCtx.rotate(item.angle);
+    overlayCtx.strokeText(item.char, 0, 0);
+    overlayCtx.fillText(item.char, 0, 0);
+    overlayCtx.restore();
+  }
+  overlayCtx.restore();
 }
 
 function boxesOverlap(a, b, padding = 0) {

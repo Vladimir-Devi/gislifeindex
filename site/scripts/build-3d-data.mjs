@@ -325,13 +325,15 @@ function prepareRoadLabel(feature, projection) {
   const best = candidates[0];
   if (!best) return null;
   const anchor = linePointAt(best.line, best.length / 2);
+  const line = best.line.map((point) => roundPoint(point, 1));
   return {
     text,
     point: roundPoint(anchor.point, 1),
     angle: round(anchor.angle, 4),
+    line,
     length: round(best.length, 1),
     priority: round(roadLabelPriority(feature.properties, best.length), 2),
-    bbox: bboxFromPoints(best.line)
+    bbox: bboxFromPoints(line)
   };
 }
 
