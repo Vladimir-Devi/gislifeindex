@@ -1664,6 +1664,7 @@ function drawBase() {
   if (state.layers.quartals) drawQuartals(baseCtx);
   drawRailways(baseCtx);
   drawRoads(baseCtx);
+  drawRoadLabels(baseCtx);
 }
 
 function terrainGridHeight(terrain, col, row) {
@@ -2016,13 +2017,12 @@ function buildingStyleRgb(style, lightenFactor = 0) {
 function drawOverlay() {
   const rect = overlayCanvas.getBoundingClientRect();
   overlayCtx.clearRect(0, 0, rect.width, rect.height);
-  drawRoadLabels();
   if (state.selected) drawSelected();
   if (state.layers.stops) drawStops();
   if (state.layers.dtp) drawAccidents();
 }
 
-function drawRoadLabels() {
+function drawRoadLabels(ctx) {
   const labels = state.data?.roadLabels;
   if (!labels?.length) return;
   const mobile = isMobileLayout();
@@ -2042,11 +2042,11 @@ function drawRoadLabels() {
   const placed = [];
   let drawn = 0;
 
-  overlayCtx.save();
-  overlayCtx.font = `700 ${fontSize}px system-ui, -apple-system, Segoe UI, sans-serif`;
-  overlayCtx.textAlign = "center";
-  overlayCtx.textBaseline = "middle";
-  overlayCtx.lineJoin = "round";
+  ctx.save();
+  ctx.font = `700 ${fontSize}px system-ui, -apple-system, Segoe UI, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineJoin = "round";
 
   const candidates = labels
     .filter((label) => bboxIntersects(label.bbox || labelPointBbox(label), view))
@@ -2067,7 +2067,7 @@ function drawRoadLabels() {
     if (drawn >= maxLabels) break;
     const { label, path, metrics } = item;
     const text = label.text;
-    const glyphs = measureRoadLabelGlyphs(text, letterSpacing);
+    const glyphs = measureRoadLabelGlyphs(ctx, text, letterSpacing);
     if (glyphs.total > metrics.total * 0.82) continue;
     const placement = roadLabelPlacement(path, metrics, glyphs, fontSize);
     if (!placement || roadLabelCurveRange(placement) > 1.75) continue;
@@ -2076,10 +2076,10 @@ function drawRoadLabels() {
     if (placed.some((box) => boxesOverlap(box, bounds, 5))) continue;
 
     placed.push(bounds);
-    drawCurvedRoadLabel(placement, progress, colors);
+    drawCurvedRoadLabel(ctx, placement, progress, colors);
     drawn += 1;
   }
-  overlayCtx.restore();
+  ctx.restore();
 }
 
 function roadLabelPitchAlpha() {
@@ -2159,9 +2159,9 @@ function pointOnScreenPath(path, metrics, distance) {
   return b && a ? { x: b[0], y: b[1], angle: Math.atan2(b[1] - a[1], b[0] - a[0]) } : null;
 }
 
-function measureRoadLabelGlyphs(text, letterSpacing) {
+function measureRoadLabelGlyphs(ctx, text, letterSpacing) {
   const chars = Array.from(text);
-  const widths = chars.map((char) => overlayCtx.measureText(char).width);
+  const widths = chars.map((char) => ctx.measureText(char).width);
   const total = widths.reduce((sum, width) => sum + width, 0) + Math.max(0, chars.length - 1) * letterSpacing;
   return { chars, widths, letterSpacing, total };
 }
@@ -2210,22 +2210,22 @@ function curvedLabelBounds(placement, fontSize) {
   return [minX - padding, minY - padding, maxX + padding, maxY + padding];
 }
 
-function drawCurvedRoadLabel(placement, alpha, colors) {
-  overlayCtx.save();
-  overlayCtx.globalAlpha = alpha;
-  overlayCtx.lineWidth = 4.4;
-  overlayCtx.strokeStyle = colors.roadLabelHalo(0.82);
-  overlayCtx.fillStyle = colors.roadLabel(0.95);
+function drawCurvedRoadLabel(ctx, placement, alpha, colors) {
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.9;
+  ctx.lineWidth = 4.2;
+  ctx.strokeStyle = colors.roadLabelHalo(0.55);
+  ctx.fillStyle = colors.roadLabel(0.78);
   for (const item of placement) {
     if (item.char === " ") continue;
-    overlayCtx.save();
-    overlayCtx.translate(item.x, item.y);
-    overlayCtx.rotate(item.angle);
-    overlayCtx.strokeText(item.char, 0, 0);
-    overlayCtx.fillText(item.char, 0, 0);
-    overlayCtx.restore();
+    ctx.save();
+    ctx.translate(item.x, item.y);
+    ctx.rotate(item.angle);
+    ctx.strokeText(item.char, 0, 0);
+    ctx.fillText(item.char, 0, 0);
+    ctx.restore();
   }
-  overlayCtx.restore();
+  ctx.restore();
 }
 
 function boxesOverlap(a, b, padding = 0) {
