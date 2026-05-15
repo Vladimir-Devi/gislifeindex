@@ -540,6 +540,39 @@ input {
   flex: 0 0 auto;
 }
 
+.panelActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.panelLinkButton {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--button-bg);
+  font-size: 15px;
+  font-weight: 780;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.panelLinkButton:hover {
+  border-color: var(--button-border-hover);
+  background: var(--button-hover);
+}
+
+.panelLinkButton.copied {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .comparisonSwitch {
   display: flex;
   flex: 0 0 auto;
@@ -1051,6 +1084,16 @@ input {
     max-width: 166px;
     gap: 5px;
     margin-right: 6px;
+  }
+
+  .infoPanel .panelActions {
+    gap: 4px;
+  }
+
+  .infoPanel .panelLinkButton {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
   }
 
   .infoPanel .comparisonLabels {

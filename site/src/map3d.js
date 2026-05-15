@@ -94,6 +94,8 @@ const MOBILE_SMALL_NON_RESIDENTIAL_FACTOR = 15;
 const MOBILE_SMALL_NON_RESIDENTIAL_FULL_FACTOR = 16;
 const CAMERA_TUTORIAL_KEY = "lifeindex.cameraTutorialSeen";
 const THEME_STORAGE_KEY = "lifeindex.theme";
+const ROUTE_COMPARISON_MODES = new Set(["city", "all"]);
+const ROUTE_THEMES = new Set(["light", "dark"]);
 const CAMERA_MIN_ZOOM_FACTOR = 0.58;
 const CAMERA_MAX_ZOOM_FACTOR = 16;
 const CAMERA_MIN_PITCH = 0.34;
@@ -184,6 +186,7 @@ const state = {
   suppressHandleClickUntil: 0,
   tooltipTarget: null,
   tooltipNode: null,
+  routeApplying: false,
   renderToken: 0
 };
 
@@ -245,6 +248,7 @@ function createWebGlContext(canvas) {
 async function init() {
   state.manifest = fallbackManifest();
   initTheme();
+  applyRouteTheme();
   renderCityMenu();
   renderControls();
   renderLegend();
@@ -257,10 +261,19 @@ async function init() {
   loadManifest()
     .then((manifest) => {
       state.manifest = manifest;
-      if (!state.activeCity) renderCityMenu();
+      const route = readRouteState();
+      if (route.city) {
+        applyRouteFromUrl({ replace: true }).catch((error) => console.error(error));
+      } else if (!state.activeCity) {
+        renderCityMenu();
+      }
     })
     .catch((error) => {
       console.error(error);
+      const route = readRouteState();
+      if (route.city && !state.activeCity) {
+        applyRouteFromUrl({ replace: true }).catch((routeError) => console.error(routeError));
+      }
     });
 }
 
@@ -437,7 +450,7 @@ function renderCityMenu() {
     .join("");
 
   for (const card of els.cityMenu.querySelectorAll(".cityCard")) {
-    card.addEventListener("click", () => loadCity(card.dataset.city));
+    card.addEventListener("click", () => loadCity(card.dataset.city, { replaceRoute: false }));
     card.addEventListener("pointermove", updateCityCardTilt);
     card.addEventListener("pointerleave", resetCityCardTilt);
   }
@@ -536,6 +549,7 @@ function renderControls() {
     recomputeScores();
     updatePanel();
     draw();
+    writeRouteState({ replace: true });
   });
 
   els.layerControls.addEventListener("change", (event) => {
@@ -550,6 +564,7 @@ function renderControls() {
       });
     }
     draw();
+    writeRouteState({ replace: true });
   });
 }
 
@@ -576,6 +591,11 @@ function renderSymbolLegend() {
 
 function renderCameraTutorial() {
   if (!els.cameraTutorial) return;
+  if (isMobileLayout()) {
+    els.cameraTutorial.classList.add("hidden");
+    els.cameraTutorial.innerHTML = "";
+    return;
+  }
   if (safeLocalStorageGet(CAMERA_TUTORIAL_KEY) === "1") {
     els.cameraTutorial.classList.add("hidden");
     return;
@@ -588,7 +608,6 @@ function renderCameraTutorial() {
       <span>ЛКМ</span><p>двигать карту</p>
       <span>ПКМ</span><p>поворот и наклон</p>
       <span>Колесо</span><p>плавный зум</p>
-      <span>Сенсор</span><p>один палец двигает, два пальца масштабируют и вращают</p>
     </div>
   `;
 }
@@ -637,6 +656,208 @@ function setTheme(theme, persist = true) {
 
 function toggleTheme() {
   setTheme(state.theme === "dark" ? "light" : "dark");
+  writeRouteState({ replace: true });
+}
+
+function applyRouteTheme() {
+  const route = readRouteState();
+  if (route.theme) setTheme(route.theme, false);
+}
+
+function readRouteState() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    city: normalizeRouteCity(params.get("city") || params.get("c")),
+    quarterId: normalizeRouteId(params.get("quarter") || params.get("q")),
+    comparisonMode: normalizeComparisonMode(params.get("cmp") || params.get("compare")),
+    theme: normalizeTheme(params.get("theme")),
+    blocks: normalizeRouteKeySet(params.get("blocks"), BLOCKS.map((block) => block.key)),
+    layers: normalizeRouteKeySet(params.get("layers"), LAYERS.map((layer) => layer.key))
+  };
+}
+
+async function applyRouteFromUrl({ replace = false } = {}) {
+  const route = readRouteState();
+  const cityExists = route.city && state.manifest?.cities?.some((city) => city.slug === route.city);
+  state.routeApplying = true;
+  try {
+    if (route.theme) setTheme(route.theme, false);
+
+    if (!cityExists) {
+      if (state.activeCity) showCityMenu({ skipRoute: true });
+      else renderCityMenu();
+      return;
+    }
+
+    const routeBlocks = route.blocks ?? defaultBlockKeySet();
+    const routeLayers = route.layers ?? defaultLayerKeySet();
+    applyRouteBlocks(routeBlocks);
+    applyRouteLayers(routeLayers);
+    syncControlInputs();
+
+    if (!state.activeCity || state.activeCity.slug !== route.city || !state.data) {
+      await loadCity(route.city, {
+        comparisonMode: route.comparisonMode,
+        quarterId: route.quarterId,
+        layers: routeLayers,
+        focusQuarter: true,
+        skipRoute: true
+      });
+      return;
+    }
+
+    state.comparisonMode = route.comparisonMode || "city";
+    recomputeScores();
+    await ensureVisiblePointLayers();
+    if (route.quarterId != null) {
+      selectQuarterById(route.quarterId, {
+        focus: true,
+        animateFocus: true,
+        updatePanel: false,
+        draw: false,
+        updateRoute: false,
+        clearMissing: true
+      });
+    } else {
+      setSelectedQuarter(null, { updatePanel: false, draw: false, updateRoute: false });
+    }
+    updatePanel();
+    draw();
+  } finally {
+    state.routeApplying = false;
+    if (replace) writeRouteState({ replace: true, force: true });
+  }
+}
+
+function normalizeRouteCity(value) {
+  const slug = String(value || "").trim().toLowerCase();
+  if (!slug || !/^[a-z0-9_-]+$/.test(slug)) return null;
+  return slug;
+}
+
+function normalizeRouteId(value) {
+  const id = String(value || "").trim();
+  return id ? id : null;
+}
+
+function normalizeComparisonMode(value) {
+  return ROUTE_COMPARISON_MODES.has(value) ? value : null;
+}
+
+function normalizeTheme(value) {
+  return ROUTE_THEMES.has(value) ? value : null;
+}
+
+function normalizeRouteKeySet(value, allowedKeys) {
+  if (value == null) return null;
+  if (value === "none") return new Set();
+  const allowed = new Set(allowedKeys);
+  const keys = String(value)
+    .split(",")
+    .map((key) => key.trim())
+    .filter((key) => allowed.has(key));
+  return new Set(keys);
+}
+
+function defaultBlockKeySet() {
+  return new Set(BLOCKS.map((block) => block.key));
+}
+
+function defaultLayerKeySet() {
+  return new Set(["quartals", "buildings"]);
+}
+
+function applyRouteBlocks(blocks) {
+  state.activeBlocks = new Set([...blocks].filter((key) => BLOCKS.some((block) => block.key === key)));
+}
+
+function applyRouteLayers(layers) {
+  const active = new Set(layers);
+  for (const layer of LAYERS) state.layers[layer.key] = active.has(layer.key);
+  if (!state.layers.dtp) state.accidentPopup = null;
+}
+
+function syncControlInputs() {
+  for (const input of els.scenarioControls.querySelectorAll("input[data-block]")) {
+    input.checked = state.activeBlocks.has(input.dataset.block);
+  }
+  for (const input of els.layerControls.querySelectorAll("input[data-layer]")) {
+    input.checked = Boolean(state.layers[input.dataset.layer]);
+  }
+}
+
+function writeRouteState({ replace = true, force = false } = {}) {
+  if (state.routeApplying && !force) return;
+  if (!window.history?.replaceState) return;
+  const url = currentDeepLinkUrl();
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const nextPath = `${url.pathname}${url.search}${url.hash}`;
+  if (currentPath === nextPath) return;
+  window.history[replace ? "replaceState" : "pushState"]({ lifeindex: true }, "", url);
+}
+
+function currentDeepLinkUrl() {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  if (state.activeCity) {
+    url.searchParams.set("city", state.activeCity.slug);
+    const selectedId = quarterRouteId(state.selected);
+    if (selectedId) url.searchParams.set("quarter", selectedId);
+    if (state.comparisonMode === "all") url.searchParams.set("cmp", "all");
+    const blockKeys = BLOCKS.filter((block) => state.activeBlocks.has(block.key)).map((block) => block.key);
+    if (blockKeys.length !== BLOCKS.length) url.searchParams.set("blocks", blockKeys.length ? blockKeys.join(",") : "none");
+    const layerKeys = LAYERS.filter((layer) => state.layers[layer.key]).map((layer) => layer.key);
+    const defaultLayers = [...defaultLayerKeySet()].join(",");
+    if (layerKeys.join(",") !== defaultLayers) url.searchParams.set("layers", layerKeys.length ? layerKeys.join(",") : "none");
+  }
+  if (state.theme === "dark") url.searchParams.set("theme", "dark");
+  return url;
+}
+
+async function copyDeepLink(button) {
+  const url = currentDeepLinkUrl().href;
+  writeRouteState({ replace: true });
+  const copied = await copyTextToClipboard(url);
+  const previousText = button.textContent;
+  button.textContent = copied ? "✓" : "↗";
+  button.classList.toggle("copied", copied);
+  button.setAttribute("aria-label", copied ? "Ссылка скопирована" : "Адресная строка обновлена");
+  window.setTimeout(() => {
+    if (!button.isConnected) return;
+    button.textContent = previousText;
+    button.classList.remove("copied");
+    button.setAttribute("aria-label", "Скопировать ссылку на текущий вид");
+  }, 1200);
+}
+
+async function copyTextToClipboard(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fallback below handles browsers without Clipboard API permission.
+  }
+  const node = document.createElement("textarea");
+  node.value = text;
+  node.setAttribute("readonly", "");
+  node.style.position = "fixed";
+  node.style.top = "0";
+  node.style.left = "-9999px";
+  document.body.appendChild(node);
+  node.focus({ preventScroll: true });
+  node.select();
+  node.setSelectionRange(0, node.value.length);
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+  node.remove();
+  return copied;
 }
 
 function initTooltip() {
@@ -687,8 +908,11 @@ function hideTooltip() {
 // @dist-split
 function attachEvents() {
   window.addEventListener("resize", resizeCanvases);
+  window.addEventListener("popstate", () => {
+    applyRouteFromUrl({ replace: false }).catch((error) => console.error(error));
+  });
   overlayCanvas.addEventListener("contextmenu", (event) => event.preventDefault());
-  els.backButton.addEventListener("click", showCityMenu);
+  els.backButton.addEventListener("click", () => showCityMenu({ replaceRoute: false }));
   els.themeToggle?.addEventListener("click", toggleTheme);
   document.getElementById("resetView").addEventListener("click", resetView);
   els.cameraTutorial?.addEventListener("click", (event) => {
@@ -703,12 +927,18 @@ function attachEvents() {
   els.accidentPopup.addEventListener("pointermove", (event) => event.stopPropagation());
   els.accidentPopup.addEventListener("touchmove", (event) => event.stopPropagation(), { passive: true });
   els.infoPanel.addEventListener("click", (event) => {
+    const copyLink = event.target.closest("[data-copy-link]");
+    if (copyLink) {
+      copyDeepLink(copyLink);
+      return;
+    }
     const comparisonToggle = event.target.closest("[data-comparison-toggle]");
     if (comparisonToggle) {
       state.comparisonMode = state.comparisonMode === "city" ? "all" : "city";
       recomputeScores();
       updatePanel();
       draw();
+      writeRouteState({ replace: true });
       return;
     }
     if (!isMobileLayout() || !event.target.closest(".sheetHandle")) return;
@@ -1037,16 +1267,16 @@ function hideLoadingOverlay() {
   els.loadingOverlay.classList.add("hidden");
 }
 
-async function loadCity(slug) {
+async function loadCity(slug, options = {}) {
   const city = state.manifest.cities.find((item) => item.slug === slug);
-  if (!city) return;
+  if (!city) return false;
   const token = state.renderToken + 1;
   state.renderToken = token;
   stopPulse();
   clearMeshes();
   state.activeCity = city;
   state.selected = null;
-  state.comparisonMode = "city";
+  state.comparisonMode = normalizeComparisonMode(options.comparisonMode) || "city";
   state.accidentPopup = null;
   state.panelValues = null;
   els.title.textContent = city.name;
@@ -1062,7 +1292,7 @@ async function loadCity(slug) {
   try {
     setLoadingStage("quartals");
     const quartals = await fetchJson(city.files3d.quartals);
-    if (token !== state.renderToken) return;
+    if (token !== state.renderToken) return false;
     setLoadingStage("quartals", "done");
 
     setLoadingStage("layers");
@@ -1073,13 +1303,13 @@ async function loadCity(slug) {
       fetchJson(city.files3d.railways),
       city.files3d.terrain ? fetchJson(city.files3d.terrain).catch(() => null) : Promise.resolve(null)
     ]);
-    if (token !== state.renderToken) return;
+    if (token !== state.renderToken) return false;
     setLoadingStage("layers", "done");
 
     setLoadingStage("buildings");
     const overviewMode = initialBuildingMeshMode();
     const overviewMesh = await loadOverviewMeshForCity(city, overviewMode);
-    if (token !== state.renderToken) return;
+    if (token !== state.renderToken) return false;
     setLoadingStage("buildings", "done");
 
     setLoadingStage("prepare");
@@ -1107,17 +1337,34 @@ async function loadCity(slug) {
     resizeCanvases();
     resetView();
     recomputeScores();
+    if (options.quarterId != null) {
+      selectQuarterById(options.quarterId, {
+        focus: options.focusQuarter !== false,
+        updatePanel: false,
+        draw: false,
+        updateRoute: false
+      });
+    }
+    if (options.layers) {
+      applyRouteLayers(options.layers);
+      syncControlInputs();
+      await ensureVisiblePointLayers();
+      if (token !== state.renderToken) return false;
+    }
     updatePanel();
     draw();
     setLoadingStage("prepare", "done");
     setTimeout(() => {
       if (token === state.renderToken) hideLoadingOverlay();
     }, 220);
+    if (!options.skipRoute) writeRouteState({ replace: options.replaceRoute !== false });
+    return true;
   } catch (error) {
     console.error(error);
-    if (token !== state.renderToken) return;
+    if (token !== state.renderToken) return false;
     setLoadingStage("prepare", "error");
     els.infoPanel.innerHTML = `<div class="muted">Не удалось загрузить 3D-данные</div>`;
+    return false;
   }
 }
 
@@ -1147,8 +1394,15 @@ async function ensurePointLayer(layer) {
   return state.pointLoadPromises[layer];
 }
 
+async function ensureVisiblePointLayers() {
+  const tasks = [];
+  if (state.layers.stops) tasks.push(ensurePointLayer("stops"));
+  if (state.layers.dtp) tasks.push(ensurePointLayer("dtp"));
+  await Promise.all(tasks);
+}
+
 // @dist-split
-function showCityMenu() {
+function showCityMenu(options = {}) {
   stopPulse();
   clearMeshes();
   state.activeCity = null;
@@ -1163,6 +1417,7 @@ function showCityMenu() {
   els.backButton.classList.add("hidden");
   els.cameraTutorial?.classList.add("hidden");
   els.cityMenu.classList.remove("hidden");
+  if (!options.skipRoute) writeRouteState({ replace: options.replaceRoute !== false });
 }
 
 function clearMeshes() {
@@ -1222,9 +1477,11 @@ function resetView() {
   state.camera.pitch = 0.82;
   const rect = overlayCanvas.getBoundingClientRect();
   const extent = projectedScreenExtent(state.data.bbox, state.camera.center);
-  const usableWidth = Math.max(320, rect.width - 420);
-  const usableHeight = Math.max(320, rect.height - 80);
-  const scale = Math.min(usableWidth / extent.width, usableHeight / extent.height) * 0.8;
+  const mobile = isMobileLayout();
+  const usableWidth = Math.max(320, rect.width - (mobile ? 24 : 420));
+  const usableHeight = Math.max(320, rect.height - (mobile ? 190 : 80));
+  const fitFactor = mobile ? 1.55 : 0.8;
+  const scale = Math.min(usableWidth / extent.width, usableHeight / extent.height) * fitFactor;
   state.camera.scale = scale;
   state.camera.fitScale = scale;
   clampCameraCenter();
@@ -2383,16 +2640,12 @@ function pickFeature(event) {
   if (accident) {
     if (accident.items && shouldZoomAccidentCluster(accident)) {
       state.accidentPopup = null;
-      state.selected = null;
-      stopPulse();
-      updatePanel();
+      setSelectedQuarter(null, { draw: false, updateRoute: true, replaceRoute: true });
       zoomToAccidentCluster(accident);
       return;
     }
     state.accidentPopup = accident;
-    state.selected = null;
-    stopPulse();
-    updatePanel();
+    setSelectedQuarter(null, { draw: false, updateRoute: true, replaceRoute: true });
     draw();
     return;
   }
@@ -2401,11 +2654,47 @@ function pickFeature(event) {
   const hit = [...state.data.quartals]
     .sort((a, b) => depthOf(b) - depthOf(a))
     .find((feature) => pointInFeature(feature, world));
-  state.selected = hit || null;
+  setSelectedQuarter(hit || null, { replaceRoute: true });
+}
+
+function setSelectedQuarter(feature, options = {}) {
+  state.selected = feature || null;
   if (state.selected) startPulse();
   else stopPulse();
-  updatePanel();
-  draw();
+  if (state.selected && options.focus) focusQuarter(state.selected, { animate: Boolean(options.animateFocus) });
+  if (options.updatePanel !== false) updatePanel();
+  if (options.draw !== false) draw();
+  if (options.updateRoute !== false) writeRouteState({ replace: options.replaceRoute !== false });
+}
+
+function selectQuarterById(id, options = {}) {
+  if (!state.data || id == null) return false;
+  const targetId = String(id);
+  const feature = state.data.quartals.find((item) => quarterRouteId(item) === targetId);
+  if (!feature) {
+    if (options.clearMissing) setSelectedQuarter(null, options);
+    return false;
+  }
+  setSelectedQuarter(feature, options);
+  return true;
+}
+
+function quarterRouteId(feature) {
+  const id = feature?.properties?.id ?? feature?.id;
+  return id == null ? null : String(id);
+}
+
+function focusQuarter(feature, options = {}) {
+  if (!state.data || !feature?.center) return;
+  const targetScale = clamp(state.camera.fitScale * (isMobileLayout() ? 5.1 : 6.2), cameraMinScale(), cameraMaxScale());
+  if (options.animate) {
+    animateCameraTo(feature.center, targetScale, 680);
+    return;
+  }
+  stopCameraAnimation();
+  state.camera.center = [...feature.center];
+  state.camera.scale = Math.max(state.camera.scale, targetScale);
+  clampCameraCenter();
 }
 
 // @dist-split
@@ -2659,7 +2948,7 @@ function renderCityPanel(cityScore) {
       <div class="panelHeading">
         <h2>${city.name}</h2>
       </div>
-      ${renderComparisonSwitch()}
+      ${renderPanelActions()}
     </div>
     <div class="metricGrid">
       <div class="metric"><strong>${formatNumber(cityScore, 2)}</strong><span>Сценарный индекс</span></div>
@@ -2680,7 +2969,7 @@ function renderQuarterPanel(feature) {
       <div class="panelHeading">
         <h2>Квартал ${props.id}</h2>
       </div>
-      ${renderComparisonSwitch()}
+      ${renderPanelActions()}
     </div>
     <div class="metricGrid">
       <div class="metric"><strong>${formatNumber(props.currentScore, 2)}</strong><span>Сценарный индекс</span></div>
@@ -2707,6 +2996,19 @@ function renderComparisonSwitch() {
       </div>
     </div>
   `;
+}
+
+function renderPanelActions() {
+  return `
+    <div class="panelActions">
+      ${renderComparisonSwitch()}
+      ${renderCopyLinkButton()}
+    </div>
+  `;
+}
+
+function renderCopyLinkButton() {
+  return `<button class="panelLinkButton" type="button" data-copy-link title="Скопировать ссылку" aria-label="Скопировать ссылку на текущий вид">↗</button>`;
 }
 
 function renderGroupedIndicators(indicators) {
