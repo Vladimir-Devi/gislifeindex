@@ -12,7 +12,10 @@ const execFileAsync = promisify(execFile);
 const requiredBundleMarkers = [
   "let activeDataVersion = DATA_VERSION",
   "dataVersionFromManifest(manifest)",
-  "manifest.json?v=${DATA_VERSION}&r=${refreshKey}"
+  "manifest.json?v=${DATA_VERSION}&r=${refreshKey}",
+  "readRouteState",
+  "currentDeepLinkUrl",
+  "panelLinkButton"
 ];
 
 let failed = false;
@@ -95,7 +98,7 @@ async function fetchJson(url) {
 }
 
 function extractBundleVersion(html) {
-  return html.match(/map3d\.bundle\.js\?v=([0-9]+)/)?.[1] ?? null;
+  return html.match(/map3d\.bundle\.js\?v=([^"&<]+)/)?.[1] ?? null;
 }
 
 function extractDataVersion(bundle) {
@@ -162,7 +165,10 @@ async function checkTarget(target) {
   const { body: bundle } = await fetchText(`${origin}/src/map3d.bundle.js?v=${htmlBundleVersion}`);
   const bundleDataVersion = extractDataVersion(bundle);
   if (!bundleDataVersion) throw new Error("DATA_VERSION not found in bundle");
-  assertEqual("HTML bundle version and DATA_VERSION", htmlBundleVersion, bundleDataVersion);
+  assertEqual("bundle DATA_VERSION", bundleDataVersion, dataVersion(localManifest));
+  if (!htmlBundleVersion.startsWith(`${bundleDataVersion}-`)) {
+    throw new Error(`Bundle version should start with ${bundleDataVersion}- and include a code hash, got ${htmlBundleVersion}`);
+  }
   for (const marker of requiredBundleMarkers) {
     if (!bundle.includes(marker)) throw new Error(`Bundle cache-busting marker missing: ${marker}`);
   }

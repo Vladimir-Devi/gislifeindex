@@ -8,6 +8,7 @@ import {
   statSync,
   writeFileSync
 } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -59,19 +60,21 @@ function dataVersionFromManifest() {
 function bundleMap3dScript() {
   const sourcePath = path.join(distDir, "src", "map3d.js");
   const source = readFileSync(sourcePath, "utf8");
-  const version = dataVersionFromManifest();
+  const dataVersion = dataVersionFromManifest();
   const versionedSource = source.replace(
     /const DATA_VERSION = "[^"]+";/,
-    `const DATA_VERSION = "${version}";`
+    `const DATA_VERSION = "${dataVersion}";`
   );
   if (versionedSource === source) {
     throw new Error("Unable to replace DATA_VERSION in map3d.js");
   }
-  const bundlePath = `src/map3d.bundle.js?v=${version}`;
+  const codeHash = createHash("sha256").update(versionedSource).digest("hex").slice(0, 10);
+  const bundleVersion = `${dataVersion}-${codeHash}`;
+  const bundlePath = `src/map3d.bundle.js?v=${bundleVersion}`;
   writeFileSync(path.join(distDir, "src", "map3d.bundle.js"), versionedSource, "utf8");
 
   const loader = `(() => {
-  const version = "${version}";
+  const version = "${bundleVersion}";
   const bundleUrl = "${bundlePath}";
   const fetchBundle = async () => {
     let lastError;
