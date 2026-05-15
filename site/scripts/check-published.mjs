@@ -14,8 +14,7 @@ const requiredBundleMarkers = [
   "dataVersionFromManifest(manifest)",
   "manifest.json?v=${DATA_VERSION}&r=${refreshKey}",
   "readRouteState",
-  "currentDeepLinkUrl",
-  "panelLinkButton"
+  "currentDeepLinkUrl"
 ];
 
 let failed = false;

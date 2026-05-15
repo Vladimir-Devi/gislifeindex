@@ -815,51 +815,6 @@ function currentDeepLinkUrl() {
   return url;
 }
 
-async function copyDeepLink(button) {
-  const url = currentDeepLinkUrl().href;
-  writeRouteState({ replace: true });
-  const copied = await copyTextToClipboard(url);
-  const previousText = button.textContent;
-  button.textContent = copied ? "✓" : "↗";
-  button.classList.toggle("copied", copied);
-  button.setAttribute("aria-label", copied ? "Ссылка скопирована" : "Адресная строка обновлена");
-  window.setTimeout(() => {
-    if (!button.isConnected) return;
-    button.textContent = previousText;
-    button.classList.remove("copied");
-    button.setAttribute("aria-label", "Скопировать ссылку на текущий вид");
-  }, 1200);
-}
-
-async function copyTextToClipboard(text) {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // Fallback below handles browsers without Clipboard API permission.
-  }
-  const node = document.createElement("textarea");
-  node.value = text;
-  node.setAttribute("readonly", "");
-  node.style.position = "fixed";
-  node.style.top = "0";
-  node.style.left = "-9999px";
-  document.body.appendChild(node);
-  node.focus({ preventScroll: true });
-  node.select();
-  node.setSelectionRange(0, node.value.length);
-  let copied = false;
-  try {
-    copied = document.execCommand("copy");
-  } catch {
-    copied = false;
-  }
-  node.remove();
-  return copied;
-}
-
 function initTooltip() {
   if (state.tooltipNode) return;
   const node = document.createElement("div");
@@ -927,11 +882,6 @@ function attachEvents() {
   els.accidentPopup.addEventListener("pointermove", (event) => event.stopPropagation());
   els.accidentPopup.addEventListener("touchmove", (event) => event.stopPropagation(), { passive: true });
   els.infoPanel.addEventListener("click", (event) => {
-    const copyLink = event.target.closest("[data-copy-link]");
-    if (copyLink) {
-      copyDeepLink(copyLink);
-      return;
-    }
     const comparisonToggle = event.target.closest("[data-comparison-toggle]");
     if (comparisonToggle) {
       state.comparisonMode = state.comparisonMode === "city" ? "all" : "city";
@@ -2948,7 +2898,7 @@ function renderCityPanel(cityScore) {
       <div class="panelHeading">
         <h2>${city.name}</h2>
       </div>
-      ${renderPanelActions()}
+      ${renderComparisonSwitch()}
     </div>
     <div class="metricGrid">
       <div class="metric"><strong>${formatNumber(cityScore, 2)}</strong><span>Сценарный индекс</span></div>
@@ -2969,7 +2919,7 @@ function renderQuarterPanel(feature) {
       <div class="panelHeading">
         <h2>Квартал ${props.id}</h2>
       </div>
-      ${renderPanelActions()}
+      ${renderComparisonSwitch()}
     </div>
     <div class="metricGrid">
       <div class="metric"><strong>${formatNumber(props.currentScore, 2)}</strong><span>Сценарный индекс</span></div>
@@ -2996,19 +2946,6 @@ function renderComparisonSwitch() {
       </div>
     </div>
   `;
-}
-
-function renderPanelActions() {
-  return `
-    <div class="panelActions">
-      ${renderComparisonSwitch()}
-      ${renderCopyLinkButton()}
-    </div>
-  `;
-}
-
-function renderCopyLinkButton() {
-  return `<button class="panelLinkButton" type="button" data-copy-link title="Скопировать ссылку" aria-label="Скопировать ссылку на текущий вид">↗</button>`;
 }
 
 function renderGroupedIndicators(indicators) {
