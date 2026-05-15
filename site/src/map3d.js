@@ -79,6 +79,8 @@ const ROAD_DETAIL_FACTOR = 11.8;
 const ROAD_DETAIL_REQUEST_FACTOR = 11.4;
 const ROAD_DETAIL_FULL_FACTOR = 14;
 const ROAD_SURFACE_OFFSET = 0;
+const ROAD_LABEL_START_FACTOR = 3.4;
+const ROAD_LABEL_FULL_FACTOR = 5.8;
 const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
 const MOBILE_BUILDING_FADE_FACTOR = 3.8;
@@ -112,6 +114,8 @@ const CANVAS_THEMES = {
     quarterStroke: "rgba(64, 66, 62, 0.42)",
     roadDetail: (alpha) => `rgba(91, 96, 96, ${alpha})`,
     roadMain: (alpha) => `rgba(47, 54, 55, ${alpha})`,
+    roadLabel: (alpha) => `rgba(35, 42, 43, ${alpha})`,
+    roadLabelHalo: (alpha) => `rgba(250, 245, 233, ${alpha})`,
     railway: (alpha) => `rgba(62, 61, 58, ${alpha})`,
     railwayDash: (alpha) => `rgba(244, 238, 226, ${Math.min(0.72, alpha + 0.18)})`,
     selectedFill: "rgba(255, 246, 199, 0.16)",
@@ -130,6 +134,8 @@ const CANVAS_THEMES = {
     quarterStroke: "rgba(214, 218, 206, 0.24)",
     roadDetail: (alpha) => `rgba(132, 129, 115, ${Math.min(0.38, alpha + 0.08)})`,
     roadMain: (alpha) => `rgba(178, 164, 135, ${Math.min(0.58, alpha + 0.08)})`,
+    roadLabel: (alpha) => `rgba(236, 229, 208, ${alpha})`,
+    roadLabelHalo: (alpha) => `rgba(12, 17, 19, ${alpha})`,
     railway: (alpha) => `rgba(186, 181, 168, ${Math.min(0.62, alpha + 0.08)})`,
     railwayDash: (alpha) => `rgba(18, 24, 26, ${Math.min(0.82, alpha + 0.08)})`,
     selectedFill: "rgba(255, 222, 132, 0.12)",
@@ -299,6 +305,7 @@ function fallbackManifest() {
           green: "data3d/orel/green.json",
           water: "data3d/orel/water.json",
           roads: "data3d/orel/roads.json",
+          roadLabels: "data3d/orel/road-labels.json",
           railways: "data3d/orel/railways.json",
           terrain: "data3d/orel/terrain.json",
           stops: "data3d/orel/stops.json",
@@ -328,6 +335,7 @@ function fallbackManifest() {
           green: "data3d/tambov/green.json",
           water: "data3d/tambov/water.json",
           roads: "data3d/tambov/roads.json",
+          roadLabels: "data3d/tambov/road-labels.json",
           railways: "data3d/tambov/railways.json",
           terrain: "data3d/tambov/terrain.json",
           stops: "data3d/tambov/stops.json",
@@ -1246,11 +1254,12 @@ async function loadCity(slug, options = {}) {
     setLoadingStage("quartals", "done");
 
     setLoadingStage("layers");
-    const [green, water, roads, railways, terrain] = await Promise.all([
+    const [green, water, roads, railways, roadLabels, terrain] = await Promise.all([
       fetchJson(city.files3d.green),
       fetchJson(city.files3d.water),
       fetchJson(city.files3d.roads),
       fetchJson(city.files3d.railways),
+      city.files3d.roadLabels ? fetchJson(city.files3d.roadLabels).catch(() => ({ labels: [] })) : Promise.resolve({ labels: [] }),
       city.files3d.terrain ? fetchJson(city.files3d.terrain).catch(() => null) : Promise.resolve(null)
     ]);
     if (token !== state.renderToken) return false;
@@ -1273,6 +1282,7 @@ async function loadCity(slug, options = {}) {
       green: green.features.map(withCenter),
       water: water.features.map(withCenter),
       roads: roads.lines,
+      roadLabels: roadLabels.labels || [],
       railways: railways.lines,
       terrain: decodeTerrain(terrain),
       points: { stops: [], dtp: [] },
@@ -2004,9 +2014,113 @@ function buildingStyleRgb(style, lightenFactor = 0) {
 function drawOverlay() {
   const rect = overlayCanvas.getBoundingClientRect();
   overlayCtx.clearRect(0, 0, rect.width, rect.height);
+  drawRoadLabels();
   if (state.selected) drawSelected();
   if (state.layers.stops) drawStops();
   if (state.layers.dtp) drawAccidents();
+}
+
+function drawRoadLabels() {
+  const labels = state.data?.roadLabels;
+  if (!labels?.length) return;
+  const start = isMobileLayout() ? ROAD_LABEL_START_FACTOR + 1.2 : ROAD_LABEL_START_FACTOR;
+  const full = isMobileLayout() ? ROAD_LABEL_FULL_FACTOR + 1.8 : ROAD_LABEL_FULL_FACTOR;
+  const progress = smoothStep(zoomRangeProgress(start, full));
+  if (progress <= 0.01) return;
+
+  const rect = overlayCanvas.getBoundingClientRect();
+  const colors = canvasTheme();
+  const view = worldViewBbox();
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
+  const fontSize = isMobileLayout() ? 11 : 12 + zoomRangeProgress(full, full + 3) * 1.5;
+  const maxLabels = isMobileLayout() ? 34 : 92;
+  const placed = [];
+  let drawn = 0;
+
+  overlayCtx.save();
+  overlayCtx.font = `700 ${fontSize}px system-ui, -apple-system, Segoe UI, sans-serif`;
+  overlayCtx.textAlign = "center";
+  overlayCtx.textBaseline = "middle";
+  overlayCtx.lineJoin = "round";
+
+  const candidates = labels
+    .filter((label) => bboxIntersects(label.bbox || labelPointBbox(label), view))
+    .map((label) => {
+      const [sx, sy] = worldToScreen(label.point[0], label.point[1], surfaceZ(label.point[0], label.point[1], 2));
+      const distance = Math.hypot(sx - centerX, sy - centerY);
+      return { label, sx, sy, distance };
+    })
+    .filter(({ sx, sy }) => sx > -120 && sx < rect.width + 120 && sy > -90 && sy < rect.height + 90)
+    .sort((a, b) => (b.label.priority || 0) - (a.label.priority || 0) || b.label.length - a.label.length || a.distance - b.distance);
+
+  for (const item of candidates) {
+    if (drawn >= maxLabels) break;
+    const { label, sx, sy } = item;
+    const text = label.text;
+    const width = overlayCtx.measureText(text).width;
+    const projectedLength = (label.length || 0) * state.camera.scale;
+    if (projectedLength && width > projectedLength * 1.35 && progress < 0.9) continue;
+
+    const angle = screenRoadLabelAngle(label);
+    const bounds = rotatedLabelBounds(sx, sy, width + 14, fontSize + 8, angle);
+    if (placed.some((box) => boxesOverlap(box, bounds, 5))) continue;
+
+    placed.push(bounds);
+    overlayCtx.save();
+    overlayCtx.translate(sx, sy);
+    overlayCtx.rotate(angle);
+    overlayCtx.globalAlpha = progress;
+    overlayCtx.lineWidth = 4.4;
+    overlayCtx.strokeStyle = colors.roadLabelHalo(0.82);
+    overlayCtx.strokeText(text, 0, 0);
+    overlayCtx.fillStyle = colors.roadLabel(0.95);
+    overlayCtx.fillText(text, 0, 0);
+    overlayCtx.restore();
+    drawn += 1;
+  }
+  overlayCtx.restore();
+}
+
+function labelPointBbox(label) {
+  const point = label.point || [0, 0];
+  return [point[0] - 1, point[1] - 1, point[0] + 1, point[1] + 1];
+}
+
+function smoothStep(t) {
+  return t * t * (3 - 2 * t);
+}
+
+function screenRoadLabelAngle(label) {
+  const point = label.point;
+  const distance = Math.max(24, Math.min(80, (label.length || 120) * 0.22));
+  const ux = Math.cos(label.angle || 0);
+  const uy = Math.sin(label.angle || 0);
+  const a = [point[0] - ux * distance, point[1] - uy * distance];
+  const b = [point[0] + ux * distance, point[1] + uy * distance];
+  const p0 = worldToScreen(a[0], a[1], surfaceZ(a[0], a[1], 2));
+  const p1 = worldToScreen(b[0], b[1], surfaceZ(b[0], b[1], 2));
+  return readableAngle(Math.atan2(p1[1] - p0[1], p1[0] - p0[0]));
+}
+
+function readableAngle(angle) {
+  while (angle <= -Math.PI) angle += Math.PI * 2;
+  while (angle > Math.PI) angle -= Math.PI * 2;
+  if (angle > Math.PI / 2) angle -= Math.PI;
+  if (angle < -Math.PI / 2) angle += Math.PI;
+  return angle;
+}
+
+function rotatedLabelBounds(x, y, width, height, angle) {
+  const cos = Math.abs(Math.cos(angle));
+  const sin = Math.abs(Math.sin(angle));
+  const boxWidth = width * cos + height * sin;
+  const boxHeight = width * sin + height * cos;
+  return [x - boxWidth / 2, y - boxHeight / 2, x + boxWidth / 2, y + boxHeight / 2];
+}
+
+function boxesOverlap(a, b, padding = 0) {
+  return a[0] - padding <= b[2] && a[2] + padding >= b[0] && a[1] - padding <= b[3] && a[3] + padding >= b[1];
 }
 
 function drawSelected() {

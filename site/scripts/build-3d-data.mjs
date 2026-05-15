@@ -255,6 +255,86 @@ function prepareMajorRoad(feature, projection) {
   return lines;
 }
 
+function roadLabelText(properties = {}) {
+  for (const key of ["name_ru", "name", "ref"]) {
+    const value = properties[key];
+    if (value === null || value === undefined) continue;
+    const text = String(value).replace(/\s+/g, " ").trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function lineLength(line) {
+  let total = 0;
+  for (let i = 1; i < line.length; i += 1) {
+    total += Math.hypot(line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]);
+  }
+  return total;
+}
+
+function linePointAt(line, targetDistance) {
+  let travelled = 0;
+  for (let i = 1; i < line.length; i += 1) {
+    const a = line[i - 1];
+    const b = line[i];
+    const segmentLength = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (segmentLength <= 0) continue;
+    if (travelled + segmentLength >= targetDistance) {
+      const t = clamp((targetDistance - travelled) / segmentLength, 0, 1);
+      return {
+        point: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
+        angle: Math.atan2(b[1] - a[1], b[0] - a[0])
+      };
+    }
+    travelled += segmentLength;
+  }
+  const a = line.at(-2);
+  const b = line.at(-1);
+  return {
+    point: b,
+    angle: a && b ? Math.atan2(b[1] - a[1], b[0] - a[0]) : 0
+  };
+}
+
+function roadLabelPriority(properties = {}, length = 0) {
+  const highway = String(properties.highway || "").toLowerCase();
+  const classPriority = {
+    motorway: 9,
+    trunk: 8,
+    primary: 7,
+    secondary: 6,
+    tertiary: 5,
+    unclassified: 4,
+    residential: 3,
+    service: 1,
+    track: 1
+  };
+  return (classPriority[highway] ?? 3) + Math.min(4, length / 1200);
+}
+
+function prepareRoadLabel(feature, projection) {
+  const text = roadLabelText(feature.properties);
+  if (!text) return null;
+  const candidates = geometryToLines(feature.geometry, projection)
+    .map((line) => simplify(line, 8))
+    .filter((line) => line.length > 1)
+    .map((line) => ({ line, length: lineLength(line) }))
+    .filter((candidate) => candidate.length >= 70)
+    .sort((a, b) => b.length - a.length);
+  const best = candidates[0];
+  if (!best) return null;
+  const anchor = linePointAt(best.line, best.length / 2);
+  return {
+    text,
+    point: roundPoint(anchor.point, 1),
+    angle: round(anchor.angle, 4),
+    length: round(best.length, 1),
+    priority: round(roadLabelPriority(feature.properties, best.length), 2),
+    bbox: bboxFromPoints(best.line)
+  };
+}
+
 function tileIndex(point, bbox) {
   const [minX, minY, maxX, maxY] = bbox;
   const tx = Math.max(0, Math.min(TILE_COUNT - 1, Math.floor(((point[0] - minX) / (maxX - minX || 1)) * TILE_COUNT)));
@@ -830,6 +910,11 @@ for (const city of sourceManifest.cities) {
     .filter(Boolean);
   const roads = readJson(city.files.roads).features
     .flatMap((feature) => prepareMajorRoad(feature, projection));
+  const roadLabelFeatures = city.files.roadLabels ? readJson(city.files.roadLabels).features : [];
+  const roadLabels = roadLabelFeatures
+    .map((feature) => prepareRoadLabel(feature, projection))
+    .filter(Boolean)
+    .sort((a, b) => b.priority - a.priority || b.length - a.length);
   const railways = readJson(city.files.railways).features
     .flatMap((feature) => prepareMajorRoad(feature, projection));
   const roadsAll = readJson(city.files.roadsAll);
@@ -847,6 +932,7 @@ for (const city of sourceManifest.cities) {
   writeJson(path.join(cityDir, "green.json"), { features: green });
   writeJson(path.join(cityDir, "water.json"), { features: water });
   writeJson(path.join(cityDir, "roads.json"), { lines: roads });
+  writeJson(path.join(cityDir, "road-labels.json"), { labels: roadLabels });
   writeJson(path.join(cityDir, "railways.json"), { lines: railways });
   writeJson(path.join(cityDir, "stops.json"), { items: stops });
   writeJson(path.join(cityDir, "dtp.json"), { items: dtp });
@@ -862,6 +948,7 @@ for (const city of sourceManifest.cities) {
       green: `data3d/${city.slug}/green.json`,
       water: `data3d/${city.slug}/water.json`,
       roads: `data3d/${city.slug}/roads.json`,
+      roadLabels: `data3d/${city.slug}/road-labels.json`,
       railways: `data3d/${city.slug}/railways.json`,
       stops: `data3d/${city.slug}/stops.json`,
       dtp: `data3d/${city.slug}/dtp.json`,
@@ -882,7 +969,7 @@ for (const city of sourceManifest.cities) {
   });
 
   console.log(
-    `${city.slug}: ${quartals.length} quarters, ${buildingStats.total} buildings, ${buildingStats.overview} overview buildings, ${availableRoadTiles.length} road tiles`
+    `${city.slug}: ${quartals.length} quarters, ${buildingStats.total} buildings, ${buildingStats.overview} overview buildings, ${roadLabels.length} road labels, ${availableRoadTiles.length} road tiles`
   );
 }
 

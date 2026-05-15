@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T23:02:46.248Z",
+  "generatedAt": "2026-05-15T20:08:55.390Z",
   "tileCount": 8,
   "overviewAreaThreshold": 700,
   "cities": [
@@ -21,6 +21,7 @@
         "railways": "data/orel/railways.geojson",
         "roads": "data/orel/roads.geojson",
         "roadsAll": "data/orel/roads-all.geojson",
+        "roadLabels": "data/orel/road-labels.geojson",
         "stops": "data/orel/stops.geojson",
         "dtp": "data/orel/dtp.geojson",
         "mkdUnmatched": "data/orel/mkd-unmatched.geojson"
@@ -68,6 +69,7 @@
         "green": "data3d/orel/green.json",
         "water": "data3d/orel/water.json",
         "roads": "data3d/orel/roads.json",
+        "roadLabels": "data3d/orel/road-labels.json",
         "railways": "data3d/orel/railways.json",
         "stops": "data3d/orel/stops.json",
         "dtp": "data3d/orel/dtp.json",
@@ -214,6 +216,7 @@
         "railways": "data/tambov/railways.geojson",
         "roads": "data/tambov/roads.geojson",
         "roadsAll": "data/tambov/roads-all.geojson",
+        "roadLabels": "data/tambov/road-labels.geojson",
         "stops": "data/tambov/stops.geojson",
         "dtp": "data/tambov/dtp.geojson",
         "mkdUnmatched": "data/tambov/mkd-unmatched.geojson"
@@ -261,6 +264,7 @@
         "green": "data3d/tambov/green.json",
         "water": "data3d/tambov/water.json",
         "roads": "data3d/tambov/roads.json",
+        "roadLabels": "data3d/tambov/road-labels.json",
         "railways": "data3d/tambov/railways.json",
         "stops": "data3d/tambov/stops.json",
         "dtp": "data3d/tambov/dtp.json",

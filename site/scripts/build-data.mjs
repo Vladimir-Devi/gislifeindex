@@ -32,6 +32,7 @@ const cities = [
     boundaryLayer: "boundary",
     roadLayer: "road_auto_site",
     roadAllLayer: "road_all_site",
+    roadLabelLayer: "road_auto_lable",
     mkdLayer: "mkd",
     mkdFields: ["address", "floor_num", "pop"],
     mkdWhere: "lon >= 35 AND lon <= 37 AND lat >= 52 AND lat <= 54",
@@ -59,6 +60,7 @@ const cities = [
     boundaryLayer: "boundary",
     roadLayer: "road_auto_site",
     roadAllLayer: "road_all_site",
+    roadLabelLayer: null,
     mkdLayer: "mkd_plus",
     mkdFields: ["address", "floor", "pop"],
     mkdWhere: "lon >= 41 AND lon <= 42 AND lat >= 52 AND lat <= 53",
@@ -594,6 +596,16 @@ function exportCity(city) {
     input: path.join(sourceBase, "road.gpkg"),
     layer: city.roadAllLayer
   });
+  if (city.roadLabelLayer) {
+    exportLayer({
+      output: path.join(rawBase, "road-labels.geojson"),
+      input: path.join(sourceBase, "road.gpkg"),
+      layer: city.roadLabelLayer,
+      select: ["name_ru", "name", "ref", "highway", "q", "lenght"]
+    });
+  } else {
+    writeJson(path.join(rawBase, "road-labels.geojson"), { type: "FeatureCollection", features: [] });
+  }
   exportLayer({
     output: path.join(rawBase, "mkd.geojson"),
     input: path.join(sourceBase, "osnova.gpkg"),
@@ -651,6 +663,7 @@ function prepareCity(city, populationRows) {
   writeJson(path.join(cityOut, "railways.geojson"), readJson(path.join(rawBase, "railways.geojson")));
   writeJson(path.join(cityOut, "roads.geojson"), readJson(path.join(rawBase, "roads.geojson")));
   writeJson(path.join(cityOut, "roads-all.geojson"), readJson(path.join(rawBase, "roads-all.geojson")));
+  writeJson(path.join(cityOut, "road-labels.geojson"), readJson(path.join(rawBase, "road-labels.geojson")));
   writeJson(path.join(cityOut, "stops.geojson"), stops);
   writeJson(path.join(cityOut, "dtp.geojson"), dtp);
   writeJson(path.join(cityOut, "mkd-unmatched.geojson"), { type: "FeatureCollection", features: unmatchedMkd });
@@ -670,6 +683,7 @@ function prepareCity(city, populationRows) {
       railways: `data/${city.slug}/railways.geojson`,
       roads: `data/${city.slug}/roads.geojson`,
       roadsAll: `data/${city.slug}/roads-all.geojson`,
+      roadLabels: `data/${city.slug}/road-labels.geojson`,
       stops: `data/${city.slug}/stops.geojson`,
       dtp: `data/${city.slug}/dtp.geojson`,
       mkdUnmatched: `data/${city.slug}/mkd-unmatched.geojson`
