@@ -165,7 +165,7 @@ const state = {
     scale: 0.045,
     fitScale: 0.045,
     center: [0, 0],
-    bearing: -0.66,
+    bearing: 0,
     pitch: 0.82
   },
   selected: null,
@@ -220,7 +220,9 @@ const els = {
   accidentPopup: document.getElementById("accidentPopup"),
   cameraTutorial: document.getElementById("cameraTutorial"),
   loadingOverlay: document.getElementById("loadingOverlay"),
-  themeToggle: document.getElementById("themeToggle")
+  themeToggle: document.getElementById("themeToggle"),
+  compassButton: document.getElementById("compassButton"),
+  compassDial: document.getElementById("compassDial")
 };
 
 let glState = null;
@@ -880,6 +882,7 @@ function attachEvents() {
   els.backButton.addEventListener("click", () => showCityMenu({ replaceRoute: false }));
   els.themeToggle?.addEventListener("click", toggleTheme);
   document.getElementById("resetView").addEventListener("click", resetView);
+  els.compassButton?.addEventListener("click", resetBearingToNorth);
   els.cameraTutorial?.addEventListener("click", (event) => {
     if (event.target.closest(".tutorialClose")) hideCameraTutorial(true);
   });
@@ -1435,7 +1438,7 @@ function resetView() {
   stopCameraAnimation();
   const [minX, minY, maxX, maxY] = state.data.bbox;
   state.camera.center = [(minX + maxX) / 2, (minY + maxY) / 2];
-  state.camera.bearing = -0.66;
+  state.camera.bearing = 0;
   state.camera.pitch = 0.82;
   const rect = overlayCanvas.getBoundingClientRect();
   const extent = projectedScreenExtent(state.data.bbox, state.camera.center);
@@ -1448,6 +1451,20 @@ function resetView() {
   state.camera.fitScale = scale;
   clampCameraCenter();
   draw();
+}
+
+function resetBearingToNorth() {
+  if (!state.data) return;
+  stopCameraAnimation();
+  state.camera.bearing = 0;
+  draw();
+}
+
+function updateCompass() {
+  if (!els.compassButton || !els.compassDial) return;
+  const bearing = normalizeAngleDelta(state.camera.bearing);
+  els.compassDial.style.transform = `rotate(${-bearing}rad)`;
+  els.compassButton.classList.toggle("isNorth", Math.abs(bearing) < 0.01);
 }
 
 function cameraMinScale() {
@@ -1642,6 +1659,7 @@ function screenToWorldOnTerrain(sx, sy, offset = 0) {
 function draw() {
   if (!state.data) return;
   clampCameraCenter();
+  updateCompass();
   renderLegend();
   renderSymbolLegend();
   drawBase();

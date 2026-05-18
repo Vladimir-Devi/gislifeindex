@@ -31,6 +31,7 @@
 
 .mapShell3d .mapControls,
 .mapShell3d .infoPanel,
+.mapShell3d .compassButton,
 .mapShell3d .legend,
 .mapShell3d .symbolLegend,
 .mapShell3d .accidentPopup {
@@ -39,6 +40,100 @@
 
 .mapShell3d .infoPanel {
   z-index: 6;
+}
+
+.compassButton {
+  position: absolute;
+  top: 16px;
+  right: 412px;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  background: var(--panel-soft);
+  box-shadow: 4px 4px 0 rgba(31, 35, 38, 0.14);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.compassButton:hover {
+  background: var(--button-hover);
+  transform: translateY(-1px);
+}
+
+.compassButton.isNorth {
+  opacity: 0.72;
+}
+
+.compassDial {
+  position: relative;
+  display: block;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transform: rotate(0rad);
+  transition: transform 120ms ease;
+}
+
+.compassDial::before {
+  position: absolute;
+  inset: 2px;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  content: "";
+}
+
+.compassNorth {
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  color: #b64c3f;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1;
+  transform: translateX(-50%);
+}
+
+.compassNeedle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 22px;
+  transform: translate(-50%, -48%);
+}
+
+.compassNeedle::before,
+.compassNeedle::after {
+  position: absolute;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.compassNeedle::before {
+  top: 0;
+  border-bottom: 13px solid #b64c3f;
+}
+
+.compassNeedle::after {
+  bottom: 0;
+  border-top: 9px solid rgba(75, 83, 84, 0.72);
+}
+
+:root[data-theme="dark"] .compassButton {
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.32);
 }
 
 .loadingOverlay {
@@ -297,6 +392,18 @@
     overscroll-behavior: contain;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .mapShell3d .compassButton {
+    top: 10px;
+    right: 10px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .mapShell3d .compassDial {
+    width: 29px;
+    height: 29px;
   }
 
   .mapShell3d .controlGroup {
