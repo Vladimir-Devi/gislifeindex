@@ -93,11 +93,12 @@
 
 .compassNorth {
   position: absolute;
-  top: 1px;
+  top: -1px;
   left: 50%;
   color: #b64c3f;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 850;
+  letter-spacing: 0;
   line-height: 1;
   transform: translateX(-50%);
 }
@@ -108,7 +109,7 @@
   left: 50%;
   width: 14px;
   height: 26px;
-  transform: translate(-50%, -48%);
+  transform: translate(-50%, -50%);
 }
 
 .compassNeedle::before,
@@ -288,7 +289,7 @@
 
 .tutorialClose {
   position: absolute;
-  top: 8px;
+  top: 50%;
   right: 8px;
   display: grid;
   width: 24px;
@@ -302,6 +303,7 @@
   background: var(--button-bg);
   color: var(--muted);
   cursor: pointer;
+  transform: translateY(-50%);
 }
 
 .tutorialClose:hover {
