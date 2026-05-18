@@ -618,7 +618,7 @@ function renderCameraTutorial() {
     <div class="tutorialGrid">
       <span>ЛКМ</span><p>движение карты</p>
       <span>ПКМ</span><p>поворот и наклон</p>
-      <span>Колесо</span><p>приближение/отдаление</p>
+      <span>Колесо</span><p>приближение и отдаление</p>
     </div>
   `;
 }
