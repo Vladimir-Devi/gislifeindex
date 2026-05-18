@@ -615,11 +615,10 @@ function renderCameraTutorial() {
   els.cameraTutorial.classList.remove("hidden");
   els.cameraTutorial.innerHTML = `
     <button class="tutorialClose" type="button" aria-label="Закрыть обучение">×</button>
-    <strong>Управление картой</strong>
     <div class="tutorialGrid">
-      <span>ЛКМ</span><p>двигать карту</p>
+      <span>ЛКМ</span><p>движение карты</p>
       <span>ПКМ</span><p>поворот и наклон</p>
-      <span>Колесо</span><p>плавный зум</p>
+      <span>Колесо</span><p>приближение/отдаление</p>
     </div>
   `;
 }
@@ -1456,8 +1455,29 @@ function resetView() {
 function resetBearingToNorth() {
   if (!state.data) return;
   stopCameraAnimation();
-  state.camera.bearing = 0;
-  draw();
+  const startBearing = state.camera.bearing;
+  const delta = normalizeAngleDelta(-startBearing);
+  if (Math.abs(delta) < 0.001) {
+    state.camera.bearing = 0;
+    draw();
+    return;
+  }
+  const startedAt = performance.now();
+  const duration = 520;
+  const tick = (time) => {
+    const t = clamp((time - startedAt) / duration, 0, 1);
+    const eased = smoothStep(t);
+    state.camera.bearing = startBearing + delta * eased;
+    draw();
+    if (t < 1) {
+      state.cameraAnimation = requestAnimationFrame(tick);
+    } else {
+      state.camera.bearing = 0;
+      state.cameraAnimation = null;
+      draw();
+    }
+  };
+  state.cameraAnimation = requestAnimationFrame(tick);
 }
 
 function updateCompass() {
