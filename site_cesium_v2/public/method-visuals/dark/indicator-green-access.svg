@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #334044;
+      }
+
+      .st1 {
+        fill: #6ca879;
+        opacity: 0;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6 {
+        isolation: isolate;
+      }
+
+      .st7 {
+        fill: #2e322c;
+        stroke-opacity: .4;
+      }
+
+      .st7, .st2, .st8, .st9, .st10, .st11, .st12, .st13 {
+        stroke: #6ca879;
+      }
+
+      .st2 {
+        opacity: .2;
+        stroke-width: 2px;
+      }
+
+      .st2, .st8, .st14, .st4 {
+        fill: none;
+      }
+
+      .st8 {
+        stroke-dasharray: 7 8;
+      }
+
+      .st8, .st11 {
+        stroke-width: 3px;
+      }
+
+      .st8, .st15, .st4, .st16, .st17 {
+        stroke-linecap: round;
+      }
+
+      .st9 {
+        stroke-opacity: .4;
+      }
+
+      .st9, .st11 {
+        fill: #1c2427;
+      }
+
+      .st18 {
+        opacity: .4;
+      }
+
+      .st10 {
+        fill: #588765;
+      }
+
+      .st10, .st12, .st13 {
+        stroke-opacity: .6;
+      }
+
+      .st14 {
+        stroke: #2a363a;
+      }
+
+      .st15 {
+        stroke-width: 5.5px;
+      }
+
+      .st15, .st16, .st17 {
+        stroke: #674727;
+      }
+
+      .st4 {
+        opacity: .7;
+        stroke: #62986f;
+        stroke-width: 25px;
+      }
+
+      .st12 {
+        fill: #486d54;
+      }
+
+      .st16 {
+        stroke-width: 4.9px;
+      }
+
+      .st5 {
+        font-size: 12px;
+      }
+
+      .st5, .st6 {
+        fill: #edf1ed;
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st17 {
+        stroke-width: 6.6px;
+      }
+
+      .st13 {
+        fill: #568362;
+      }
+
+      .st6 {
+        font-size: 13px;
+      }
+
+      .st19 {
+        fill: #171d20;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st19" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st1" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st2" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st18">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st14" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st9" x="26.1" y="18" width="105" height="40" rx="7" ry="7"/>
+    <g class="st3">
+      <text class="st6" transform="translate(38.3 33.9)"><tspan x="0" y="0">Доступность</tspan></text>
+      <text class="st6" transform="translate(38.3 48.9)"><tspan x="0" y="0">зелёных зон</tspan></text>
+    </g>
+  </g>
+  <g id="illustration">
+    <path class="st4" d="M60,126c42-35,85,10,131-21,49-33,98-19,168,19"/>
+    <path class="st8" d="M60,126c42-35,85,10,131-21,49-33,98-19,168,19"/>
+    <path class="st15" d="M158.6,95.3v27.5"/>
+    <circle class="st10" cx="158.2" cy="97.1" r="15.4"/>
+    <circle class="st12" cx="158.6" cy="85.4" r="18.7"/>
+    <circle class="st13" cx="167.6" cy="96.9" r="14.3"/>
+    <path class="st17" d="M340.7,72.8v33"/>
+    <circle class="st10" cx="340.7" cy="75.2" r="18.5"/>
+    <circle class="st12" cx="340.7" cy="64.7" r="22.4"/>
+    <circle class="st13" cx="348.9" cy="63.3" r="17.2" transform="translate(230.6 397.6) rotate(-80.8)"/>
+    <path class="st16" d="M359.2,99.1v24.5"/>
+    <circle class="st13" cx="366.1" cy="101" r="12.7"/>
+    <rect class="st7" x="221.2" y="106" width="64" height="24" rx="7" ry="7"/>
+    <text class="st5" transform="translate(236 122.1)"><tspan x="0" y="0">5 мин</tspan></text>
+    <circle class="st12" cx="360.3" cy="89.4" r="16.7"/>
+    <circle class="st10" cx="352.9" cy="97.6" r="13.7"/>
+    <circle class="st11" cx="60" cy="126" r="8"/>
+  </g>
+</svg>

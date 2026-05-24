@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #d8d2c7;
+      }
+
+      .st1 {
+        opacity: 0;
+      }
+
+      .st1, .st2, .st3, .st4, .st5 {
+        isolation: isolate;
+      }
+
+      .st1, .st6 {
+        fill: #6f6c2d;
+      }
+
+      .st7 {
+        stroke-opacity: .4;
+      }
+
+      .st7, .st3, .st8, .st9, .st10, .st11 {
+        stroke: #6f6c2d;
+      }
+
+      .st7, .st9 {
+        fill: #fffaf1;
+      }
+
+      .st12 {
+        opacity: .4;
+      }
+
+      .st3 {
+        opacity: .2;
+      }
+
+      .st3, .st8, .st13 {
+        fill: none;
+      }
+
+      .st3, .st9 {
+        stroke-width: 2px;
+      }
+
+      .st8 {
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2.8px;
+      }
+
+      .st13 {
+        stroke: #e7dfd1;
+      }
+
+      .st4 {
+        font-size: 12px;
+      }
+
+      .st4, .st5 {
+        fill: #202326;
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st10 {
+        fill: #a19e72;
+      }
+
+      .st11 {
+        fill: #dfdbc6;
+      }
+
+      .st5 {
+        font-size: 13px;
+      }
+
+      .st14 {
+        fill: #fffdf8;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st14" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st1" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st3" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st12">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st13" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st7" x="26" y="18" width="133" height="28" rx="7" ry="7"/>
+    <g class="st2">
+      <g class="st2">
+        <text class="st5" transform="translate(35.5 36)"><tspan x="0" y="0">Полнота корзины</tspan></text>
+      </g>
+    </g>
+  </g>
+  <g id="illustration">
+    <circle class="st10" cx="112.4" cy="116.6" r="9"/>
+    <rect class="st11" x="151.1" y="116.6" width="22" height="26" rx="5" ry="5"/>
+    <rect class="st9" x="240" y="61" width="102" height="80" rx="10" ry="10"/>
+    <path class="st8" d="M256.5,82.2l5.8,7.1,10.8-15.3"/>
+    <g class="st2">
+      <text class="st4" transform="translate(285 87)"><tspan x="0" y="0">магазин</tspan></text>
+    </g>
+    <path class="st8" d="M256.5,101.5l5.8,7.1,10.8-15.3"/>
+    <g class="st2">
+      <text class="st4" transform="translate(285 106)"><tspan x="0" y="0">аптека</tspan></text>
+    </g>
+    <path class="st8" d="M256.5,120.9l5.8,7.1,10.8-15.3"/>
+    <g class="st2">
+      <text class="st4" transform="translate(285 125)"><tspan x="0" y="0">услуги</tspan></text>
+    </g>
+  </g>
+  <path class="st6" d="M107.5,84.2h66.7l-18.8-32.7c-.9-2,1.7-3.7,3.3-2.2l20.2,34.9h17.8c2.2.4,2.7,3.6.5,4.1s-7.8-.2-8.1.2l-8.8,49.4c-1.6,4.3-5.3,7.2-9.8,7.9h-62.4c-9.3-1.2-10.4-7.6-11.8-15.3-2.6-13.9-4.6-28-7.1-41.9-.4-.6-6.8,0-8.2-.3-2.2-.5-1.7-3.7.5-4h21.2c0,0,20.6-35.2,20.6-35.2,2.3-.8,3.6.6,2.9,2.9l-18.6,32.3h0ZM184.8,88.3h-91.4l8.1,47.5c.9,3.3,3.7,5.8,7.2,5.9h61.1c4-.5,6.3-3.1,7.2-6.9,3.5-14.5,4.4-30.5,7.8-45.1v-1.4h0Z"/>
+  <path class="st6" d="M140.6,98.9c.4.3.6,1.1.6,1.6.8,8.6-.6,18.5,0,27.2-.3,2.6-3.9,2.6-4.1,0v-27.2c0-1.8,2.2-2.7,3.5-1.6Z"/>
+  <path class="st6" d="M117.9,129c-.4-.4-.6-1.5-.6-2.1-.7-8.3.5-17.5,0-25.9-.2-2.9,3.8-3.8,4.1-.8v27.7c0,1.7-2.5,2.3-3.5,1.1Z"/>
+  <path class="st6" d="M160.3,129c-1,1.2-3.4.6-3.5-1.1v-27.7c.4-3,4.3-2.1,4.1.8-.5,8.4.7,17.6,0,25.9-.7,8.3-.2,1.7-.6,2.1Z"/>
+</svg>

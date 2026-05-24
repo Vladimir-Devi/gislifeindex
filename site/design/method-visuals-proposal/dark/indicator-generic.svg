@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #334044;
+      }
+
+      .st1 {
+        stroke-linejoin: round;
+        stroke-width: 4px;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6, .st7 {
+        stroke: #54a7a5;
+      }
+
+      .st1, .st2, .st8, .st6 {
+        fill: none;
+      }
+
+      .st1, .st7 {
+        stroke-linecap: round;
+      }
+
+      .st2 {
+        opacity: .2;
+      }
+
+      .st2, .st4 {
+        stroke-width: 2px;
+      }
+
+      .st2, .st9, .st10, .st11, .st12 {
+        isolation: isolate;
+      }
+
+      .st3 {
+        fill: #1c2427;
+        stroke-opacity: .4;
+      }
+
+      .st4 {
+        fill: #263135;
+      }
+
+      .st13 {
+        opacity: .3;
+      }
+
+      .st5 {
+        fill: #24383a;
+        stroke-opacity: .4;
+      }
+
+      .st14 {
+        opacity: .4;
+      }
+
+      .st8 {
+        stroke: #2a363a;
+      }
+
+      .st10 {
+        font-size: 12px;
+      }
+
+      .st10, .st12 {
+        fill: #edf1ed;
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st11 {
+        opacity: 0;
+      }
+
+      .st11, .st15 {
+        fill: #54a7a5;
+      }
+
+      .st16 {
+        opacity: 0;
+      }
+
+      .st6 {
+        stroke-width: 6px;
+      }
+
+      .st7 {
+        stroke-width: 7px;
+      }
+
+      .st12 {
+        font-size: 13px;
+      }
+
+      .st17 {
+        fill: #171d20;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st17" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st11" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st2" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st14">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st8" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st3" x="26" y="18" width="98" height="28" rx="7" ry="7"/>
+    <g class="st9">
+      <text class="st12" transform="translate(40 36)"><tspan x="0" y="0">Показатель</tspan></text>
+    </g>
+  </g>
+  <g id="illustration">
+    <path class="st4" d="M75,70l119-22,57,44-49,46-118-10-9-58Z"/>
+    <path class="st1" d="M90,96l40-10,40,18,47-26"/>
+    <circle class="st6" cx="248" cy="83" r="30"/>
+    <g class="st13">
+      <path class="st15" d="M248,58.7c13.4,0,24.3,10.9,24.3,24.3s-10.9,24.3-24.3,24.3-24.3-10.9-24.3-24.3,10.9-24.3,24.3-24.3M248,53c-16.6,0-30,13.4-30,30s13.4,30,30,30,30-13.4,30-30-13.4-30-30-30h0Z"/>
+    </g>
+    <g class="st16">
+      <path class="st15" d="M248,61.5c11.9,0,21.5,9.6,21.5,21.5s-9.6,21.5-21.5,21.5-21.5-9.6-21.5-21.5,9.6-21.5,21.5-21.5M248,53c-16.6,0-30,13.4-30,30s13.4,30,30,30,30-13.4,30-30-13.4-30-30-30h0Z"/>
+    </g>
+    <path class="st7" d="M270,106l45,33"/>
+    <rect class="st5" x="280" y="52" width="76" height="24" rx="7" ry="7"/>
+    <text class="st10" transform="translate(296.9 68.1)"><tspan x="0" y="0">оценка</tspan></text>
+  </g>
+</svg>

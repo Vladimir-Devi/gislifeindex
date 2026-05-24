@@ -33,7 +33,7 @@ const BLOCKS = [
     key: "commerce",
     label: "Экономика",
     color: "#b88624",
-    help: "Экономическая активность по данным ФНС: ККТ, активность и чековые показатели"
+    help: "Экономическая активность по данным ФНС: ККТ, активность и чековые показатели. Используется только во внутригородском сравнении."
   }
 ];
 
@@ -70,6 +70,171 @@ const GROUP_HELP = {
   "Экономика": BLOCKS.find((block) => block.key === "commerce").help
 };
 
+const METHOD_METRICS = {
+  scenario: {
+    title: "Сценарный индекс",
+    lead: "Показывает оценку с учетом только тех направлений, которые сейчас включены в блоке «Сценарии индекса».",
+    visual: "scenario",
+    bullets: [
+      "Если включены все направления, значение совпадает с основной оценкой.",
+      "Если отключить одно направление, сайт показывает, как территория выглядит без него.",
+      "Это удобно для вопроса: что сильнее всего влияет на итоговый результат?"
+    ]
+  },
+  base: {
+    title: "Основной индекс",
+    lead: "Главная оценка территории по всем направлениям сразу: жилье, инфраструктура, транспорт, работа, зелень и экономика.",
+    visual: "base",
+    bullets: [
+      "Значение заранее рассчитано по подготовленным данным.",
+      "Оно не меняется, когда вы включаете или выключаете сценарии.",
+      "Используйте его как исходную оценку квартала или города."
+    ]
+  },
+  rank: {
+    title: "Ранг",
+    lead: "Показывает место территории в рейтинге. Чем меньше число, тем выше позиция.",
+    visual: "rank",
+    bullets: [
+      "Ранг помогает быстро понять, насколько территория сильна относительно других.",
+      "При внутригородском сравнении место считается внутри выбранного города.",
+      "При общегородском сравнении территория сопоставляется на общей шкале."
+    ]
+  },
+  population: {
+    title: "Численность населения",
+    lead: "Показывает, сколько жителей относится к выбранной территории.",
+    visual: "population",
+    bullets: [
+      "Для города это общее число жителей.",
+      "Для квартала это расчетное число жителей внутри его границ.",
+      "Чем больше жителей в квартале, тем заметнее он влияет на общую оценку города."
+    ]
+  }
+};
+
+const METHOD_BLOCKS = {
+  housing: {
+    title: "Жильё",
+    lead: "Описывает жилую среду квартала: насколько комфортно и устойчиво устроен жилой фонд.",
+    visual: "housing",
+    bullets: ["Плотность жителей", "Жилая площадь на человека", "Износ домов", "Средняя этажность"]
+  },
+  infra: {
+    title: "Коммерческая инфраструктура",
+    lead: "Показывает, есть ли рядом с жителями повседневные места: магазины, услуги и другие городские функции.",
+    visual: "infra",
+    bullets: ["Разнообразие мест", "Полнота повседневной корзины", "Близость нужных функций"]
+  },
+  transport: {
+    title: "Транспорт",
+    lead: "Показывает, насколько удобно жителям дойти до остановок общественного транспорта.",
+    visual: "transport",
+    bullets: ["Остановки рядом", "Пешеходная доступность", "Доля жителей в удобной зоне"]
+  },
+  work: {
+    title: "Крупные работодатели",
+    lead: "Показывает связь квартала с крупными местами занятости.",
+    visual: "work",
+    bullets: ["Крупные организации", "Рабочие места рядом", "Насыщенность территории занятостью"]
+  },
+  green: {
+    title: "Зелёные зоны",
+    lead: "Показывает, насколько жителям доступна зелень: парки, скверы и другие озелененные территории.",
+    visual: "green",
+    bullets: ["Зеленые территории", "Пешеходная доступность", "Доля жителей рядом с зеленью"]
+  },
+  commerce: {
+    title: "Экономика",
+    lead: "Показывает деловую и потребительскую активность территории по нескольким косвенным признакам. Используется только во внутригородском сравнении: при общегородском сравнении этот субиндекс отключается.",
+    visual: "commerce",
+    bullets: ["Активность организаций", "Кассовая техника", "Размер типичного чека", "Только внутригородское сравнение"]
+  }
+};
+
+const METHOD_VISUAL_ASSET_BASE = "public/method-visuals";
+const METHOD_VISUAL_ASSETS = {
+  scenario: "metric-scenario",
+  base: "metric-base",
+  rank: "metric-rank",
+  population: "metric-population",
+  housing: "block-housing",
+  infra: "block-infra",
+  transport: "block-transport",
+  work: "block-work",
+  green: "block-green",
+  commerce: "block-commerce",
+  indicator: "indicator-generic"
+};
+
+const INDICATOR_METHODS = {
+  "Жильё|плотность": {
+    title: "Плотность",
+    lead: "Показывает, сколько жителей приходится на площадь квартала.",
+    bullets: ["Помогает понять нагрузку на территорию.", "Слишком высокая плотность может означать меньше пространства на человека."]
+  },
+  "Жильё|обеспеченность": {
+    title: "Обеспеченность жильём",
+    lead: "Показывает, сколько жилой площади приходится на одного жителя.",
+    bullets: ["Чем выше значение, тем больше жилого пространства на человека.", "Показатель помогает отличать тесную и более свободную жилую среду."]
+  },
+  "Жильё|износ": {
+    title: "Износ",
+    lead: "Показывает состояние жилого фонда.",
+    bullets: ["Чем выше износ, тем больше домов требует внимания.", "Показатель отражает не внешний вид квартала, а возраст и состояние жилой застройки."]
+  },
+  "Жильё|этажность": {
+    title: "Этажность",
+    lead: "Показывает среднюю высоту жилой застройки.",
+    bullets: ["Помогает понять тип квартала: малоэтажный, среднеэтажный или многоэтажный.", "Связан с плотностью, числом жителей и характером пространства."]
+  },
+  "Коммерческая инфраструктура|разнообразие": {
+    title: "Разнообразие",
+    lead: "Показывает, насколько разные повседневные функции есть рядом.",
+    bullets: ["Высокое значение означает не один тип объектов, а более широкий набор услуг.", "Это важно для районов, где жители решают повседневные задачи рядом с домом."]
+  },
+  "Коммерческая инфраструктура|полнота корзины": {
+    title: "Полнота корзины",
+    lead: "Показывает, насколько полный набор повседневных мест доступен жителям.",
+    bullets: ["Сюда относятся базовые городские функции.", "Чем выше значение, тем меньше повседневных дефицитов в квартале."]
+  },
+  "Транспорт|доступность": {
+    title: "Доступность остановок",
+    lead: "Показывает долю жителей, которым удобно дойти до остановок общественного транспорта.",
+    bullets: ["Высокое значение означает, что остановки находятся рядом с большей частью жителей.", "Низкое значение указывает на транспортный дефицит для части квартала."]
+  },
+  "Крупные работодатели|обеспеченность": {
+    title: "Обеспеченность работодателями",
+    lead: "Показывает, насколько квартал связан с крупными местами занятости.",
+    bullets: ["Высокое значение означает больше возможностей рядом или в удобной доступности.", "Показатель важен для понимания связи жилых районов с рабочими местами."]
+  },
+  "Крупные работодатели|плотность": {
+    title: "Плотность работодателей",
+    lead: "Показывает концентрацию крупных мест занятости на территории.",
+    bullets: ["Помогает отличить спальные кварталы от территорий с заметной деловой функцией.", "Смотрится вместе с обеспеченностью работодателями."]
+  },
+  "Зелёные зоны|доступность": {
+    title: "Доступность зелёных зон",
+    lead: "Показывает долю жителей, которым удобно дойти до зеленых территорий.",
+    bullets: ["Высокое значение означает, что зелень рядом с большей частью жителей.", "Низкое значение показывает нехватку доступной зелени."]
+  },
+  "Экономика|активность ФНС": {
+    title: "Активность",
+    lead: "Показывает общую деловую активность территории.",
+    bullets: ["Это не оценка доходов жителей.", "Показатель нужен как сигнал, насколько активно работает экономика места."]
+  },
+  "Экономика|ККТ": {
+    title: "Кассовая техника",
+    lead: "Показывает наличие торговых и сервисных операций на территории.",
+    bullets: ["Больше кассовой техники обычно означает больше активных точек продаж и услуг.", "Показатель помогает увидеть живые экономические узлы."]
+  },
+  "Экономика|медианный чек": {
+    title: "Медианный чек",
+    lead: "Показывает типичный размер покупки или операции.",
+    bullets: ["Это не средний доход жителей.", "Показатель помогает понять характер потребления и деловой активности."]
+  }
+};
+
 const DETAIL_FACTOR = 4.75;
 const BUILDING_DETAIL_REQUEST_FACTOR = 4.25;
 const BUILDING_DETAIL_FADE_START_FACTOR = 4.55;
@@ -87,6 +252,9 @@ const RAILWAY_SURFACE_OFFSET = 0;
 const BUILDING_FADE_FACTOR = 5.35;
 const MOBILE_BUILDING_FADE_FACTOR = 3.8;
 const MOBILE_BUILDING_MIN_ALPHA = 0.08;
+const POINT_SURFACE_OFFSET = 0;
+const ACCIDENT_POPUP_SURFACE_OFFSET = 18;
+const ACCIDENT_CLUSTER_SMOOTHING = 0.2;
 const SMALL_NON_RESIDENTIAL_FULL_FACTOR = 15;
 const PACKED_VERTEX_BYTES = 8;
 const HEIGHT_EXAGGERATION = 1.33;
@@ -115,7 +283,7 @@ const CANVAS_THEMES = {
     greenStroke: "rgba(61, 92, 58, 0.2)",
     quarterStroke: "rgba(64, 66, 62, 0.42)",
     roadDetail: (alpha) => `rgba(91, 96, 96, ${alpha})`,
-    roadMain: (alpha) => `rgba(47, 54, 55, ${alpha})`,
+    roadMain: () => "rgb(126, 136, 132)",
     roadLabel: (alpha) => `rgba(35, 42, 43, ${alpha})`,
     roadLabelHalo: (alpha) => `rgba(250, 245, 233, ${alpha})`,
     railway: (alpha) => `rgba(62, 61, 58, ${alpha})`,
@@ -135,7 +303,7 @@ const CANVAS_THEMES = {
     greenStroke: "rgba(111, 158, 99, 0.2)",
     quarterStroke: "rgba(214, 218, 206, 0.24)",
     roadDetail: (alpha) => `rgba(132, 129, 115, ${Math.min(0.38, alpha + 0.08)})`,
-    roadMain: (alpha) => `rgba(178, 164, 135, ${Math.min(0.58, alpha + 0.08)})`,
+    roadMain: () => "rgb(238, 229, 205)",
     roadLabel: (alpha) => `rgba(236, 229, 208, ${alpha})`,
     roadLabelHalo: (alpha) => `rgba(12, 17, 19, ${alpha})`,
     railway: (alpha) => `rgba(186, 181, 168, ${Math.min(0.62, alpha + 0.08)})`,
@@ -171,6 +339,8 @@ const state = {
   selected: null,
   accidentPopup: null,
   accidentDisplayItems: [],
+  accidentAnimatedItems: new Map(),
+  accidentAnimationFrame: null,
   pointLoadPromises: { stops: null, dtp: null },
   cameraAnimation: null,
   smoothZoom: null,
@@ -194,6 +364,7 @@ const state = {
   suppressHandleClickUntil: 0,
   tooltipTarget: null,
   tooltipNode: null,
+  methodCardKey: null,
   routeApplying: false,
   renderToken: 0
 };
@@ -569,7 +740,10 @@ function renderControls() {
     if (!input) return;
     const layer = input.dataset.layer;
     state.layers[layer] = input.checked;
-    if (!state.layers.dtp) state.accidentPopup = null;
+    if (!state.layers.dtp) {
+      state.accidentPopup = null;
+      resetAccidentAnimation();
+    }
     if (input.checked && (layer === "stops" || layer === "dtp")) {
       ensurePointLayer(layer).then(() => {
         if (state.layers[layer]) draw();
@@ -785,7 +959,10 @@ function applyRouteBlocks(blocks) {
 function applyRouteLayers(layers) {
   const active = new Set(layers);
   for (const layer of LAYERS) state.layers[layer.key] = active.has(layer.key);
-  if (!state.layers.dtp) state.accidentPopup = null;
+  if (!state.layers.dtp) {
+    state.accidentPopup = null;
+    resetAccidentAnimation();
+  }
 }
 
 function syncControlInputs() {
@@ -880,7 +1057,7 @@ function attachEvents() {
   overlayCanvas.addEventListener("contextmenu", (event) => event.preventDefault());
   els.backButton.addEventListener("click", () => showCityMenu({ replaceRoute: false }));
   els.themeToggle?.addEventListener("click", toggleTheme);
-  document.getElementById("resetView").addEventListener("click", resetView);
+  document.getElementById("resetView").addEventListener("click", () => resetView({ animate: true }));
   els.compassButton?.addEventListener("click", resetBearingToNorth);
   els.cameraTutorial?.addEventListener("click", (event) => {
     if (event.target.closest(".tutorialClose")) hideCameraTutorial(true);
@@ -894,8 +1071,34 @@ function attachEvents() {
   els.accidentPopup.addEventListener("pointermove", (event) => event.stopPropagation());
   els.accidentPopup.addEventListener("touchmove", (event) => event.stopPropagation(), { passive: true });
   els.infoPanel.addEventListener("click", (event) => {
+    const closeMethod = event.target.closest("[data-method-close]");
+    if (closeMethod) {
+      state.methodCardKey = null;
+      updatePanel();
+      return;
+    }
+    const rankTarget = event.target.closest("[data-rank-quarter]");
+    if (rankTarget) {
+      selectQuarterById(rankTarget.dataset.rankQuarter, {
+        focus: true,
+        animateFocus: true,
+        replaceRoute: true
+      });
+      return;
+    }
+    const methodTarget = event.target.closest("[data-method-card]");
+    if (methodTarget) {
+      const key = methodTarget.dataset.methodCard;
+      state.methodCardKey = state.methodCardKey === key ? null : key;
+      if (isMobileLayout()) els.infoPanel.classList.add("sheetExpanded");
+      hideTooltip();
+      updatePanel();
+      return;
+    }
     const comparisonToggle = event.target.closest("[data-comparison-toggle]");
     if (comparisonToggle) {
+      event.preventDefault();
+      event.stopPropagation();
       state.comparisonMode = state.comparisonMode === "city" ? "all" : "city";
       recomputeScores();
       updatePanel();
@@ -1240,6 +1443,8 @@ async function loadCity(slug, options = {}) {
   state.selected = null;
   state.comparisonMode = normalizeComparisonMode(options.comparisonMode) || "city";
   state.accidentPopup = null;
+  resetAccidentAnimation();
+  state.methodCardKey = null;
   state.panelValues = null;
   els.title.textContent = city.name;
   els.topMetric.textContent = `Индекс ${formatNumber(city.index, 2)} · ${formatInt(city.population)} жителей`;
@@ -1346,7 +1551,7 @@ async function ensurePointLayer(layer) {
       const items = Array.isArray(payload) ? payload : payload.items || payload[layer] || [];
       state.data.points[layer] = items;
       state.data.pointLayersLoaded[layer] = true;
-      if (layer === "dtp") state.accidentDisplayItems = [];
+      if (layer === "dtp") resetAccidentAnimation();
     })
     .catch((error) => {
       console.error(error);
@@ -1373,6 +1578,8 @@ function showCityMenu(options = {}) {
   state.data = null;
   state.selected = null;
   state.accidentPopup = null;
+  resetAccidentAnimation();
+  state.methodCardKey = null;
   hideAccidentPopup();
   hideLoadingOverlay();
   els.title.textContent = "Города исследования";
@@ -1388,7 +1595,12 @@ function clearMeshes() {
   stopCameraAnimation();
   if (gl) {
     const meshes = new Set(
-      [...state.tileMeshes.values(), ...state.smallTileMeshes.values(), ...state.overviewMeshes.values(), state.overviewMesh].filter(Boolean)
+      [
+        ...state.tileMeshes.values(),
+        ...state.smallTileMeshes.values(),
+        ...state.overviewMeshes.values(),
+        state.overviewMesh
+      ].filter(Boolean)
     );
     for (const mesh of meshes) {
       if (mesh?.buffer) gl.deleteBuffer(mesh.buffer);
@@ -1432,24 +1644,52 @@ function canvasPixelRatio() {
   return isMobileLayout() ? Math.min(ratio, 1.5) : Math.min(ratio, 2);
 }
 
-function resetView() {
+function resetView(options = {}) {
   if (!state.data) return;
+  const view = defaultCameraView();
+  if (!view) return;
+  if (options.animate) {
+    animateCameraTo(view.center, view.scale, 780, {
+      bearing: view.bearing,
+      pitch: view.pitch,
+      fitScale: view.fitScale
+    });
+    return;
+  }
   stopCameraAnimation();
+  applyCameraView(view);
+  draw();
+}
+
+function defaultCameraView() {
+  if (!state.data) return null;
   const [minX, minY, maxX, maxY] = state.data.bbox;
-  state.camera.center = [(minX + maxX) / 2, (minY + maxY) / 2];
-  state.camera.bearing = 0;
-  state.camera.pitch = 0.82;
+  const view = {
+    center: [(minX + maxX) / 2, (minY + maxY) / 2],
+    bearing: 0,
+    pitch: 0.82,
+    scale: state.camera.scale,
+    fitScale: state.camera.fitScale
+  };
   const rect = overlayCanvas.getBoundingClientRect();
-  const extent = projectedScreenExtent(state.data.bbox, state.camera.center);
+  const extent = projectedScreenExtent(state.data.bbox, view.center, view);
   const mobile = isMobileLayout();
   const usableWidth = Math.max(320, rect.width - (mobile ? 24 : 420));
   const usableHeight = Math.max(320, rect.height - (mobile ? 190 : 80));
   const fitFactor = mobile ? 1.55 : 1.08;
   const scale = Math.min(usableWidth / extent.width, usableHeight / extent.height) * fitFactor;
-  state.camera.scale = scale;
-  state.camera.fitScale = scale;
+  view.scale = scale;
+  view.fitScale = scale;
+  return view;
+}
+
+function applyCameraView(view) {
+  state.camera.center = [...view.center];
+  state.camera.bearing = view.bearing;
+  state.camera.pitch = view.pitch;
+  state.camera.scale = view.scale;
+  state.camera.fitScale = view.fitScale;
   clampCameraCenter();
-  draw();
 }
 
 function resetBearingToNorth() {
@@ -1624,26 +1864,30 @@ function limitVector(vector, maxLength) {
   return [vector[0] * factor, vector[1] * factor];
 }
 
-function projectedScreenExtent(bbox, center) {
+function projectedScreenExtent(bbox, center, camera = state.camera) {
   const corners = [
     [bbox[0], bbox[1]],
     [bbox[2], bbox[1]],
     [bbox[2], bbox[3]],
     [bbox[0], bbox[3]]
-  ].map(([x, y]) => transformWorld(x, y, 0, center));
+  ].map(([x, y]) => transformWorldWithCamera(x, y, 0, center, camera));
   const box = bboxFromPoints(corners);
   return { width: box[2] - box[0], height: box[3] - box[1] };
 }
 
 function transformWorld(x, y, z = 0, center = state.camera.center) {
+  return transformWorldWithCamera(x, y, z, center, state.camera);
+}
+
+function transformWorldWithCamera(x, y, z = 0, center = state.camera.center, camera = state.camera) {
   const dx = x - center[0];
   const dy = y - center[1];
-  const cos = Math.cos(state.camera.bearing);
-  const sin = Math.sin(state.camera.bearing);
+  const cos = Math.cos(camera.bearing);
+  const sin = Math.sin(camera.bearing);
   const rx = dx * cos - dy * sin;
   const ry = dx * sin + dy * cos;
-  const pitchCos = Math.cos(state.camera.pitch);
-  const pitchSin = Math.sin(state.camera.pitch);
+  const pitchCos = Math.cos(camera.pitch);
+  const pitchSin = Math.sin(camera.pitch);
   const visualZ = z * HEIGHT_EXAGGERATION;
   return [rx, ry * pitchCos + visualZ * pitchSin, ry * pitchSin - visualZ * pitchCos];
 }
@@ -1767,21 +2011,33 @@ function drawQuartals(ctx) {
 // @dist-split
 function drawRoads(ctx) {
   const colors = canvasTheme();
-  const mainAlpha = zoomFade(0.13, 0.46, 2.7);
   const detailProgress = zoomRangeProgress(ROAD_DETAIL_FACTOR, ROAD_DETAIL_FULL_FACTOR);
   const detailAlpha = isMobileLayout() ? 0 : (0.04 + 0.18 * detailProgress) * detailProgress;
   ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   if (detailAlpha > 0.002 && state.roadTiles.size) {
-    ctx.lineWidth = 0.72;
+    ctx.lineWidth = detailRoadWidth(detailProgress);
     ctx.strokeStyle = colors.roadDetail(detailAlpha);
     for (const tile of state.roadTiles.values()) {
       for (const segment of tile.segments) drawLine(ctx, segment, ROAD_SURFACE_OFFSET);
     }
   }
-  ctx.lineWidth = 1.28;
-  ctx.strokeStyle = colors.roadMain(mainAlpha);
+  ctx.lineWidth = mainRoadWidth();
+  ctx.strokeStyle = colors.roadMain();
   for (const line of state.data.roads) drawLine(ctx, line, ROAD_SURFACE_OFFSET);
   ctx.restore();
+}
+
+function mainRoadWidth() {
+  const t = zoomRangeProgress(0.9, 6.2);
+  const eased = t * t * (3 - 2 * t);
+  return 1.15 + eased * 3.05;
+}
+
+function detailRoadWidth(detailProgress) {
+  const eased = detailProgress * detailProgress * (3 - 2 * detailProgress);
+  return 0.42 + eased * 0.34;
 }
 
 function drawRailways(ctx) {
@@ -2292,7 +2548,7 @@ function drawStops() {
   overlayCtx.strokeStyle = colors.pointStroke;
   overlayCtx.lineWidth = 1;
   for (const item of state.data.points.stops) {
-    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 12));
+    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], POINT_SURFACE_OFFSET));
     const isTram = item.properties.source === "tram_stop";
     overlayCtx.fillStyle = isTram ? "#b64c3f" : "#316a9c";
     overlayCtx.beginPath();
@@ -2306,7 +2562,7 @@ function drawStops() {
 
 function drawAccidents() {
   const colors = canvasTheme();
-  state.accidentDisplayItems = buildAccidentDisplayItems();
+  state.accidentDisplayItems = smoothAccidentDisplayItems(buildAccidentDisplayItems());
   overlayCtx.save();
   overlayCtx.strokeStyle = colors.pointStroke;
   overlayCtx.lineWidth = 1;
@@ -2314,8 +2570,8 @@ function drawAccidents() {
   overlayCtx.textBaseline = "middle";
   overlayCtx.font = "700 11px system-ui, sans-serif";
   for (const item of state.accidentDisplayItems) {
-    const radius = accidentRadius(item);
-    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 15));
+    const radius = item.displayRadius ?? accidentRadius(item);
+    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], POINT_SURFACE_OFFSET));
     overlayCtx.fillStyle = item.items ? "#893a35" : "#b64c3f";
     overlayCtx.beginPath();
     overlayCtx.arc(sx, sy, radius, 0, Math.PI * 2);
@@ -2339,12 +2595,27 @@ function accidentRadius(item) {
   return clamp(2.8 + Math.sqrt(Math.max(severity, 1)) * 2.2, 3.5, 13);
 }
 
+function accidentItemKey(item) {
+  const props = item.properties || {};
+  const id = props.id ?? props.osm_id ?? props.full_id ?? props.uid;
+  if (id !== null && id !== undefined && id !== "") return `a:${id}`;
+  return `a:${item.point[0].toFixed(1)}:${item.point[1].toFixed(1)}:${props.date || ""}:${props.time || ""}`;
+}
+
+function accidentClusterKey(memberKeys) {
+  let hash = 0;
+  for (const key of memberKeys) {
+    for (let i = 0; i < key.length; i += 1) hash = ((hash << 5) - hash + key.charCodeAt(i)) | 0;
+  }
+  return `c:${memberKeys.length}:${Math.abs(hash)}`;
+}
+
 function buildAccidentDisplayItems() {
   if (!state.layers.dtp || !state.data?.points?.dtp?.length) return [];
   const clusterDistance = accidentClusterDistance();
   const clusters = [];
   for (const item of state.data.points.dtp) {
-    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 15));
+    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], POINT_SURFACE_OFFSET));
     let cluster = null;
     for (const candidate of clusters) {
       if (Math.hypot(candidate.sx - sx, candidate.sy - sy) <= clusterDistance) {
@@ -2364,10 +2635,17 @@ function buildAccidentDisplayItems() {
     cluster.items.push(item);
   }
   return clusters.map((cluster) => {
-    if (cluster.items.length === 1) return cluster.items[0];
+    if (cluster.items.length === 1) {
+      const item = cluster.items[0];
+      const key = accidentItemKey(item);
+      return { ...item, key, memberKeys: [key] };
+    }
     const injured = cluster.items.reduce((sum, item) => sum + (Number(item.properties.injured) || 0), 0);
     const dead = cluster.items.reduce((sum, item) => sum + (Number(item.properties.dead) || 0), 0);
+    const memberKeys = cluster.items.map(accidentItemKey).sort();
     return {
+      key: accidentClusterKey(memberKeys),
+      memberKeys,
       items: cluster.items,
       point: [cluster.wx, cluster.wy],
       properties: {
@@ -2378,6 +2656,81 @@ function buildAccidentDisplayItems() {
       }
     };
   });
+}
+
+function smoothAccidentDisplayItems(targets) {
+  if (!targets.length) {
+    resetAccidentAnimation();
+    return [];
+  }
+  const previous = state.accidentAnimatedItems || new Map();
+  const next = new Map();
+  let needsFrame = false;
+  for (const target of targets) {
+    const previousItem = previous.get(target.key) || previousAccidentByMembers(target, previous) || nearestPreviousAccident(target, previous);
+    const targetRadius = accidentRadius(target);
+    const startPoint = previousItem?.point || target.point;
+    const startRadius = previousItem?.displayRadius ?? (previousItem ? accidentRadius(previousItem) : targetRadius);
+    const point = [
+      startPoint[0] + (target.point[0] - startPoint[0]) * ACCIDENT_CLUSTER_SMOOTHING,
+      startPoint[1] + (target.point[1] - startPoint[1]) * ACCIDENT_CLUSTER_SMOOTHING
+    ];
+    const displayRadius = startRadius + (targetRadius - startRadius) * ACCIDENT_CLUSTER_SMOOTHING;
+    const item = { ...target, point, targetPoint: target.point, displayRadius };
+    next.set(target.key, item);
+    if (Math.hypot(point[0] - target.point[0], point[1] - target.point[1]) > 0.35 || Math.abs(displayRadius - targetRadius) > 0.15) {
+      needsFrame = true;
+    }
+  }
+  state.accidentAnimatedItems = next;
+  if (needsFrame) requestAccidentAnimationFrame();
+  return [...next.values()];
+}
+
+function previousAccidentByMembers(target, previous) {
+  if (!target.memberKeys?.length || !previous.size) return null;
+  const targetMembers = new Set(target.memberKeys);
+  const matches = [];
+  for (const item of previous.values()) {
+    const members = item.memberKeys || [item.key].filter(Boolean);
+    if (members.some((key) => targetMembers.has(key))) matches.push(item);
+  }
+  if (!matches.length) return null;
+  const point = matches.reduce((sum, item) => [sum[0] + item.point[0], sum[1] + item.point[1]], [0, 0]);
+  const radius = matches.reduce((sum, item) => sum + (item.displayRadius ?? accidentRadius(item)), 0);
+  return {
+    point: [point[0] / matches.length, point[1] / matches.length],
+    displayRadius: radius / matches.length,
+    memberKeys: target.memberKeys
+  };
+}
+
+function nearestPreviousAccident(target, previous) {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const item of previous.values()) {
+    const distance = Math.hypot(target.point[0] - item.point[0], target.point[1] - item.point[1]);
+    if (distance < bestDistance) {
+      best = item;
+      bestDistance = distance;
+    }
+  }
+  return bestDistance < 160 ? best : null;
+}
+
+function requestAccidentAnimationFrame() {
+  if (state.accidentAnimationFrame) return;
+  state.accidentAnimationFrame = requestAnimationFrame(() => {
+    state.accidentAnimationFrame = null;
+    if (state.layers.dtp && state.data) draw();
+  });
+}
+
+function resetAccidentAnimation() {
+  if (state.accidentAnimationFrame) cancelAnimationFrame(state.accidentAnimationFrame);
+  state.accidentAnimationFrame = null;
+  state.accidentAnimatedItems = new Map();
+  state.accidentDisplayItems = [];
 }
 
 function accidentClusterDistance() {
@@ -2539,7 +2892,8 @@ function initGl(glContext) {
     void main() {
       vec3 liftedColor = mix(v_color.rgb, vec3(0.92, 0.92, 0.88), u_lightenFactor * 0.48);
       vec3 darkColor = mix(v_color.rgb * vec3(0.62, 0.64, 0.6), vec3(0.43, 0.47, 0.44), u_lightenFactor * 0.28);
-      gl_FragColor = vec4(mix(liftedColor, darkColor, u_darkFactor), v_color.a * u_alphaFactor);
+      vec3 themedColor = mix(liftedColor, darkColor, u_darkFactor);
+      gl_FragColor = vec4(themedColor, v_color.a * u_alphaFactor);
     }
   `;
 
@@ -2753,8 +3107,9 @@ function visibleBuildingTileKeys() {
 
 function recomputeScores() {
   if (!state.data) return;
-  const active = [...state.activeBlocks];
-  const fullScenario = active.length === BLOCKS.length && BLOCKS.every((block) => state.activeBlocks.has(block.key));
+  const comparableKeys = comparableBlockKeys();
+  const active = comparableKeys.filter((key) => state.activeBlocks.has(key));
+  const fullScenario = active.length === comparableKeys.length && comparableKeys.every((key) => state.activeBlocks.has(key));
   for (const feature of state.data.quartals) {
     const baseScore = comparisonScore(feature.properties);
     if (fullScenario && Number.isFinite(baseScore)) {
@@ -2781,6 +3136,12 @@ function recomputeScores() {
   }
 }
 
+function comparableBlockKeys() {
+  return BLOCKS
+    .map((block) => block.key)
+    .filter((key) => state.comparisonMode !== "all" || key !== "commerce");
+}
+
 function comparisonData(properties) {
   return properties?.compare?.[state.comparisonMode] ?? null;
 }
@@ -2797,13 +3158,28 @@ function comparisonRank(properties) {
   return comparisonData(properties)?.rank ?? properties?.baseRank ?? null;
 }
 
+function quarterPopulation(properties) {
+  const population = Number(properties?.population);
+  if (Number.isFinite(population)) return population;
+  const popSum2 = Number(properties?.pop_sum2);
+  if (Number.isFinite(popSum2)) return popSum2;
+  const popSumAlt = Number(properties?.pop_sum_2);
+  if (Number.isFinite(popSumAlt)) return popSumAlt;
+  const popSum = Number(properties?.pop_sum);
+  return Number.isFinite(popSum) ? popSum : null;
+}
+
+function featurePopulation(feature) {
+  return quarterPopulation(feature?.properties);
+}
+
 function cityScenarioScore() {
   if (!state.data) return null;
   let weighted = 0;
   let total = 0;
   for (const feature of state.data.quartals) {
     const score = feature.properties.currentScore;
-    const weight = feature.properties.population;
+    const weight = featurePopulation(feature);
     if (!Number.isFinite(score) || !Number.isFinite(weight) || weight <= 0) continue;
     weighted += score * weight;
     total += weight;
@@ -2817,7 +3193,7 @@ function cityBaseScore() {
   let total = 0;
   for (const feature of state.data.quartals) {
     const score = comparisonScore(feature.properties);
-    const weight = feature.properties.population;
+    const weight = featurePopulation(feature);
     if (!Number.isFinite(score) || !Number.isFinite(weight) || weight <= 0) continue;
     weighted += score * weight;
     total += weight;
@@ -2833,7 +3209,7 @@ function cityBlockScores() {
     for (const feature of state.data.quartals) {
       const blocks = comparisonBlocks(feature.properties);
       const value = blocks ? blocks[block.key] : undefined;
-      const weight = feature.properties.population;
+      const weight = featurePopulation(feature);
       if (!Number.isFinite(value) || !Number.isFinite(weight) || weight <= 0) continue;
       weighted += value * 100 * weight;
       total += weight;
@@ -2915,8 +3291,8 @@ function pickAccident(screenX, screenY) {
   let bestDistance = Infinity;
   const items = state.accidentDisplayItems.length ? state.accidentDisplayItems : buildAccidentDisplayItems();
   for (const item of items) {
-    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 15));
-    const radius = accidentRadius(item) + 5;
+    const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], POINT_SURFACE_OFFSET));
+    const radius = (item.displayRadius ?? accidentRadius(item)) + 5;
     const distance = Math.hypot(screenX - sx, screenY - sy);
     if (distance <= radius && distance < bestDistance) {
       best = item;
@@ -2932,29 +3308,43 @@ function shouldZoomAccidentCluster(cluster) {
 
 function zoomToAccidentCluster(cluster) {
   const targetScale = Math.min(state.camera.scale * 2.35, cameraMaxScale());
-  animateCameraTo(cluster.point, targetScale, 720);
+  animateCameraTo(cluster.targetPoint || cluster.point, targetScale, 720);
 }
 
-function animateCameraTo(targetCenter, targetScale, duration = 650) {
+function animateCameraTo(targetCenter, targetScale, duration = 650, options = {}) {
   stopCameraAnimation();
+  if (Number.isFinite(options.fitScale)) state.camera.fitScale = options.fitScale;
   targetScale = clamp(targetScale, cameraMinScale(), cameraMaxScale());
   const startCenter = [...state.camera.center];
   const startScale = state.camera.scale;
+  const startBearing = state.camera.bearing;
+  const targetBearing = Number.isFinite(options.bearing) ? options.bearing : startBearing;
+  const bearingDelta = normalizeAngleDelta(targetBearing - startBearing);
+  const startPitch = state.camera.pitch;
+  const targetPitch = Number.isFinite(options.pitch) ? options.pitch : startPitch;
   const startTime = performance.now();
   const tick = (time) => {
     const t = clamp((time - startTime) / duration, 0, 1);
-    const eased = t * t * (3 - 2 * t);
+    const eased = smoothStep(t);
     state.camera.center = [
       startCenter[0] + (targetCenter[0] - startCenter[0]) * eased,
       startCenter[1] + (targetCenter[1] - startCenter[1]) * eased
     ];
     clampCameraCenter();
     state.camera.scale = startScale + (targetScale - startScale) * eased;
+    state.camera.bearing = startBearing + bearingDelta * eased;
+    state.camera.pitch = startPitch + (targetPitch - startPitch) * eased;
     draw();
     if (t < 1) {
       state.cameraAnimation = requestAnimationFrame(tick);
     } else {
+      state.camera.center = [...targetCenter];
+      state.camera.scale = targetScale;
+      state.camera.bearing = targetBearing;
+      state.camera.pitch = targetPitch;
+      clampCameraCenter();
       state.cameraAnimation = null;
+      draw();
     }
   };
   state.cameraAnimation = requestAnimationFrame(tick);
@@ -3005,7 +3395,7 @@ function renderAccidentPopup() {
     return;
   }
   const item = state.accidentPopup;
-  const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], 30));
+  const [sx, sy] = worldToScreen(item.point[0], item.point[1], surfaceZ(item.point[0], item.point[1], ACCIDENT_POPUP_SURFACE_OFFSET));
   const props = item.properties;
   if (item.items) {
     const rows = item.items.slice(0, 8).map((accident) => {
@@ -3070,7 +3460,7 @@ function panelAnimationValues(cityScore) {
     const blocks = comparisonBlocks(props);
     return {
       metricFormats,
-      metrics: [props.currentScore, comparisonScore(props), comparisonRank(props), props.population],
+      metrics: [props.currentScore, comparisonScore(props), comparisonRank(props), quarterPopulation(props)],
       bars: BLOCKS.map((block) => {
         const value = blocks ? blocks[block.key] : null;
         return value == null ? null : value * 100;
@@ -3150,6 +3540,222 @@ function formatAnimatedValue(value, format = {}) {
   return formatNumber(value, format.digits != null ? format.digits : 0);
 }
 
+function renderActiveMethodCard() {
+  if (!state.methodCardKey) return "";
+  const data = methodCardData(state.methodCardKey);
+  if (!data) return "";
+  const color = data.color || methodVisualColor(data.visual);
+  return `
+    <section class="methodCard" style="--method-color:${color}" aria-live="polite">
+      <div class="methodCardTop">
+        <span>Как читать показатель</span>
+        <button class="methodClose" type="button" data-method-close aria-label="Закрыть">×</button>
+      </div>
+      <h3>${escapeAttr(data.title)}</h3>
+      <p>${escapeAttr(data.lead)}</p>
+      ${renderMethodVisual(data)}
+      ${data.bullets?.length ? `<ul>${data.bullets.map((item) => `<li>${escapeAttr(item)}</li>`).join("")}</ul>` : ""}
+      ${data.extra || ""}
+    </section>
+  `;
+}
+
+function methodCardData(key) {
+  if (key.startsWith("metric:")) {
+    const id = key.slice("metric:".length);
+    const metric = METHOD_METRICS[id];
+    if (!metric) return null;
+    const extra = id === "rank" ? renderRankMethodTable() : "";
+    return { ...metric, extra };
+  }
+  if (key.startsWith("block:")) {
+    const id = key.slice("block:".length);
+    const block = METHOD_BLOCKS[id];
+    const source = BLOCKS.find((item) => item.key === id);
+    if (!block || !source) return null;
+    return { ...block, color: source.color, chips: block.bullets };
+  }
+  if (key.startsWith("indicator|")) {
+    const [, group, label] = key.split("|");
+    const data = indicatorMethodData(group, label);
+    if (!data) return null;
+    const block = blockForGroup(group);
+    return {
+      ...data,
+      visual: data.visual || "indicator",
+      asset: data.asset || indicatorMethodAsset(group, label),
+      color: block?.color || "var(--accent)",
+      chips: [group, label]
+    };
+  }
+  return null;
+}
+
+function renderMethodVisual(data) {
+  const color = data.color || methodVisualColor(data.visual);
+  const asset = methodVisualAsset(data);
+  if (!asset) return "";
+  const lightSrc = `${METHOD_VISUAL_ASSET_BASE}/light/${asset}.svg`;
+  const darkSrc = `${METHOD_VISUAL_ASSET_BASE}/dark/${asset}.svg`;
+  return `
+    <figure class="methodVisual methodVisualAsset" style="--method-color:${color}" aria-hidden="true">
+      <img class="methodVisualImg methodVisualImgLight" src="${escapeAttr(lightSrc)}" width="420" height="180" alt="" loading="lazy" decoding="async">
+      <img class="methodVisualImg methodVisualImgDark" src="${escapeAttr(darkSrc)}" width="420" height="180" alt="" loading="lazy" decoding="async">
+    </figure>
+  `;
+}
+
+function methodVisualAsset(data) {
+  return data.asset || METHOD_VISUAL_ASSETS[data.visual] || METHOD_VISUAL_ASSETS.indicator;
+}
+
+function indicatorMethodAsset(group, label) {
+  const block = blockForGroup(group);
+  const normalized = normalizeMethodText(label);
+  if (block?.key === "housing") {
+    if (normalized.includes("плотность")) return "indicator-housing-density";
+    if (normalized.includes("обеспеченность")) return "indicator-housing-supply";
+    if (normalized.includes("износ")) return "indicator-housing-wear";
+    if (normalized.includes("этажность")) return "indicator-housing-floors";
+  }
+  if (block?.key === "infra") {
+    if (normalized.includes("разнообразие")) return "indicator-infra-diversity";
+    if (normalized.includes("полнота")) return "indicator-infra-basket";
+  }
+  if (block?.key === "transport") return "indicator-transport-access";
+  if (block?.key === "work") {
+    if (normalized.includes("обеспеченность")) return "indicator-work-access";
+    if (normalized.includes("плотность")) return "indicator-work-density";
+  }
+  if (block?.key === "green") return "indicator-green-access";
+  if (block?.key === "commerce") {
+    if (normalized.includes("активность")) return "indicator-commerce-activity";
+    if (normalized.includes("ккт")) return "indicator-commerce-registers";
+    if (normalized.includes("чек")) return "indicator-commerce-check";
+  }
+  return METHOD_VISUAL_ASSETS.indicator;
+}
+
+function methodVisualColor(type) {
+  if (type === "rank") return "#7b5796";
+  if (type === "population") return "#477f5b";
+  if (type === "base") return "#b88624";
+  return "#256d72";
+}
+
+function renderRankMethodTable() {
+  const rows = state.selected ? quarterRankRows() : cityRankRows();
+  if (!rows.length) return "";
+  return `
+    <div class="rankMethodTableWrap">
+      <strong class="rankMethodTitle">${state.selected ? "Соседние кварталы в рейтинге" : "Города в рейтинге"}</strong>
+      <table class="rankMethodTable">
+        <thead><tr><th>Место</th><th>Территория</th><th>Индекс</th></tr></thead>
+        <tbody>
+          ${rows.map((row) => {
+            if (row.gap) return `<tr class="rankGap"><td colspan="3">...</td></tr>`;
+            const label = row.quarterId
+              ? `<button type="button" data-rank-quarter="${escapeAttr(row.quarterId)}">${escapeAttr(row.label)}</button>`
+              : escapeAttr(row.label);
+            return `
+              <tr class="${row.current ? "current" : ""}">
+                <td>${formatInt(row.rank)}</td>
+                <td>${label}</td>
+                <td>${formatNumber(row.score, 1)}</td>
+              </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function quarterRankRows() {
+  if (!state.data || !state.selected) return [];
+  const targetRank = comparisonRank(state.selected.properties);
+  const targetId = quarterRouteId(state.selected);
+  if (!Number.isFinite(targetRank)) return [];
+  const ranked = state.data.quartals
+    .map((feature) => ({
+      feature,
+      rank: comparisonRank(feature.properties),
+      score: comparisonScore(feature.properties)
+    }))
+    .filter((item) => Number.isFinite(item.rank))
+    .sort((a, b) => a.rank - b.rank);
+  return compactRankRows(ranked, targetRank).map((item) => {
+    if (item.gap) return item;
+    const id = quarterRouteId(item.feature);
+    return {
+      rank: item.rank,
+      score: item.score,
+      quarterId: id,
+      current: id === targetId,
+      label: `Квартал ${item.feature.properties.id ?? id}`
+    };
+  });
+}
+
+function cityRankRows() {
+  if (!state.manifest?.cities?.length) return [];
+  return [...state.manifest.cities]
+    .filter((city) => Number.isFinite(city.rank))
+    .sort((a, b) => a.rank - b.rank)
+    .map((city) => ({
+      rank: city.rank,
+      score: city.index,
+      label: city.name,
+      current: city.slug === state.activeCity?.slug
+    }));
+}
+
+function compactRankRows(ranked, targetRank) {
+  if (!ranked.length) return [];
+  const lastRank = ranked[ranked.length - 1].rank;
+  const wantedRanks = new Set([1, 2, 3, lastRank - 2, lastRank - 1, lastRank]);
+  for (let rank = targetRank - 2; rank <= targetRank + 2; rank += 1) wantedRanks.add(rank);
+  const rows = ranked.filter((item) => wantedRanks.has(item.rank));
+  const result = [];
+  let previousRank = null;
+  for (const item of rows) {
+    if (previousRank !== null && item.rank - previousRank > 1) result.push({ gap: true });
+    result.push(item);
+    previousRank = item.rank;
+  }
+  return result;
+}
+
+function blockForGroup(group) {
+  const normalized = normalizeMethodText(group);
+  if (normalized === "жилье") return BLOCKS.find((block) => block.key === "housing");
+  if (normalized === "коммерческая инфраструктура") return BLOCKS.find((block) => block.key === "infra");
+  if (normalized === "транспорт") return BLOCKS.find((block) => block.key === "transport");
+  if (normalized === "крупные работодатели") return BLOCKS.find((block) => block.key === "work");
+  if (normalized === "зеленые зоны") return BLOCKS.find((block) => block.key === "green");
+  if (normalized === "экономика") return BLOCKS.find((block) => block.key === "commerce");
+  return null;
+}
+
+function indicatorMethodData(group, label) {
+  const key = `${normalizeMethodText(group)}|${normalizeMethodText(label)}`;
+  for (const [candidate, value] of Object.entries(INDICATOR_METHODS)) {
+    if (normalizeMethodText(candidate) === key) return value;
+  }
+  return {
+    title: label,
+    lead: "Поясняет один из показателей, из которых складывается оценка выбранного направления.",
+    bullets: ["Смотрите значение вместе с соседними показателями этой же группы.", "Один показатель не объясняет всю оценку, но помогает понять причину результата."]
+  };
+}
+
+function indicatorMethodKey(group, label) {
+  return `indicator|${group}|${label}`;
+}
+
+function normalizeMethodText(value) {
+  return String(value || "").trim().toLowerCase().replace(/ё/g, "е");
+}
+
 function renderCityPanel(cityScore) {
   const city = state.activeCity;
   const baseScore = cityBaseScore();
@@ -3162,11 +3768,12 @@ function renderCityPanel(cityScore) {
       ${renderComparisonSwitch()}
     </div>
     <div class="metricGrid">
-      <div class="metric"><strong>${formatNumber(cityScore, 2)}</strong><span>Сценарный индекс</span></div>
-      <div class="metric"><strong>${formatNumber(baseScore, 2)}</strong><span>Основной индекс</span></div>
-      <div class="metric"><strong>${formatInt(city.rank)}</strong><span>Ранг</span></div>
-      <div class="metric"><strong>${formatInt(city.population)}</strong><span>Численность населения</span></div>
+      <button class="metric methodTrigger ${state.methodCardKey === "metric:scenario" ? "active" : ""}" type="button" data-method-card="metric:scenario" style="--method-color:#256d72"><strong>${formatNumber(cityScore, 2)}</strong><span>Сценарный индекс</span></button>
+      <button class="metric methodTrigger ${state.methodCardKey === "metric:base" ? "active" : ""}" type="button" data-method-card="metric:base" style="--method-color:#b88624"><strong>${formatNumber(baseScore, 2)}</strong><span>Основной индекс</span></button>
+      <button class="metric methodTrigger ${state.methodCardKey === "metric:rank" ? "active" : ""}" type="button" data-method-card="metric:rank" style="--method-color:#7b5796"><strong>${formatInt(city.rank)}</strong><span>Ранг</span></button>
+      <button class="metric methodTrigger ${state.methodCardKey === "metric:population" ? "active" : ""}" type="button" data-method-card="metric:population" style="--method-color:#477f5b"><strong>${formatInt(city.population)}</strong><span>Численность населения</span></button>
     </div>
+    ${renderActiveMethodCard()}
     ${renderBars(cityBlockScores())}
   `;
 }
@@ -3183,11 +3790,12 @@ function renderQuarterPanel(feature) {
       ${renderComparisonSwitch()}
     </div>
     <div class="metricGrid">
-      <div class="metric"><strong>${formatNumber(props.currentScore, 2)}</strong><span>Сценарный индекс</span></div>
-      <div class="metric"><strong>${formatNumber(comparisonScore(props), 2)}</strong><span>Основной индекс</span></div>
-      <div class="metric"><strong>${formatNumber(comparisonRank(props), 0)}</strong><span>Ранг</span></div>
-      <div class="metric"><strong>${formatInt(props.population)}</strong><span>Численность населения</span></div>
+      <button class="metric methodTrigger ${state.methodCardKey === "metric:scenario" ? "active" : ""}" type="button" data-method-card="metric:scenario" style="--method-color:#256d72"><strong>${formatNumber(props.currentScore, 2)}</strong><span>Сценарный индекс</span></button>
+      <button class="metric methodTrigger ${state.methodCardKey === "metric:base" ? "active" : ""}" type="button" data-method-card="metric:base" style="--method-color:#b88624"><strong>${formatNumber(comparisonScore(props), 2)}</strong><span>Основной индекс</span></button>
+      <button class="metric methodTrigger ${state.methodCardKey === "metric:rank" ? "active" : ""}" type="button" data-method-card="metric:rank" style="--method-color:#7b5796"><strong>${formatNumber(comparisonRank(props), 0)}</strong><span>Ранг</span></button>
+      <button class="metric methodTrigger ${state.methodCardKey === "metric:population" ? "active" : ""}" type="button" data-method-card="metric:population" style="--method-color:#477f5b"><strong>${formatInt(quarterPopulation(props))}</strong><span>Численность населения</span></button>
     </div>
+    ${renderActiveMethodCard()}
     ${renderBars(blockScoreValues(blocks))}
     ${renderGroupedIndicators(props.indicators || [])}
   `;
@@ -3233,15 +3841,15 @@ function renderGroupedIndicators(indicators) {
         .map(
           ([group, items]) => `
             <section class="indicatorGroup">
-              <h3 data-tooltip="${escapeAttr(GROUP_HELP[group] || "")}">${group}</h3>
+              <button class="indicatorGroupTitle methodTrigger ${state.methodCardKey === `block:${blockForGroup(group)?.key || ""}` ? "active" : ""}" type="button" data-method-card="block:${blockForGroup(group)?.key || ""}" data-tooltip="${escapeAttr(GROUP_HELP[group] || "")}">${group}</button>
               ${items
                 .map(
                   (item) => `
-                    <div class="indicator" data-tooltip="${escapeAttr(item.help)}">
+                    <button class="indicator methodTrigger ${state.methodCardKey === indicatorMethodKey(group, item.label) ? "active" : ""}" type="button" data-method-card="${escapeAttr(indicatorMethodKey(group, item.label))}" data-tooltip="${escapeAttr(item.help)}">
                       <span>${item.label}</span>
                       <em>${item.unit}</em>
                       <strong>${formatNumber(item.value, 2)}</strong>
-                    </div>`
+                    </button>`
                 )
                 .join("")}
             </section>`
@@ -3262,11 +3870,11 @@ function renderBars(values) {
         const value = values ? values[block.key] : undefined;
         const normalized = Number.isFinite(value) ? clamp(value, 0, 100) : 0;
         return `
-          <div class="barRow" data-tooltip="${escapeAttr(block.help)}">
+          <button class="barRow methodTrigger ${state.methodCardKey === `block:${block.key}` ? "active" : ""}" type="button" data-method-card="block:${block.key}" data-tooltip="${escapeAttr(block.help)}" style="--method-color:${block.color}">
             <span class="helpText">${block.label}</span>
             <div class="barTrack"><div class="barFill" style="width:${normalized}%; background:${block.color}"></div></div>
             <strong>${formatNumber(value, 0)}</strong>
-          </div>`;
+          </button>`;
       }).join("")}
     </div>
   `;

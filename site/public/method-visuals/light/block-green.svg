@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #d8d2c7;
+      }
+
+      .st1 {
+        fill: #477f5b;
+        opacity: 0;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6, .st7 {
+        isolation: isolate;
+      }
+
+      .st8 {
+        fill: #e9ebdf;
+        stroke-opacity: .4;
+      }
+
+      .st8, .st2, .st9, .st10, .st11, .st12, .st13 {
+        stroke: #477f5b;
+      }
+
+      .st14 {
+        stroke-width: 5px;
+      }
+
+      .st14, .st9, .st15, .st5, .st16 {
+        stroke-linecap: round;
+      }
+
+      .st14, .st15, .st16 {
+        stroke: #7e5e3d;
+      }
+
+      .st2 {
+        opacity: .2;
+        stroke-width: 2px;
+      }
+
+      .st2, .st9, .st17, .st5 {
+        fill: none;
+      }
+
+      .st9 {
+        stroke-dasharray: 7 8;
+        stroke-width: 3px;
+      }
+
+      .st10 {
+        fill: #fffaf1;
+        stroke-opacity: .4;
+      }
+
+      .st18 {
+        opacity: .4;
+      }
+
+      .st15 {
+        stroke-width: 6.5px;
+      }
+
+      .st11 {
+        fill: #6f9a7c;
+      }
+
+      .st11, .st12, .st13 {
+        stroke-opacity: .6;
+      }
+
+      .st17 {
+        stroke: #e7dfd1;
+      }
+
+      .st4 {
+        fill: #9ab69f;
+      }
+
+      .st4, .st5 {
+        opacity: .7;
+      }
+
+      .st5 {
+        stroke: #9ab69f;
+        stroke-width: 24px;
+      }
+
+      .st16 {
+        stroke-width: 5.6px;
+      }
+
+      .st12 {
+        fill: #5d8e6d;
+      }
+
+      .st6 {
+        font-size: 12px;
+      }
+
+      .st6, .st7 {
+        fill: #202326;
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st13 {
+        fill: #6c9879;
+      }
+
+      .st7 {
+        font-size: 13px;
+      }
+
+      .st19 {
+        fill: #fffdf8;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st19" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st1" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st2" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st18">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st17" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st10" x="26.1" y="18" width="112" height="28" rx="7" ry="7"/>
+    <g class="st3">
+      <text class="st7" transform="translate(36.6 36)"><tspan x="0" y="0">Зелёные зоны</tspan></text>
+    </g>
+  </g>
+  <ellipse class="st4" cx="87.2" cy="132" rx="47.1" ry="27.4"/>
+  <g id="illustration">
+    <path class="st5" d="M149.1,132c7.1-1.1,17.7-11.1,23.5-17.1s7.5-6.8,11.9-9.3c51.2-29.9,110.1-25.4,182.5,19.4"/>
+    <path class="st9" d="M87.2,131c48.3,6.3,52.2,15.6,88.8-21,53-35,115-32,191,15"/>
+    <path class="st16" d="M103,92.2v28"/>
+    <circle class="st11" cx="96.9" cy="87.4" r="15.7"/>
+    <circle class="st12" cx="110.8" cy="82.1" r="19"/>
+    <circle class="st13" cx="112.6" cy="94.2" r="14.6"/>
+    <path class="st15" d="M209.9,107.7v32.5"/>
+    <circle class="st11" cx="201.7" cy="106.3" r="18.2"/>
+    <circle class="st12" cx="207.9" cy="93" r="22.1"/>
+    <circle class="st13" cx="222.2" cy="111.1" r="16.9"/>
+    <path class="st14" d="M303.6,59.3v25"/>
+    <circle class="st11" cx="311.6" cy="62.8" r="14"/>
+    <circle class="st12" cx="304.9" cy="48.8" r="17"/>
+    <circle class="st13" cx="297.6" cy="68.3" r="13"/>
+    <rect class="st8" x="28" y="108" width="62" height="24" rx="7" ry="7"/>
+    <rect class="st8" x="324.8" y="79.3" width="62" height="24" rx="7" ry="7"/>
+    <text class="st6" transform="translate(45 122.5)"><tspan x="0" y="0">парк</tspan></text>
+    <text class="st6" transform="translate(338.6 93.8)"><tspan x="0" y="0">5 мин</tspan></text>
+  </g>
+</svg>

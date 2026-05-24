@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3D-карта индекса качества городской среды</title>
+    <link rel="icon" href="data:," />
+    <script>
+      try {
+        if (localStorage.getItem("lifeindex.theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch (error) {}
+      window.CESIUM_BASE_URL = "./vendor/cesium/";
+    </script>
+    <link rel="stylesheet" href="vendor/cesium/Widgets/widgets.css" />
+    <link rel="stylesheet" href="src/styles.css?v=cesium-v2-centered-buttons" />
+    <link rel="stylesheet" href="src/map3d.css?v=cesium-v2-balanced-compass" />
+    <script src="vendor/cesium/Cesium.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <button class="icon-button hidden" id="backButton" type="button" title="К городам">←</button>
+        <h1 id="pageTitle">Города исследования</h1>
+        <div class="topbarMetric" id="topMetric">
+          <div class="eyebrow">Оценка качества городской среды методами ГИС</div>
+        </div>
+        <button class="icon-button themeToggle" id="themeToggle" type="button" title="Ночная тема" aria-label="Ночная тема" aria-pressed="false">◐</button>
+      </header>
+
+      <main>
+        <section class="cityMenu" id="cityMenu">
+          <article class="cityCard pkmn-card pkmn-card--rare" data-city="orel">
+            <div class="cityCardTop">
+              <h2 class="cityName">Орёл</h2>
+              <div class="cityRating"><strong>50,15</strong><span>место 1</span></div>
+            </div>
+            <div class="crestSlot"><img src="public/herb_orel.png" alt="Герб Орла" loading="lazy"></div>
+            <dl class="cityFacts">
+              <div><dt>Жители</dt><dd>282 314</dd></div>
+              <div><dt>Кварталы</dt><dd>344</dd></div>
+            </dl>
+            <div class="qualityMix" aria-label="Структура населения по качеству среды">
+              <div class="qualityTitle">Структура населения по качеству среды:</div>
+              <div class="qualityBar"><span class="qualityBad" style="width:14.1%"></span><span class="qualityMid" style="width:72.5%"></span><span class="qualityGood" style="width:13.4%"></span></div>
+              <div class="qualityLegend"><span><i class="qualityDot bad"></i>Плохая 14,1%</span><span><i class="qualityDot mid"></i>Средняя 72,5%</span><span><i class="qualityDot good"></i>Хорошая 13,4%</span></div>
+            </div>
+          </article>
+          <article class="cityCard pkmn-card pkmn-card--rare" data-city="tambov">
+            <div class="cityCardTop">
+              <h2 class="cityName">Тамбов</h2>
+              <div class="cityRating"><strong>48,24</strong><span>место 2</span></div>
+            </div>
+            <div class="crestSlot"><img src="public/herb_tambov.png" alt="Герб Тамбова" loading="lazy"></div>
+            <dl class="cityFacts">
+              <div><dt>Жители</dt><dd>248 808</dd></div>
+              <div><dt>Кварталы</dt><dd>391</dd></div>
+            </dl>
+            <div class="qualityMix" aria-label="Структура населения по качеству среды">
+              <div class="qualityTitle">Структура населения по качеству среды:</div>
+              <div class="qualityBar"><span class="qualityBad" style="width:10.6%"></span><span class="qualityMid" style="width:88%"></span><span class="qualityGood" style="width:1.3%"></span></div>
+              <div class="qualityLegend"><span><i class="qualityDot bad"></i>Плохая 10,6%</span><span><i class="qualityDot mid"></i>Средняя 88,0%</span><span><i class="qualityDot good"></i>Хорошая 1,3%</span></div>
+            </div>
+          </article>
+        </section>
+
+        <section class="mapShell hidden mapShell3d" id="mapShell">
+          <div id="cesiumContainer" class="cesiumContainer"></div>
+          <canvas class="roadLabelCanvas" id="roadLabelCanvas" aria-hidden="true"></canvas>
+          <canvas class="accidentCanvas" id="accidentCanvas" aria-hidden="true"></canvas>
+          <div class="loadingOverlay hidden" id="loadingOverlay"></div>
+          <div class="pointToast hidden" id="pointToast" aria-live="polite"></div>
+
+          <div class="mapControls">
+            <div class="controlGroup controlPanel" id="scenarioControls"></div>
+            <div class="controlGroup controlPanel" id="layerControls"></div>
+            <button class="icon-button" id="resetView" type="button" title="Сбросить вид">⌂</button>
+          </div>
+
+          <aside class="infoPanel" id="infoPanel"></aside>
+          <button class="compassButton" id="compassButton" type="button" title="Повернуть на север" aria-label="Повернуть карту на север">
+            <span class="compassDial" id="compassDial" aria-hidden="true">
+              <span class="compassNeedle"></span>
+            </span>
+          </button>
+          <div class="legend" id="legend"></div>
+          <div class="symbolLegend" id="symbolLegend"></div>
+          <div class="cameraTutorial hidden" id="cameraTutorial"></div>
+          <div class="accidentPopup hidden" id="accidentPopup"></div>
+        </section>
+      </main>
+    </div>
+
+    <script defer src="src/map3d-cesium.js?v=cesium-v2-original-pulse-compact"></script>
+  </body>
+</html>

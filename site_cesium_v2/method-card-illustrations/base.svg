@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 180" role="img" aria-labelledby="title desc">
+  <title id="title">Base index illustration</title>
+  <desc id="desc">All index directions are combined into a stable base score.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff7e7"/>
+      <stop offset=".55" stop-color="#f7f0df"/>
+      <stop offset="1" stop-color="#eef2e8"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0" x2="1">
+      <stop offset="0" stop-color="#b6534d"/>
+      <stop offset=".5" stop-color="#dfc85e"/>
+      <stop offset="1" stop-color="#3f8277"/>
+    </linearGradient>
+    <filter id="hardShadow" x="-20%" y="-25%" width="150%" height="165%">
+      <feDropShadow dx="4" dy="5" stdDeviation="0" flood-color="#2d2d25" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="420" height="180" rx="18" fill="url(#bg)"/>
+  <g opacity=".13" stroke="#6f715f">
+    <path d="M22 40h376M22 90h376M22 140h376"/>
+    <path d="M54 18v144M114 18v144M174 18v144M234 18v144M294 18v144M354 18v144"/>
+  </g>
+
+  <g transform="translate(29 29)" filter="url(#hardShadow)">
+    <path d="M10 34l45-22 47 17 24 44-20 43-55 8-39-30z" fill="#fffdf7" stroke="#d6c9b4"/>
+    <path d="M22 39l35-15 34 13 17 34-15 29-41 7-29-22z" fill="#f3ead2" stroke="#d0ba72"/>
+    <path d="M58 24l33 13M91 37l17 34M108 71l-15 29M93 100l-41 7M52 107L23 85M23 85l-1-46" fill="none" stroke="#bba977" stroke-width="2"/>
+    <g fill="#fffdf7" stroke-width="3">
+      <circle cx="58" cy="24" r="8" stroke="#3f8277"/>
+      <circle cx="91" cy="37" r="8" stroke="#4f79a8"/>
+      <circle cx="108" cy="71" r="8" stroke="#805a98"/>
+      <circle cx="93" cy="100" r="8" stroke="#b98c33"/>
+      <circle cx="52" cy="107" r="8" stroke="#6f6c2d"/>
+      <circle cx="23" cy="85" r="8" stroke="#b6534d"/>
+    </g>
+    <circle cx="63" cy="68" r="18" fill="#fffdf7" stroke="#b88624" stroke-width="2"/>
+    <path d="M53 70h20M63 60v20" stroke="#b88624" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <g fill="none" stroke="#625d53" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+    <path d="M161 70c20-17 40-24 64-20"/>
+    <path d="M211 42l16 9-16 10"/>
+    <path d="M161 113c21 16 42 21 65 14"/>
+    <path d="M212 118l16 8-15 11"/>
+  </g>
+
+  <g transform="translate(218 24)" filter="url(#hardShadow)">
+    <rect x="0" y="0" width="92" height="124" rx="18" fill="#fffdf7" stroke="#d6c9b4"/>
+    <g transform="translate(16 17)">
+      <rect width="60" height="10" rx="5" fill="#ede8da"/>
+      <rect width="42" height="10" rx="5" fill="#3f8277"/>
+      <rect y="18" width="60" height="10" rx="5" fill="#ede8da"/>
+      <rect y="18" width="54" height="10" rx="5" fill="#4f79a8"/>
+      <rect y="36" width="60" height="10" rx="5" fill="#ede8da"/>
+      <rect y="36" width="28" height="10" rx="5" fill="#805a98"/>
+      <rect y="54" width="60" height="10" rx="5" fill="#ede8da"/>
+      <rect y="54" width="47" height="10" rx="5" fill="#b98c33"/>
+      <rect y="72" width="60" height="10" rx="5" fill="#ede8da"/>
+      <rect y="72" width="36" height="10" rx="5" fill="#6f6c2d"/>
+      <rect y="90" width="60" height="10" rx="5" fill="#ede8da"/>
+      <rect y="90" width="50" height="10" rx="5" fill="#b6534d"/>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#625d53" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+    <path d="M312 86c17 0 31 5 43 16"/>
+    <path d="M350 88l8 15-16-1"/>
+  </g>
+
+  <g transform="translate(333 35)" filter="url(#hardShadow)">
+    <rect x="0" y="0" width="68" height="103" rx="18" fill="#fffdf7" stroke="#d6c9b4"/>
+    <circle cx="34" cy="42" r="27" fill="#f2ead1" stroke="#b88624" stroke-width="2"/>
+    <path d="M16 50a20 20 0 0 1 37-17" fill="none" stroke="url(#bar)" stroke-width="7" stroke-linecap="round"/>
+    <path d="M34 42l15-17" stroke="#7c6b45" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="34" cy="42" r="5" fill="#7c6b45"/>
+    <rect x="13" y="78" width="42" height="8" rx="4" fill="url(#bar)"/>
+    <circle cx="34" cy="82" r="5" fill="#fffdf7" stroke="#7c6b45" stroke-width="2"/>
+  </g>
+</svg>

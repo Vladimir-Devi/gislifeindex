@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-15T20:36:32.997Z",
+  "generatedAt": "2026-05-24T12:29:18.205Z",
   "tileCount": 8,
   "overviewAreaThreshold": 700,
   "cities": [
@@ -32,25 +32,25 @@
         "mkdMatched": 1836,
         "mkdUnmatched": 60,
         "stops": 391,
-        "dtp": 250,
+        "dtp": 528,
         "quarterPopulationSum": 271866,
         "quarterPopulationSource": "layer",
         "quarterPopulationField": "pop_sum_2"
       },
       "rank": 1,
-      "index": 42.82309293228197,
-      "indexNoWork": 52.4983280614248,
+      "index": 49.34275795522442,
+      "indexNoWork": 57.84098631409884,
       "population": 282314,
       "areaHa": 3487.308598901367,
-      "lowShare": 0.16220940573084133,
-      "midShare": 0.7726053145653596,
-      "highShare": 0.0651852797037991,
+      "lowShare": 0.12094595665202504,
+      "midShare": 0.6833377515738437,
+      "highShare": 0.19571629177413138,
       "blocks": {
-        "housing": 62.99771478399325,
-        "infra": 57.81792593257888,
-        "transport": 49.196582506654984,
-        "work": 4.122152415710685,
-        "green": 39.98108902247209
+        "housing": 63.10858043429378,
+        "infra": 57.26197048722166,
+        "transport": 67.00162124823585,
+        "work": 15.349844519726728,
+        "green": 43.991773086644045
       },
       "center": [
         36.0902535,
@@ -233,19 +233,19 @@
         "quarterPopulationField": "pop_sum"
       },
       "rank": 2,
-      "index": 34.50289837275928,
-      "indexNoWork": 42.15126605023461,
+      "index": 38.608667230406965,
+      "indexNoWork": 45.83242075608585,
       "population": 248808,
       "areaHa": 3027.338913256836,
-      "lowShare": 0.11514996423287918,
-      "midShare": 0.8764750432469772,
-      "highShare": 0.008374992520143556,
+      "lowShare": 0.04793540851246952,
+      "midShare": 0.8660505338224144,
+      "highShare": 0.08601405766511609,
       "blocks": {
-        "housing": 38.926140996019306,
-        "infra": 51.734615532410054,
-        "transport": 28.682769688873268,
-        "work": 3.9094276628579654,
-        "green": 49.26153798363582
+        "housing": 38.88805230915884,
+        "infra": 61.667572720579535,
+        "transport": 29.286954108703075,
+        "work": 9.713653127691387,
+        "green": 53.487103885901966
       },
       "center": [
         41.436362,

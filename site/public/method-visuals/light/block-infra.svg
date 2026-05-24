@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #d8d2c7;
+      }
+
+      .st1 {
+        opacity: 0;
+      }
+
+      .st1, .st2 {
+        fill: #6f6c2d;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6 {
+        isolation: isolate;
+      }
+
+      .st7 {
+        stroke-linejoin: round;
+      }
+
+      .st7, .st8, .st9, .st4, .st10 {
+        stroke: #6f6c2d;
+      }
+
+      .st7, .st8, .st10 {
+        fill: #fffaf1;
+      }
+
+      .st7, .st4, .st10 {
+        stroke-width: 2px;
+      }
+
+      .st2 {
+        font-size: 10px;
+      }
+
+      .st2, .st6 {
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st8 {
+        stroke-opacity: .4;
+      }
+
+      .st11 {
+        opacity: .4;
+      }
+
+      .st9 {
+        stroke-width: 2.5px;
+      }
+
+      .st9, .st4, .st12 {
+        fill: none;
+      }
+
+      .st9, .st13 {
+        stroke-linecap: round;
+      }
+
+      .st4 {
+        opacity: .2;
+      }
+
+      .st12 {
+        stroke: #e7dfd1;
+      }
+
+      .st5 {
+        opacity: .1;
+      }
+
+      .st5, .st6 {
+        fill: #202326;
+      }
+
+      .st13 {
+        stroke: #aeaa83;
+        stroke-width: 4px;
+      }
+
+      .st6 {
+        font-size: 13px;
+      }
+
+      .st14 {
+        fill: #fffdf8;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st14" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st1" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st4" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st11">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st12" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st8" x="26.1" y="18" width="126" height="40" rx="7" ry="7"/>
+    <g class="st3">
+      <g class="st3">
+        <text class="st6" transform="translate(37.3 34)"><tspan x="0" y="0">Коммерческая</tspan></text>
+      </g>
+      <g class="st3">
+        <text class="st6" transform="translate(37.3 49)"><tspan x="0" y="0">инфраструктура</tspan></text>
+      </g>
+    </g>
+  </g>
+  <g id="illustration">
+    <ellipse class="st5" cx="89.7" cy="136.6" rx="35.3" ry="9"/>
+    <ellipse class="st5" cx="170.7" cy="117.4" rx="35.3" ry="9"/>
+    <ellipse class="st5" cx="251.7" cy="141.6" rx="35.3" ry="9"/>
+    <ellipse class="st5" cx="332.7" cy="124.6" rx="21.2" ry="4"/>
+    <rect class="st10" x="58.7" y="83.6" width="62" height="40" rx="7" ry="7"/>
+    <path class="st13" d="M68.7,98.6h42"/>
+    <g class="st3">
+      <text class="st2" transform="translate(65.8 111.6)"><tspan x="0" y="0">продукты</tspan></text>
+    </g>
+    <rect class="st10" x="139.7" y="64.6" width="62" height="40" rx="7" ry="7"/>
+    <path class="st13" d="M149.7,79.6h42"/>
+    <g class="st3">
+      <text class="st2" transform="translate(154.7 92.6)"><tspan x="0" y="0">услуги</tspan></text>
+    </g>
+    <rect class="st10" x="220.7" y="88.6" width="62" height="40" rx="7" ry="7"/>
+    <path class="st13" d="M230.7,103.6h42"/>
+    <g class="st3">
+      <text class="st2" transform="translate(235.5 116.6)"><tspan x="0" y="0">аптека</tspan></text>
+    </g>
+  </g>
+  <path class="st7" d="M314,89.1h39.8l-7,23.3h-26.9s-5.9-23.3-5.9-23.3Z"/>
+  <path class="st9" d="M323.9,88.7c1-18,19-18,20,0"/>
+</svg>

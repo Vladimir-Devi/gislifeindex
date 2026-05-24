@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0, .st1, .st2, .st3, .st4, .st5 {
+        stroke-linecap: round;
+      }
+
+      .st0, .st6, .st7, .st8, .st9, .st10, .st5, .st11, .st12 {
+        isolation: isolate;
+      }
+
+      .st0, .st13 {
+        opacity: .6;
+        stroke: #316a9c;
+      }
+
+      .st0, .st5 {
+        stroke-width: 3px;
+      }
+
+      .st1 {
+        opacity: .3;
+      }
+
+      .st1, .st6, .st14, .st2, .st15, .st3, .st16 {
+        stroke: #256d72;
+      }
+
+      .st1, .st6, .st17, .st15, .st18, .st19, .st13, .st11, .st16 {
+        stroke-width: 2px;
+      }
+
+      .st20 {
+        stroke: #d8d2c7;
+      }
+
+      .st6 {
+        opacity: .2;
+      }
+
+      .st6, .st2, .st3, .st21, .st4 {
+        fill: none;
+      }
+
+      .st14 {
+        stroke-opacity: .4;
+      }
+
+      .st14, .st15 {
+        fill: #fffaf1;
+      }
+
+      .st2, .st4 {
+        stroke-width: 8px;
+      }
+
+      .st17 {
+        fill: #979464;
+        stroke: #6f6c2d;
+      }
+
+      .st22 {
+        opacity: .4;
+      }
+
+      .st3 {
+        stroke-width: 2.8px;
+      }
+
+      .st7 {
+        font-size: 14px;
+      }
+
+      .st7, .st9, .st12 {
+        fill: #202326;
+      }
+
+      .st7, .st12 {
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st18 {
+        fill: #cca65d;
+        stroke: #b88624;
+      }
+
+      .st21 {
+        stroke: #e7dfd1;
+      }
+
+      .st19 {
+        fill: #7ba185;
+        stroke: #477f5b;
+      }
+
+      .st13, .st11 {
+        fill: #f6efe2;
+      }
+
+      .st9 {
+        opacity: .1;
+      }
+
+      .st4 {
+        stroke: #81a8a7;
+      }
+
+      .st10 {
+        fill: #256d72;
+        opacity: 0;
+      }
+
+      .st5, .st11 {
+        opacity: .6;
+        stroke: #7b5796;
+      }
+
+      .st16 {
+        fill: #629496;
+      }
+
+      .st12 {
+        font-size: 13px;
+      }
+
+      .st23 {
+        fill: #fffdf8;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st23" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st10" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st6" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st22">
+      <path class="st20" d="M30,16v148"/>
+      <path class="st20" d="M60,16v148"/>
+      <path class="st20" d="M90,16v148"/>
+      <path class="st20" d="M120,16v148"/>
+      <path class="st20" d="M150,16v148"/>
+      <path class="st20" d="M180,16v148"/>
+      <path class="st20" d="M210,16v148"/>
+      <path class="st20" d="M240,16v148"/>
+      <path class="st20" d="M270,16v148"/>
+      <path class="st20" d="M300,16v148"/>
+      <path class="st20" d="M330,16v148"/>
+      <path class="st20" d="M360,16v148"/>
+      <path class="st20" d="M390,16v148"/>
+      <path class="st20" d="M16,30h388"/>
+      <path class="st20" d="M16,60h388"/>
+      <path class="st20" d="M16,90h388"/>
+      <path class="st20" d="M16,120h388"/>
+      <path class="st20" d="M16,150h388"/>
+    </g>
+    <rect class="st21" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st14" x="26.1" y="18" width="140" height="28" rx="7" ry="7"/>
+    <g class="st8">
+      <text class="st12" transform="translate(35.4 35.3)"><tspan x="0" y="0">Сценарный индекс</tspan></text>
+    </g>
+  </g>
+  <g id="illustration">
+    <rect class="st15" x="294.5" y="73" width="92" height="58" rx="10" ry="10"/>
+    <path class="st4" d="M310.5,107.4c0-16.8,13.7-24.9,30.5-24.9s30.5,8,30.5,24.9"/>
+    <path class="st2" d="M310.5,107.4c0-16.6,13.9-24.9,30.5-24.9,5.3,0,10.2.7,15.2,2.6"/>
+    <text class="st7" transform="translate(316.5 122.1)"><tspan x="0" y="0">индекс</tspan></text>
+  </g>
+  <g id="illustration1" data-name="illustration">
+    <ellipse class="st9" cx="162.3" cy="147" rx="112.3" ry="9"/>
+    <ellipse class="st9" cx="330" cy="147" rx="46" ry="9"/>
+    <rect class="st16" x="55" y="86" width="24" height="46" rx="6" ry="6"/>
+    <rect class="st17" x="92" y="97" width="24" height="35" rx="6" ry="6"/>
+    <rect class="st13" x="129" y="74" width="24" height="58" rx="6" ry="6"/>
+    <rect class="st11" x="166" y="102" width="24" height="30" rx="6" ry="6"/>
+    <rect class="st19" x="203" y="90" width="24" height="42" rx="6" ry="6"/>
+    <rect class="st18" x="240" y="80" width="24" height="52" rx="6" ry="6"/>
+    <path class="st1" d="M48,134h222"/>
+  </g>
+  <path class="st0" d="M134,103h14"/>
+  <path class="st5" d="M171,117h14"/>
+  <line class="st3" x1="272.5" y1="95.1" x2="286.7" y2="95.1"/>
+  <line class="st3" x1="272.5" y1="100.8" x2="286.7" y2="100.8"/>
+</svg>

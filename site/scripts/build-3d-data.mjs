@@ -256,13 +256,21 @@ function prepareMajorRoad(feature, projection) {
 }
 
 function roadLabelText(properties = {}) {
-  for (const key of ["name_ru", "name", "ref"]) {
+  for (const key of ["name_ru", "name:ru", "name", "ref", "int_ref"]) {
     const value = properties[key];
     if (value === null || value === undefined) continue;
-    const text = String(value).replace(/\s+/g, " ").trim();
+    const text = cleanRoadLabelText(String(value).replace(/\s+/g, " ").trim());
     if (text) return text;
   }
   return "";
+}
+
+function cleanRoadLabelText(text) {
+  return text
+    .replace(/^(?:\u0443\u043b(?:\.|\u0438\u0446\u0430)?)\s+/iu, "")
+    .replace(/\s+(?:\u0443\u043b(?:\.|\u0438\u0446\u0430)?)$/iu, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function lineLength(line) {

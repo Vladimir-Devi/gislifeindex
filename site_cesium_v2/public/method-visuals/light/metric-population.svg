@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #d8d2c7;
+      }
+
+      .st1 {
+        opacity: 0;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6, .st7 {
+        isolation: isolate;
+      }
+
+      .st1, .st2, .st6 {
+        fill: #477f5b;
+      }
+
+      .st2 {
+        opacity: .9;
+      }
+
+      .st8 {
+        opacity: .4;
+      }
+
+      .st9 {
+        stroke: #e7dfd1;
+      }
+
+      .st9, .st10, .st11, .st4 {
+        fill: none;
+      }
+
+      .st10 {
+        stroke-linejoin: round;
+      }
+
+      .st10, .st11 {
+        stroke-linecap: round;
+        stroke-width: 2.5px;
+      }
+
+      .st10, .st11, .st12, .st4, .st13, .st14 {
+        stroke: #477f5b;
+      }
+
+      .st11 {
+        stroke-dasharray: 14.2 8.5;
+      }
+
+      .st12, .st13 {
+        fill: #e9ebdf;
+      }
+
+      .st12, .st14 {
+        stroke-opacity: .4;
+      }
+
+      .st4 {
+        opacity: .2;
+      }
+
+      .st4, .st13 {
+        stroke-width: 2px;
+      }
+
+      .st5 {
+        font-size: 12px;
+      }
+
+      .st5, .st7 {
+        fill: #202326;
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st6 {
+        opacity: .7;
+      }
+
+      .st14 {
+        fill: #fffaf1;
+      }
+
+      .st7 {
+        font-size: 13px;
+      }
+
+      .st15 {
+        fill: #fffdf8;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st15" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st1" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st4" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st8">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st9" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st14" x="25.2" y="18" width="105" height="40" rx="7" ry="7"/>
+    <g class="st3">
+      <g class="st3">
+        <text class="st7" transform="translate(36.8 33)"><tspan x="0" y="0">Численность</tspan></text>
+      </g>
+      <g class="st3">
+        <text class="st7" transform="translate(36.8 48)"><tspan x="0" y="0">населения</tspan></text>
+      </g>
+    </g>
+  </g>
+  <g id="illustration">
+    <path class="st13" d="M62,72l112-26,61,43-40,51-117-6-16-62Z"/>
+    <circle class="st2" cx="92" cy="95" r="6"/>
+    <circle class="st6" cx="112" cy="78" r="5"/>
+    <circle class="st2" cx="133" cy="100" r="5"/>
+    <circle class="st6" cx="155" cy="83" r="4.5"/>
+    <circle class="st2" cx="175" cy="107" r="5"/>
+    <circle class="st6" cx="110.9" cy="115.9" r="3.9"/>
+    <circle class="st2" cx="145" cy="128" r="7.5"/>
+    <circle class="st6" cx="188" cy="84" r="6.7"/>
+    <rect class="st12" x="29" y="116" width="78" height="24" rx="7" ry="7"/>
+    <g class="st3">
+      <text class="st5" transform="translate(45.9 132.1)"><tspan x="0" y="0">квартал</tspan></text>
+    </g>
+    <rect class="st13" x="280.5" y="46" width="82.2" height="96.1" rx="14.2" ry="14.2"/>
+    <circle class="st2" cx="295.4" cy="60.7" r="3.2"/>
+    <circle class="st2" cx="305.9" cy="60.7" r="3.2"/>
+    <circle class="st2" cx="316.3" cy="60.7" r="3.2"/>
+    <circle class="st2" cx="326.8" cy="60.7" r="3.2"/>
+    <circle class="st2" cx="337.2" cy="60.7" r="3.2"/>
+    <circle class="st2" cx="347.7" cy="60.7" r="3.2"/>
+    <circle class="st2" cx="295.4" cy="70.8" r="3.2"/>
+    <circle class="st2" cx="305.9" cy="70.8" r="3.2"/>
+    <circle class="st2" cx="316.3" cy="70.8" r="3.2"/>
+    <circle class="st2" cx="326.8" cy="70.8" r="3.2"/>
+    <circle class="st2" cx="337.2" cy="70.8" r="3.2"/>
+    <circle class="st2" cx="347.7" cy="70.8" r="3.2"/>
+    <circle class="st2" cx="295.4" cy="80.8" r="3.2"/>
+    <circle class="st2" cx="305.9" cy="80.8" r="3.2"/>
+    <circle class="st2" cx="316.3" cy="80.8" r="3.2"/>
+    <circle class="st2" cx="326.8" cy="80.8" r="3.2"/>
+    <circle class="st2" cx="337.2" cy="80.8" r="3.2"/>
+    <circle class="st2" cx="347.7" cy="80.8" r="3.2"/>
+    <circle class="st2" cx="295.4" cy="90.8" r="3.2"/>
+    <circle class="st2" cx="305.9" cy="90.8" r="3.2"/>
+    <circle class="st2" cx="316.3" cy="90.8" r="3.2"/>
+    <circle class="st2" cx="295.4" cy="100.8" r="3.2"/>
+    <circle class="st2" cx="305.9" cy="100.8" r="3.2"/>
+    <circle class="st2" cx="316.3" cy="100.8" r="3.2"/>
+    <circle class="st2" cx="326.8" cy="90.8" r="3.2"/>
+    <circle class="st2" cx="337.2" cy="90.8" r="3.2"/>
+    <circle class="st2" cx="347.7" cy="90.8" r="3.2"/>
+    <rect class="st12" x="231.7" y="33.6" width="78" height="24" rx="7" ry="7"/>
+    <g class="st3">
+      <text class="st5" transform="translate(248.6 49.7)"><tspan x="0" y="0">270 чел.</tspan></text>
+    </g>
+    <path class="st11" d="M220.5,113c26-1,38-11,54-12"/>
+    <path class="st10" d="M266.9,95.5l10.8,4.9c.2,0,.3.4,0,.5l-9.4,6.8"/>
+  </g>
+</svg>

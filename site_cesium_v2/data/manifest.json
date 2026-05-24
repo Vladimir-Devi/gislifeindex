@@ -1,0 +1,127 @@
+{
+  "generatedAt": "2026-05-24T12:29:53.326Z",
+  "sourceGeneratedAt": "2026-05-24T12:29:18.205Z",
+  "cesiumVersion": "1.141",
+  "cities": [
+    {
+      "slug": "orel",
+      "name": "Орёл",
+      "center": [
+        36.0902535,
+        52.9642425
+      ],
+      "bbox": [
+        35.999736,
+        52.905227,
+        36.180771,
+        53.023258
+      ],
+      "rank": 1,
+      "index": 49.34275795522442,
+      "population": 282314,
+      "lowShare": 0.12094595665202504,
+      "midShare": 0.6833377515738437,
+      "highShare": 0.19571629177413138,
+      "stats": {
+        "quartals": 344,
+        "buildings": 22422,
+        "mkdMatched": 1836,
+        "mkdUnmatched": 60,
+        "stops": 391,
+        "dtp": 528,
+        "quarterPopulationSum": 271866,
+        "quarterPopulationSource": "layer",
+        "quarterPopulationField": "pop_sum_2"
+      },
+      "files": {
+        "meta": "data/orel/meta.json",
+        "quartals": "data/orel/quartals.json",
+        "surfaces": "data/orel/surfaces.json",
+        "roads": "data/orel/roads.json",
+        "roadsDetail": "data/orel/roads-detail.json",
+        "points": "data/orel/points.json",
+        "roadLabels": "data/orel/road-labels.json",
+        "trees": "data/orel/trees/manifest.json",
+        "treesTileset": "data/orel/trees-3d/tileset.json",
+        "terrainTileset": "data/orel/terrain/tileset.json",
+        "buildingsTileset": "data/orel/buildings/tileset.json",
+        "buildingsMobileTileset": "data/orel/buildings-mobile/tileset.json"
+      },
+      "cesium": {
+        "buildingTiles": 1,
+        "buildingBytes": 11995052,
+        "buildingGzipBytes": 1567245,
+        "buildingBrotliBytes": 1314721,
+        "buildingMobileTiles": 1,
+        "buildingMobileBytes": 7608284,
+        "buildingMobileGzipBytes": 987875,
+        "buildingMobileBrotliBytes": 828984,
+        "treeTiles": 306,
+        "treeBytes": 2105928,
+        "treeGzipBytes": 785703,
+        "treeBrotliBytes": 751515,
+        "terrainBytes": 866564
+      }
+    },
+    {
+      "slug": "tambov",
+      "name": "Тамбов",
+      "center": [
+        41.436362,
+        52.7311755
+      ],
+      "bbox": [
+        41.359286,
+        52.670662,
+        41.513438,
+        52.791689
+      ],
+      "rank": 2,
+      "index": 38.608667230406965,
+      "population": 248808,
+      "lowShare": 0.04793540851246952,
+      "midShare": 0.8660505338224144,
+      "highShare": 0.08601405766511609,
+      "stats": {
+        "quartals": 391,
+        "buildings": 50988,
+        "mkdMatched": 1867,
+        "mkdUnmatched": 151,
+        "stops": 384,
+        "dtp": 900,
+        "quarterPopulationSum": 243995,
+        "quarterPopulationSource": "layer",
+        "quarterPopulationField": "pop_sum"
+      },
+      "files": {
+        "meta": "data/tambov/meta.json",
+        "quartals": "data/tambov/quartals.json",
+        "surfaces": "data/tambov/surfaces.json",
+        "roads": "data/tambov/roads.json",
+        "roadsDetail": "data/tambov/roads-detail.json",
+        "points": "data/tambov/points.json",
+        "roadLabels": "data/tambov/road-labels.json",
+        "trees": "data/tambov/trees/manifest.json",
+        "treesTileset": "data/tambov/trees-3d/tileset.json",
+        "terrainTileset": "data/tambov/terrain/tileset.json",
+        "buildingsTileset": "data/tambov/buildings/tileset.json",
+        "buildingsMobileTileset": "data/tambov/buildings-mobile/tileset.json"
+      },
+      "cesium": {
+        "buildingTiles": 1,
+        "buildingBytes": 20043276,
+        "buildingGzipBytes": 2524433,
+        "buildingBrotliBytes": 2080659,
+        "buildingMobileTiles": 1,
+        "buildingMobileBytes": 12748364,
+        "buildingMobileGzipBytes": 1590248,
+        "buildingMobileBrotliBytes": 1310361,
+        "treeTiles": 360,
+        "treeBytes": 2387304,
+        "treeGzipBytes": 847386,
+        "treeBrotliBytes": 809488,
+        "terrainBytes": 854356
+      }
+    }
+  ]
+}

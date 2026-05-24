@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0, .st1 {
+        stroke: #d8d2c7;
+      }
+
+      .st2 {
+        font-size: 20px;
+      }
+
+      .st2, .st3, .st4, .st5, .st6, .st7, .st8 {
+        isolation: isolate;
+      }
+
+      .st2, .st7 {
+        fill: #b88624;
+      }
+
+      .st2, .st8 {
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st9 {
+        opacity: .4;
+      }
+
+      .st3 {
+        opacity: .2;
+      }
+
+      .st3, .st4, .st6, .st10, .st11 {
+        stroke: #b88624;
+      }
+
+      .st3, .st1, .st11 {
+        stroke-width: 2px;
+      }
+
+      .st3, .st12 {
+        fill: none;
+      }
+
+      .st4 {
+        opacity: .7;
+        stroke-width: 3px;
+      }
+
+      .st4, .st1, .st6 {
+        stroke-linecap: round;
+      }
+
+      .st12 {
+        stroke: #e7dfd1;
+      }
+
+      .st6 {
+        opacity: .8;
+        stroke-width: 17px;
+      }
+
+      .st7 {
+        opacity: 0;
+      }
+
+      .st10 {
+        stroke-opacity: .4;
+      }
+
+      .st10, .st11 {
+        fill: #fffaf1;
+      }
+
+      .st8 {
+        fill: #202326;
+        font-size: 13px;
+      }
+
+      .st13 {
+        fill: #fffdf8;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st13" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st7" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st3" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st9">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st12" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st10" x="26" y="18" width="119" height="28" rx="7" ry="7"/>
+    <g class="st5">
+      <text class="st8" transform="translate(34 36)"><tspan x="0" y="0">Медианный чек</tspan></text>
+    </g>
+  </g>
+  <g id="illustration">
+    <path class="st11" d="M80,56l10,8,10-8,10,8,10-8,10,8,10-8,10,8,10-8,10,8,15-8v79c0,3.9-3.1,7-7,7h-91c-3.9,0-7-3.1-7-7V56Z"/>
+    <path class="st4" d="M100,79h64M100,97h56M100,116h46"/>
+    <text class="st2" transform="translate(127.1 136)"><tspan x="0" y="0">₽</tspan></text>
+    <path class="st6" d="M238,132v-31M268,132v-50M298,132V63M328,132v-37"/>
+    <path class="st1" d="M225,142h127"/>
+  </g>
+</svg>

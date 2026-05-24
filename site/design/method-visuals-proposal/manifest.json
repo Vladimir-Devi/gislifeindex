@@ -1,0 +1,122 @@
+[
+  {
+    "file": "metric-scenario",
+    "title": "Сценарный индекс",
+    "color": "housing"
+  },
+  {
+    "file": "metric-base",
+    "title": "Основной индекс",
+    "color": "commerce"
+  },
+  {
+    "file": "metric-rank",
+    "title": "Ранг",
+    "color": "work"
+  },
+  {
+    "file": "metric-population",
+    "title": "Численность населения",
+    "color": "green"
+  },
+  {
+    "file": "block-housing",
+    "title": "Жильё",
+    "color": "housing"
+  },
+  {
+    "file": "block-infra",
+    "title": "Коммерческая инфраструктура",
+    "color": "infra"
+  },
+  {
+    "file": "block-transport",
+    "title": "Транспорт",
+    "color": "transport"
+  },
+  {
+    "file": "block-work",
+    "title": "Крупные работодатели",
+    "color": "work"
+  },
+  {
+    "file": "block-green",
+    "title": "Зелёные зоны",
+    "color": "green"
+  },
+  {
+    "file": "block-commerce",
+    "title": "Экономика",
+    "color": "commerce"
+  },
+  {
+    "file": "indicator-generic",
+    "title": "Показатель",
+    "color": "housing"
+  },
+  {
+    "file": "indicator-housing-density",
+    "title": "Плотность",
+    "color": "housing"
+  },
+  {
+    "file": "indicator-housing-supply",
+    "title": "Обеспеченность жильём",
+    "color": "housing"
+  },
+  {
+    "file": "indicator-housing-wear",
+    "title": "Износ",
+    "color": "housing"
+  },
+  {
+    "file": "indicator-housing-floors",
+    "title": "Этажность",
+    "color": "housing"
+  },
+  {
+    "file": "indicator-infra-diversity",
+    "title": "Разнообразие",
+    "color": "infra"
+  },
+  {
+    "file": "indicator-infra-basket",
+    "title": "Полнота корзины",
+    "color": "infra"
+  },
+  {
+    "file": "indicator-transport-access",
+    "title": "Доступность остановок",
+    "color": "transport"
+  },
+  {
+    "file": "indicator-work-access",
+    "title": "Обеспеченность работодателями",
+    "color": "work"
+  },
+  {
+    "file": "indicator-work-density",
+    "title": "Плотность работодателей",
+    "color": "work"
+  },
+  {
+    "file": "indicator-green-access",
+    "title": "Доступность зелёных зон",
+    "color": "green"
+  },
+  {
+    "file": "indicator-commerce-activity",
+    "title": "Активность ФНС",
+    "color": "commerce"
+  },
+  {
+    "file": "indicator-commerce-registers",
+    "title": "ККТ",
+    "color": "commerce"
+  },
+  {
+    "file": "indicator-commerce-check",
+    "title": "Медианный чек",
+    "color": "commerce"
+  }
+]

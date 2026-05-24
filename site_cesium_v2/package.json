@@ -1,0 +1,14 @@
+{
+  "name": "gislifeindex-cesium-interface-v2",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-tiles.mjs",
+    "build:dist": "node scripts/build-dist.mjs",
+    "serve": "node scripts/serve.mjs"
+  },
+  "devDependencies": {
+    "cesium": "^1.141.0"
+  }
+}

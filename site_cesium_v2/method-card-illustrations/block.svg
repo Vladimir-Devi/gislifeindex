@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 180" role="img" aria-labelledby="title desc">
+  <title id="title">Subindex illustration</title>
+  <desc id="desc">Several related measures are grouped into one subindex score.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff8ec"/>
+      <stop offset=".55" stop-color="#f5f1e6"/>
+      <stop offset="1" stop-color="#edf3ef"/>
+    </linearGradient>
+    <filter id="hardShadow" x="-20%" y="-25%" width="150%" height="165%">
+      <feDropShadow dx="4" dy="5" stdDeviation="0" flood-color="#24302d" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="420" height="180" rx="18" fill="url(#bg)"/>
+  <g opacity=".12" stroke="#5f6b67">
+    <path d="M24 44h372M24 92h372M24 140h372"/>
+    <path d="M62 18v144M124 18v144M186 18v144M248 18v144M310 18v144M372 18v144"/>
+  </g>
+
+  <g transform="translate(31 32)" filter="url(#hardShadow)">
+    <rect width="126" height="98" rx="18" fill="#fffdf7" stroke="#d6c9b4"/>
+    <g transform="translate(20 17)" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="18" cy="18" r="14" fill="#e5f0ec" stroke="#3f8277"/>
+      <path d="M8 20l10-9 10 9v12H8z" stroke="#3f8277"/>
+      <circle cx="68" cy="18" r="14" fill="#e8f0f8" stroke="#4f79a8"/>
+      <path d="M58 24h20M61 15h14M64 9h8" stroke="#4f79a8"/>
+      <circle cx="18" cy="62" r="14" fill="#efe7f4" stroke="#805a98"/>
+      <path d="M12 66l6-16 7 16M15 60h7" stroke="#805a98"/>
+      <circle cx="68" cy="62" r="14" fill="#f4ead1" stroke="#b98c33"/>
+      <path d="M58 67h20M64 67V51h8v16M61 57h14" stroke="#b98c33"/>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#59645f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+    <path d="M162 80c18-13 36-17 56-11"/>
+    <path d="M205 61l15 10-17 8"/>
+    <path d="M162 112c19 11 37 13 56 4"/>
+    <path d="M204 108l16 7-14 12"/>
+  </g>
+
+  <g transform="translate(216 27)" filter="url(#hardShadow)">
+    <rect width="70" height="110" rx="18" fill="#fffdf7" stroke="#d6c9b4"/>
+    <g transform="translate(16 18)">
+      <rect width="38" height="74" rx="19" fill="#ece7d9"/>
+      <rect y="25" width="38" height="49" rx="19" fill="#3f8277"/>
+      <circle cx="19" cy="50" r="9" fill="#fffdf7" stroke="#3f8277" stroke-width="2"/>
+      <path d="M13 50h12M19 44v12" stroke="#3f8277" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#59645f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+    <path d="M288 84c18-2 34 1 48 11"/>
+    <path d="M331 81l8 15-16-1"/>
+  </g>
+
+  <g transform="translate(320 38)" filter="url(#hardShadow)">
+    <path d="M15 23l47-14 38 18 12 43-28 31-52 4L4 74z" fill="#fffdf7" stroke="#d6c9b4"/>
+    <path d="M24 32l36-10 29 13 9 29-21 22-39 3-21-22z" fill="#e5f0ec" stroke="#3f8277" stroke-width="1.5"/>
+    <path d="M28 69h60" stroke="#fffdf7" stroke-width="7" stroke-linecap="round"/>
+    <path d="M28 69h60" stroke="#63716d" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="44" y="41" width="13" height="25" rx="2" fill="#d6d5cc"/>
+    <rect x="61" y="33" width="16" height="33" rx="2" fill="#c9cac2"/>
+    <rect x="78" y="48" width="12" height="18" rx="2" fill="#b9bbb4"/>
+  </g>
+</svg>

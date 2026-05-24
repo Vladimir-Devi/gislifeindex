@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #d8d2c7;
+      }
+
+      .st1 {
+        opacity: .2;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6, .st7, .st8 {
+        isolation: isolate;
+      }
+
+      .st1, .st9 {
+        fill: none;
+      }
+
+      .st1, .st10, .st11, .st12 {
+        stroke: #7b5796;
+      }
+
+      .st1, .st12 {
+        stroke-width: 2px;
+      }
+
+      .st2 {
+        opacity: .7;
+        stroke: #b49ebd;
+        stroke-linecap: round;
+        stroke-width: 3px;
+      }
+
+      .st13 {
+        opacity: .4;
+      }
+
+      .st3 {
+        opacity: .8;
+      }
+
+      .st3, .st5 {
+        fill: #7b5796;
+      }
+
+      .st9 {
+        stroke: #e7dfd1;
+      }
+
+      .st5 {
+        opacity: 0;
+      }
+
+      .st10 {
+        fill: #efe6e6;
+      }
+
+      .st10, .st11 {
+        stroke-opacity: .4;
+      }
+
+      .st6 {
+        font-size: 12px;
+      }
+
+      .st6, .st7, .st8 {
+        fill: #202326;
+      }
+
+      .st6, .st8 {
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st7 {
+        opacity: .1;
+      }
+
+      .st11 {
+        fill: #fffaf1;
+      }
+
+      .st12 {
+        fill: #f2eae8;
+      }
+
+      .st8 {
+        font-size: 13px;
+      }
+
+      .st14 {
+        fill: #fffdf8;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st14" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st5" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st1" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st13">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st9" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st11" x="26" y="18" width="119" height="40" rx="7" ry="7"/>
+    <g class="st4">
+      <g class="st4">
+        <text class="st8" transform="translate(38 33)"><tspan x="0" y="0">Плотность</tspan></text>
+      </g>
+      <g class="st4">
+        <text class="st8" transform="translate(38 48)"><tspan x="0" y="0">работодателей</tspan></text>
+      </g>
+    </g>
+  </g>
+  <g id="illustration">
+    <ellipse class="st7" cx="188" cy="150" rx="130" ry="9"/>
+    <rect class="st12" x="66" y="84" width="39" height="52" rx="6" ry="6"/>
+    <path class="st2" d="M76,95h19"/>
+    <path class="st2" d="M76,109h19"/>
+    <path class="st2" d="M76,123h19"/>
+    <rect class="st12" x="116" y="66" width="46" height="70" rx="6" ry="6"/>
+    <path class="st2" d="M126,77h26"/>
+    <path class="st2" d="M126,92.3h26"/>
+    <path class="st2" d="M126,107.7h26"/>
+    <path class="st2" d="M126,123h26"/>
+    <rect class="st12" x="177" y="49" width="54" height="87" rx="6" ry="6"/>
+    <path class="st2" d="M187,60h34"/>
+    <path class="st2" d="M187,72.6h34"/>
+    <path class="st2" d="M187,85.2h34"/>
+    <path class="st2" d="M187,97.8h34"/>
+    <path class="st2" d="M187,110.4h34"/>
+    <path class="st2" d="M187,123h34"/>
+    <rect class="st12" x="247" y="76" width="42" height="60" rx="6" ry="6"/>
+    <path class="st2" d="M257,87h22"/>
+    <path class="st2" d="M257,99h22"/>
+    <path class="st2" d="M257,111h22"/>
+    <path class="st2" d="M257,123h22"/>
+    <path class="st12" d="M306,58l76,17-11,64-65-12V58Z"/>
+    <circle class="st3" cx="326" cy="82" r="5"/>
+    <circle class="st3" cx="346" cy="76" r="5"/>
+    <circle class="st3" cx="353.8" cy="98.5" r="5"/>
+    <circle class="st3" cx="333" cy="118" r="5"/>
+    <circle class="st3" cx="365" cy="123" r="5"/>
+    <circle class="st3" cx="316" cy="105" r="5"/>
+    <rect class="st10" x="306" y="42" width="72" height="24" rx="7" ry="7"/>
+    <g class="st4">
+      <text class="st6" transform="translate(323.7 58.1)"><tspan x="0" y="0">ед./м²</tspan></text>
+    </g>
+  </g>
+</svg>

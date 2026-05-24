@@ -33,11 +33,13 @@ const cities = [
     roadLayer: "road_auto_site",
     roadAllLayer: "road_all_site",
     roadLabelLayer: "road_auto_lable",
+    roadLabelSelect: ["name_ru", "name", "int_ref", "highway", "q", "lenght"],
     mkdLayer: "mkd",
     mkdFields: ["address", "floor_num", "pop"],
     mkdWhere: "lon >= 35 AND lon <= 37 AND lat >= 52 AND lat <= 54",
     stopLayers: ["bus_stop", "tram_stop"],
-    dtpLayer: "dtp24",
+    dtpSourceGpkg: "transport.gpkg",
+    dtpLayer: "dtp24_25",
     dtpAliases: {
       injured: ["injured", "Раненые"],
       dead: ["dead", "Погибшие"]
@@ -60,11 +62,13 @@ const cities = [
     boundaryLayer: "boundary",
     roadLayer: "road_auto_site",
     roadAllLayer: "road_all_site",
-    roadLabelLayer: null,
+    roadLabelLayer: "road_lable_site",
+    roadLabelSelect: ["name", "ref", "highway"],
     mkdLayer: "mkd_plus",
     mkdFields: ["address", "floor", "pop"],
     mkdWhere: "lon >= 41 AND lon <= 42 AND lat >= 52 AND lat <= 53",
     stopLayers: ["bus_stop"],
+    dtpSourceGpkg: "transport.gpkg",
     dtpLayer: "dtp24_25",
     dtpAliases: {
       injured: ["injured", "Раненые"],
@@ -165,13 +169,14 @@ function scoreRatio(value) {
 }
 
 function comparisonBlocks(properties, suffix) {
+  const commerceCity = scoreRatio(properties.idx_commerce_city ?? properties.idx_commerce);
   return {
     housing: scoreRatio(properties[`idx_housing_${suffix}`] ?? properties.idx_housing),
     infra: scoreRatio(properties[`idx_infra_${suffix}`] ?? properties.idx_infra),
     transport: scoreRatio(properties[`idx_transport_${suffix}`] ?? properties.idx_transport),
     work: scoreRatio(properties[`idx_work_${suffix}`] ?? properties.idx_work),
     green: scoreRatio(properties[`idx_green_${suffix}`] ?? properties.idx_green),
-    commerce: scoreRatio(properties[`idx_commerce_${suffix}`] ?? properties.idx_commerce)
+    commerce: commerceCity
   };
 }
 
@@ -201,7 +206,7 @@ function firstText(properties, names) {
   return "";
 }
 
-const defaultQuarterPopulationFields = ["pop_sum", "population", "population_est", "pop"];
+const defaultQuarterPopulationFields = ["pop_sum", "pop_sum2", "pop_sum_2", "population", "population_est", "pop"];
 
 function hasAnyProperty(properties, names) {
   return names.some((name) => Object.prototype.hasOwnProperty.call(properties, name));
@@ -231,7 +236,7 @@ function layerPopulationStats(features, city) {
   const coverage = withPopulation / total;
   const target = city.populationOverride;
   const relativeDiff = target ? Math.abs(sum - target) / target : 0;
-  const authoritative = withField > 0 && coverage >= 0.75 && (!target || relativeDiff <= 0.05);
+  const authoritative = withField > 0;
 
   return { sum, withPopulation, withField, coverage, authoritative, fields };
 }
@@ -332,9 +337,18 @@ function quarterFeature(feature, city, populationByFid, index, populationOptions
   const blocks = compare.city.blocks;
   const hasLayerPopulationField = hasAnyProperty(props, populationOptions.fields);
   const layerPopulation = firstNumber(props, populationOptions.fields);
-  const population = populationOptions.authoritative && hasLayerPopulationField
+  const population = hasLayerPopulationField
     ? layerPopulation ?? 0
-    : layerPopulation ?? populationByFid.get(fid) ?? null;
+    : populationByFid.get(fid) ?? null;
+  const populationSourceField = populationOptions.fields.find((field) =>
+    Object.prototype.hasOwnProperty.call(props, field)
+  ) ?? null;
+  const sourcePopulationFields = {};
+  for (const field of ["pop_sum", "pop_sum2", "pop_sum_2"]) {
+    if (Object.prototype.hasOwnProperty.call(props, field)) {
+      sourcePopulationFields[field] = number(props[field]) ?? 0;
+    }
+  }
   return {
     type: "Feature",
     id: fid,
@@ -345,6 +359,8 @@ function quarterFeature(feature, city, populationByFid, index, populationOptions
       baseScoreNoCommerce: number(props.idx_life_no_commerce_100),
       baseRank: compare.city.rank,
       population,
+      populationField: populationSourceField,
+      ...sourcePopulationFields,
       blocks,
       compare,
       indicators: pickIndicators(props)
@@ -601,7 +617,7 @@ function exportCity(city) {
       output: path.join(rawBase, "road-labels.geojson"),
       input: path.join(sourceBase, "road.gpkg"),
       layer: city.roadLabelLayer,
-      select: ["name_ru", "name", "ref", "highway", "q", "lenght"]
+      select: city.roadLabelSelect ?? ["name_ru", "name", "ref", "highway", "q", "lenght"]
     });
   } else {
     writeJson(path.join(rawBase, "road-labels.geojson"), { type: "FeatureCollection", features: [] });
@@ -615,7 +631,7 @@ function exportCity(city) {
   });
   exportLayer({
     output: path.join(rawBase, "dtp.geojson"),
-    input: path.join(sourceBase, "dtp.gpkg"),
+    input: path.join(sourceBase, city.dtpSourceGpkg ?? "dtp.gpkg"),
     layer: city.dtpLayer
   });
   for (const stopLayer of city.stopLayers) {

@@ -4,6 +4,10 @@
 !.gitignore
 !site/
 !site/**
+!site_cesium_v2/
+!site_cesium_v2/**
+!deploy/
+!deploy/**
 
 # Generated deployment output.
 site_dist/
@@ -13,6 +17,10 @@ site/tmp_*.png
 site/node_modules/
 site/.wrangler/
 site/.cache/
+site_cesium_v2/server.*.log
+site_cesium_v2/node_modules/
+site_cesium_v2/vendor/cesium/
+site_cesium_v2/tmp_chrome_profile*/
 
 # Heavy source GIS files are converted into deployable data before build.
 site/data/_raw/

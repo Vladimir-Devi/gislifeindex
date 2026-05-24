@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #334044;
+      }
+
+      .st1 {
+        opacity: .2;
+      }
+
+      .st1, .st2, .st3, .st4, .st5 {
+        stroke: #54a7a5;
+      }
+
+      .st1, .st3, .st6 {
+        stroke-width: 2px;
+      }
+
+      .st1, .st6, .st5, .st7, .st8, .st9, .st10 {
+        isolation: isolate;
+      }
+
+      .st1, .st11 {
+        fill: none;
+      }
+
+      .st2 {
+        fill: #1c2427;
+        stroke-opacity: .4;
+      }
+
+      .st3, .st6 {
+        fill: #263135;
+      }
+
+      .st4 {
+        fill: #24383a;
+        stroke-opacity: .4;
+      }
+
+      .st6 {
+        opacity: .4;
+        stroke: #448282;
+      }
+
+      .st6, .st5 {
+        stroke-linecap: round;
+      }
+
+      .st5 {
+        opacity: .8;
+        stroke-width: 15px;
+      }
+
+      .st12 {
+        opacity: .4;
+      }
+
+      .st11 {
+        stroke: #2a363a;
+      }
+
+      .st8 {
+        font-size: 12px;
+      }
+
+      .st8, .st10 {
+        fill: #edf1ed;
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st9 {
+        opacity: 0;
+      }
+
+      .st9, .st13 {
+        fill: #54a7a5;
+      }
+
+      .st10 {
+        font-size: 13px;
+      }
+
+      .st14 {
+        fill: #171d20;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st14" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st9" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st1" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st12">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st11" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st2" x="26.1" y="18" width="91" height="28" rx="7" ry="7"/>
+    <g class="st7">
+      <text class="st10" transform="translate(40.1 36)"><tspan x="0" y="0">Плотность</tspan></text>
+    </g>
+  </g>
+  <g>
+    <polygon class="st3" points="223.5 132 142.1 132 142.1 92.6 223.5 74 223.5 132"/>
+    <circle class="st13" cx="157.4" cy="119.3" r="5.3"/>
+    <circle class="st13" cx="169" cy="97.7" r="5.3"/>
+    <circle class="st13" cx="213.6" cy="87.1" r="5.3"/>
+    <circle class="st13" cx="211.9" cy="111.1" r="5.3"/>
+    <circle class="st13" cx="186.6" cy="118.3" r="5.3"/>
+  </g>
+  <g>
+    <polygon class="st3" points="121.1 132 63.7 132 63.7 107.5 121.1 95.9 121.1 132"/>
+    <circle class="st13" cx="75.4" cy="124.6" r="5.3"/>
+    <circle class="st13" cx="80.7" cy="111.9" r="5.3"/>
+    <circle class="st13" cx="96" cy="118.3" r="5.3"/>
+    <circle class="st13" cx="111.3" cy="123.6" r="5.3"/>
+    <circle class="st13" cx="106" cy="108.3" r="5.3"/>
+  </g>
+  <g>
+    <g>
+      <path class="st3" d="M276,46.4h58c3.3,0,6,3.3,6,7.5v82c0,4.1-2.7,7.5-6,7.5h-58c-3.3,0-6-3.3-6-7.5V53.9c0-4.1,2.7-7.5,6-7.5Z"/>
+      <path class="st6" d="M280,111.9h50"/>
+      <path class="st6" d="M280,121.6h50"/>
+      <path class="st6" d="M280,132.1h50"/>
+    </g>
+    <path class="st5" d="M292.5,96v-33.3M317.5,96v-15"/>
+  </g>
+  <rect class="st4" x="270" y="26.3" width="70" height="24" rx="7" ry="7"/>
+  <text class="st8" transform="translate(286.3 41.5)"><tspan x="0" y="0">чел/га</tspan></text>
+</svg>

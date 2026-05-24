@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #334044;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6, .st7, .st8, .st9, .st10, .st11, .st12, .st13 {
+        stroke: #d4ac55;
+      }
+
+      .st1, .st4, .st10, .st14 {
+        fill: none;
+      }
+
+      .st1, .st4, .st10, .st12, .st13 {
+        stroke-width: 2px;
+      }
+
+      .st1, .st5, .st10, .st12 {
+        stroke-linejoin: round;
+      }
+
+      .st2 {
+        opacity: .6;
+        stroke-width: 3px;
+      }
+
+      .st2, .st4, .st8, .st15, .st16, .st17, .st18, .st19, .st20 {
+        isolation: isolate;
+      }
+
+      .st2, .st8, .st10, .st21 {
+        stroke-linecap: round;
+      }
+
+      .st3 {
+        fill: #3d3c2f;
+      }
+
+      .st3, .st5, .st7 {
+        stroke-width: 1.8px;
+      }
+
+      .st4 {
+        opacity: .2;
+      }
+
+      .st22 {
+        opacity: .4;
+      }
+
+      .st5, .st6 {
+        fill: #2e322c;
+      }
+
+      .st6, .st9, .st11 {
+        stroke-opacity: .4;
+      }
+
+      .st7, .st11, .st13 {
+        fill: #1c2427;
+      }
+
+      .st8 {
+        opacity: .8;
+        stroke-width: 2.8px;
+      }
+
+      .st9 {
+        fill: #32342d;
+      }
+
+      .st14 {
+        stroke: #2a363a;
+      }
+
+      .st16 {
+        font-size: 14px;
+      }
+
+      .st16, .st17, .st20 {
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st16, .st19 {
+        fill: #d4ac55;
+      }
+
+      .st17 {
+        font-size: 12px;
+      }
+
+      .st17, .st18, .st20 {
+        fill: #edf1ed;
+      }
+
+      .st18 {
+        opacity: .1;
+      }
+
+      .st21 {
+        stroke: #837041;
+        stroke-width: 4px;
+      }
+
+      .st19 {
+        opacity: 0;
+      }
+
+      .st12 {
+        fill: #484532;
+      }
+
+      .st20 {
+        font-size: 13px;
+      }
+
+      .st23 {
+        fill: #171d20;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st23" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st19" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st4" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st22">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st14" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st11" x="26" y="18" width="91" height="28" rx="7" ry="7"/>
+    <g class="st15">
+      <g class="st15">
+        <text class="st20" transform="translate(35.8 36)"><tspan x="0" y="0">Экономика</tspan></text>
+      </g>
+    </g>
+  </g>
+  <g id="illustration">
+    <ellipse class="st18" cx="106" cy="148.1" rx="50.5" ry="9"/>
+    <ellipse class="st18" cx="209.3" cy="144.1" rx="31.3" ry="7.1"/>
+    <ellipse class="st18" cx="328" cy="152.1" rx="31.3" ry="5.9"/>
+    <rect class="st13" x="65" y="90" width="82" height="45" rx="7" ry="7"/>
+    <path class="st12" d="M55.5,94.9h101l-9.9-24.9h-81.3l-9.9,24.9h0Z"/>
+    <path class="st21" d="M75,105h62"/>
+    <path class="st5" d="M194.6,57h23l7.4,18.4h-23.9l-6.4-18.4h-.1Z"/>
+    <rect class="st3" x="182.6" y="73.6" width="49.7" height="18.4" rx="4.6" ry="4.6"/>
+    <rect class="st7" x="178" y="90.1" width="62.6" height="42.3" rx="7.4" ry="7.4"/>
+    <rect class="st6" x="188.1" y="100.2" width="36.8" height="13.8" rx="3.7" ry="3.7"/>
+    <path class="st6" d="M76.6,110.4h13.2c.9,0,1.6,1.8,1.6,3.9v6.9c0,2.2-.7,3.9-1.6,3.9h-13.2c-.9,0-1.6-1.8-1.6-3.9v-6.9c0-2.2.7-3.9,1.6-3.9Z"/>
+    <path class="st6" d="M99.4,110.4h13.2c.9,0,1.6,1.8,1.6,3.9v6.9c0,2.2-.7,3.9-1.6,3.9h-13.2c-.9,0-1.6-1.8-1.6-3.9v-6.9c0-2.2.7-3.9,1.6-3.9Z"/>
+    <path class="st8" d="M190,123.2h38.6M193.6,117.7h3M203.8,117.7h3M213.9,117.7h3"/>
+    <rect class="st13" x="297" y="65" width="62" height="76" rx="7" ry="7"/>
+    <path class="st2" d="M309,83h38M309,99h37M309,115h27"/>
+    <g class="st15">
+      <text class="st16" transform="translate(323.8 136)"><tspan x="0" y="0">₽</tspan></text>
+    </g>
+    <rect class="st9" x="196" y="39" width="58" height="24" rx="7" ry="7"/>
+    <g class="st15">
+      <text class="st17" transform="translate(213.7 55.1)"><tspan x="0" y="0">ККТ</tspan></text>
+    </g>
+    <rect class="st9" x="318" y="45.2" width="58" height="24" rx="7" ry="7"/>
+    <g class="st15">
+      <text class="st17" transform="translate(336.8 61.3)"><tspan x="0" y="0">чек</tspan></text>
+    </g>
+    <line class="st10" x1="77.4" y1="70" x2="67.5" y2="94.9"/>
+    <line class="st10" x1="134.6" y1="70" x2="144.5" y2="94.9"/>
+    <line class="st1" x1="120" y1="70" x2="126" y2="94.9"/>
+    <line class="st10" x1="120" y1="70" x2="126" y2="94.9"/>
+    <line class="st10" x1="91.9" y1="70" x2="85.9" y2="94.9"/>
+    <line class="st10" x1="106" y1="70" x2="106" y2="94.9"/>
+    <rect class="st9" x="110.5" y="51.2" width="58" height="24" rx="7" ry="7"/>
+    <g class="st15">
+      <text class="st17" transform="translate(126.2 67.3)"><tspan x="0" y="0">ФНС</tspan></text>
+    </g>
+  </g>
+</svg>

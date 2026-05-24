@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 180" role="img" aria-labelledby="title desc">
+  <title id="title">Population illustration</title>
+  <desc id="desc">People living in quarters are summarized by environmental quality groups.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff8ea"/>
+      <stop offset=".55" stop-color="#f5f0df"/>
+      <stop offset="1" stop-color="#e5f0ec"/>
+    </linearGradient>
+    <filter id="hardShadow" x="-20%" y="-25%" width="150%" height="165%">
+      <feDropShadow dx="4" dy="5" stdDeviation="0" flood-color="#24302e" flood-opacity=".14"/>
+    </filter>
+  </defs>
+  <rect width="420" height="180" rx="18" fill="url(#bg)"/>
+  <g opacity=".12" stroke="#5f6b67">
+    <path d="M24 44h372M24 92h372M24 140h372"/>
+    <path d="M62 18v144M124 18v144M186 18v144M248 18v144M310 18v144M372 18v144"/>
+  </g>
+
+  <g transform="translate(24 26)" filter="url(#hardShadow)">
+    <path d="M20 28l61-16 55 20 16 49-35 43-68 4-37-36z" fill="#fffdf7" stroke="#d6c9b4"/>
+    <path d="M27 36l50-12 45 16 12 36-28 33-53 3-30-28z" fill="#e5efd9" stroke="#4f825e" stroke-width="1.5"/>
+    <path d="M78 25l43 15 13 36M52 112l25-87M23 84l111-8" fill="none" stroke="#fffdf7" stroke-width="7" stroke-linecap="round"/>
+    <path d="M78 25l43 15 13 36M52 112l25-87M23 84l111-8" fill="none" stroke="#77877b" stroke-width="2.5" stroke-linecap="round"/>
+    <g fill="#3f8277">
+      <circle cx="54" cy="52" r="5"/>
+      <path d="M49 64c2-9 8-9 10 0l2 12H47z"/>
+      <circle cx="82" cy="46" r="5"/>
+      <path d="M77 58c2-9 8-9 10 0l2 12H75z"/>
+      <circle cx="102" cy="75" r="5"/>
+      <path d="M97 87c2-9 8-9 10 0l2 12H95z"/>
+      <circle cx="63" cy="91" r="5"/>
+      <path d="M58 103c2-9 8-9 10 0l2 12H56z"/>
+    </g>
+  </g>
+
+  <g fill="none" stroke="#59645f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+    <path d="M173 72c22-12 43-14 65-4"/>
+    <path d="M225 58l15 11-17 7"/>
+    <path d="M174 112c24 9 45 7 64-5"/>
+    <path d="M223 101l17 4-12 14"/>
+  </g>
+
+  <g transform="translate(225 29)" filter="url(#hardShadow)">
+    <rect width="164" height="118" rx="18" fill="#fffdf7" stroke="#d6c9b4"/>
+    <g transform="translate(19 19)">
+      <rect width="126" height="18" rx="9" fill="#e9e3d5"/>
+      <rect width="30" height="18" rx="9" fill="#b95a50"/>
+      <rect x="30" width="78" height="18" fill="#d9c15d"/>
+      <path d="M108 0h9a9 9 0 0 1 0 18h-9z" fill="#4f825e"/>
+      <g fill="#675f56" opacity=".75">
+        <circle cx="14" cy="42" r="5"/>
+        <circle cx="27" cy="42" r="5"/>
+        <circle cx="40" cy="42" r="5"/>
+        <circle cx="53" cy="42" r="5"/>
+        <circle cx="66" cy="42" r="5"/>
+        <circle cx="79" cy="42" r="5"/>
+        <circle cx="92" cy="42" r="5"/>
+        <circle cx="105" cy="42" r="5"/>
+        <path d="M9 54c2-8 8-8 10 0l2 11H7z"/>
+        <path d="M22 54c2-8 8-8 10 0l2 11H20z"/>
+        <path d="M35 54c2-8 8-8 10 0l2 11H33z"/>
+        <path d="M48 54c2-8 8-8 10 0l2 11H46z"/>
+        <path d="M61 54c2-8 8-8 10 0l2 11H59z"/>
+        <path d="M74 54c2-8 8-8 10 0l2 11H72z"/>
+        <path d="M87 54c2-8 8-8 10 0l2 11H85z"/>
+        <path d="M100 54c2-8 8-8 10 0l2 11H98z"/>
+      </g>
+      <g transform="translate(0 82)">
+        <circle cx="8" cy="5" r="5" fill="#b95a50"/>
+        <rect x="18" y="1" width="26" height="8" rx="4" fill="#b95a50"/>
+        <circle cx="59" cy="5" r="5" fill="#d9c15d"/>
+        <rect x="69" y="1" width="39" height="8" rx="4" fill="#d9c15d"/>
+        <circle cx="124" cy="5" r="5" fill="#4f825e"/>
+      </g>
+    </g>
+  </g>
+</svg>

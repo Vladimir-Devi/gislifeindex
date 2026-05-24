@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 420 180">
+  <!-- Generator: Adobe Illustrator 29.0.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 192)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #d8d2c7;
+      }
+
+      .st1 {
+        opacity: 0;
+      }
+
+      .st1, .st2 {
+        fill: #6f6c2d;
+      }
+
+      .st1, .st2, .st3, .st4, .st5, .st6 {
+        isolation: isolate;
+      }
+
+      .st2 {
+        font-size: 10px;
+      }
+
+      .st2, .st6 {
+        font-family: SegoeUI-Bold, 'Segoe UI';
+        font-weight: 700;
+      }
+
+      .st7 {
+        stroke-opacity: .4;
+      }
+
+      .st7, .st4, .st8 {
+        stroke: #6f6c2d;
+      }
+
+      .st7, .st8 {
+        fill: #fffaf1;
+      }
+
+      .st9 {
+        opacity: .4;
+      }
+
+      .st4 {
+        opacity: .2;
+      }
+
+      .st4, .st10 {
+        fill: none;
+      }
+
+      .st4, .st8 {
+        stroke-width: 2px;
+      }
+
+      .st10 {
+        stroke: #e7dfd1;
+      }
+
+      .st5 {
+        opacity: .1;
+      }
+
+      .st5, .st6 {
+        fill: #202326;
+      }
+
+      .st11 {
+        stroke: #aeaa83;
+        stroke-linecap: round;
+        stroke-width: 4px;
+      }
+
+      .st6 {
+        font-size: 13px;
+      }
+
+      .st12 {
+        fill: #fffdf8;
+      }
+    </style>
+  </defs>
+  <g id="background">
+    <rect class="st12" y="0" width="420" height="180" rx="8" ry="8"/>
+    <path class="st1" d="M0,138c72-26,136,20,213-12,73-32,125-16,207-44v98H0v-42Z"/>
+    <path class="st4" d="M24,137c58-32,102,12,158-25,61-40,114,11,172-24,20-12,36-16,50-13"/>
+    <g id="map-grid" class="st9">
+      <path class="st0" d="M30,16v148"/>
+      <path class="st0" d="M60,16v148"/>
+      <path class="st0" d="M90,16v148"/>
+      <path class="st0" d="M120,16v148"/>
+      <path class="st0" d="M150,16v148"/>
+      <path class="st0" d="M180,16v148"/>
+      <path class="st0" d="M210,16v148"/>
+      <path class="st0" d="M240,16v148"/>
+      <path class="st0" d="M270,16v148"/>
+      <path class="st0" d="M300,16v148"/>
+      <path class="st0" d="M330,16v148"/>
+      <path class="st0" d="M360,16v148"/>
+      <path class="st0" d="M390,16v148"/>
+      <path class="st0" d="M16,30h388"/>
+      <path class="st0" d="M16,60h388"/>
+      <path class="st0" d="M16,90h388"/>
+      <path class="st0" d="M16,120h388"/>
+      <path class="st0" d="M16,150h388"/>
+    </g>
+    <rect class="st10" x="18" y="18" width="384" height="144" rx="8" ry="8"/>
+  </g>
+  <g id="caption">
+    <rect class="st7" x="26" y="18" width="112" height="28" rx="7" ry="7"/>
+    <g class="st3">
+      <g class="st3">
+        <text class="st6" transform="translate(40 36)"><tspan x="0" y="0">Разнообразие</tspan></text>
+      </g>
+    </g>
+  </g>
+  <g id="illustration">
+    <ellipse class="st5" cx="95" cy="135.3" rx="35.3" ry="9"/>
+    <ellipse class="st5" cx="176" cy="116.2" rx="35.3" ry="9"/>
+    <ellipse class="st5" cx="257" cy="140.3" rx="35.3" ry="9"/>
+    <ellipse class="st5" cx="338" cy="123.3" rx="35.3" ry="9"/>
+    <rect class="st8" x="64" y="82.3" width="62" height="40" rx="7" ry="7"/>
+    <path class="st11" d="M74,97.3h42"/>
+    <g class="st3">
+      <text class="st2" transform="translate(71.1 110.3)"><tspan x="0" y="0">продукты</tspan></text>
+    </g>
+    <rect class="st8" x="145" y="63.3" width="62" height="40" rx="7" ry="7"/>
+    <path class="st11" d="M155,78.3h42"/>
+    <g class="st3">
+      <text class="st2" transform="translate(160 91.3)"><tspan x="0" y="0">услуги</tspan></text>
+    </g>
+    <rect class="st8" x="226" y="87.3" width="62" height="40" rx="7" ry="7"/>
+    <path class="st11" d="M236,102.3h42"/>
+    <g class="st3">
+      <text class="st2" transform="translate(240.9 115.3)"><tspan x="0" y="0">аптека</tspan></text>
+    </g>
+    <rect class="st8" x="307" y="70.3" width="62" height="40" rx="7" ry="7"/>
+    <path class="st11" d="M317,85.3h42"/>
+    <g class="st3">
+      <text class="st2" transform="translate(324.2 98.3)"><tspan x="0" y="0">спорт</tspan></text>
+    </g>
+  </g>
+</svg>
