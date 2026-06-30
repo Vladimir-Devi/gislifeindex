@@ -22,6 +22,39 @@ sudo systemctl reload nginx
 - тяжёлые бинарные 3D-тайлы (`b3dm`, `i3dm`, `glb`, `bin`) кэшируются на 1 день;
 - `src`, `public`, `vendor` кэшируются надолго, потому что версии скриптов меняются через query/version.
 
+## Отдельная сборка Димитровграда
+
+Основной сайт и сайт только для Димитровграда собираются в разные папки и могут лежать на одном сервере одновременно:
+
+```bash
+npm --prefix site run build:dist
+npm --prefix site run build:dimitrovgrad
+```
+
+Результат:
+
+- `site_dist` — основной сайт со всеми городами;
+- `site_dimitrovgrad` — отдельный сайт, где `data/manifest.json` содержит только Димитровград, а стартовый экран сразу открывает карту города.
+
+На сервере это можно отдать отдельным поддоменом с собственным `root`, например:
+
+```nginx
+server {
+    listen 80;
+    server_name dimitrovgrad.gislifeindex.ru;
+    root /var/www/gislifeindex-dimitrovgrad;
+    index index.html;
+    charset utf-8;
+
+    location / {
+        add_header Cache-Control "public, max-age=0, must-revalidate" always;
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+Альтернатива — подкаталог на основном домене: скопировать `site_dimitrovgrad` в `/var/www/gislifeindex.ru/dimitrovgrad` и добавить `location /dimitrovgrad/` с `try_files $uri $uri/ /dimitrovgrad/index.html;`.
+
 ## Brotli
 
 Brotli нельзя включать вслепую: если модуль не установлен, `nginx -t` упадёт.

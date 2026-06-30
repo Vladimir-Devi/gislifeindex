@@ -8,6 +8,7 @@
     "build:3d": "node scripts/build-3d-data.mjs",
     "build:method-visuals": "node scripts/build-method-visuals.mjs",
     "build:dist": "node scripts/build-dist.mjs",
+    "build:dimitrovgrad": "node ../site_cesium_v2/scripts/build-dist.mjs --city dimitrovgrad --brand dimitrovgrad --out ../site_dimitrovgrad",
     "check:published": "node scripts/check-published.mjs",
     "serve": "node scripts/serve.mjs",
     "serve:dist": "node scripts/serve.mjs ../site_dist"

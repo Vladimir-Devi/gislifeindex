@@ -296,7 +296,7 @@ const BRAND_MAP_THEME_OVERRIDES = {
       railwayDash: "rgba(255, 255, 255, 0.72)",
       selectedFill: "rgba(226, 214, 148, 0.12)",
       selectedOuter: "rgba(195, 209, 249, 0.34)",
-      selectedInner: "#dbf48c",
+      selectedInner: "#e1b45c",
       accident: "#f261a1",
       accidentCluster: "#eb136b",
       bus: "#8ca7f4",

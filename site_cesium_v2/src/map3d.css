@@ -152,6 +152,10 @@
   border-bottom: 13px solid #b64c3f;
 }
 
+:root[data-brand="dimitrovgrad"] .compassNeedle::before {
+  border-bottom-color: #eb136b;
+}
+
 .compassNeedle::after {
   bottom: 0;
   border-top: 13px solid rgba(75, 83, 84, 0.72);
@@ -250,10 +254,21 @@
   box-shadow: 0 0 0 5px rgba(37, 109, 114, 0.11);
 }
 
+:root[data-brand="dimitrovgrad"] .loadingStep.active span {
+  border-color: rgba(57, 96, 183, 0.42);
+  background: #3960b7;
+  box-shadow: 0 0 0 5px rgba(57, 96, 183, 0.11);
+}
+
 .loadingStep.done span {
   border-color: rgba(71, 127, 91, 0.45);
   background: #477f5b;
   animation: none;
+}
+
+:root[data-brand="dimitrovgrad"] .loadingStep.done span {
+  border-color: rgba(79, 138, 87, 0.48);
+  background: #4f8a57;
 }
 
 .loadingStep.error {
@@ -264,6 +279,15 @@
   border-color: rgba(137, 58, 53, 0.45);
   background: #b64c3f;
   animation: none;
+}
+
+:root[data-brand="dimitrovgrad"] .loadingStep.error {
+  color: #b80f55;
+}
+
+:root[data-brand="dimitrovgrad"] .loadingStep.error span {
+  border-color: rgba(235, 19, 107, 0.45);
+  background: #eb136b;
 }
 
 @keyframes loadingBreath {
@@ -298,6 +322,13 @@
   box-shadow: 5px 5px 0 rgba(31, 35, 38, 0.14);
   color: var(--ink);
   transform: translateX(-50%);
+}
+
+:root[data-brand="dimitrovgrad"] .pointToast,
+:root[data-brand="dimitrovgrad"] .cameraTutorial,
+:root[data-brand="dimitrovgrad"] .tutorialClose,
+:root[data-brand="dimitrovgrad"] .controlPanelTitle {
+  border-radius: 4px;
 }
 
 .cameraTutorial strong {

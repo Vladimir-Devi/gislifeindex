@@ -5,11 +5,31 @@ import { fileURLToPath } from "node:url";
 
 const cesiumSiteDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const rootDir = path.resolve(cesiumSiteDir, "..");
-const distDir = path.join(rootDir, "site_dist");
+const options = parseArgs(process.argv.slice(2));
+const citySlug = options.city || "";
+const brand = options.brand || citySlug || "";
+const distDir = options.out ? path.resolve(cesiumSiteDir, options.out) : path.join(rootDir, "site_dist");
+
+function parseArgs(args) {
+  const result = {};
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--city") result.city = args[++index];
+    else if (arg.startsWith("--city=")) result.city = arg.slice("--city=".length);
+    else if (arg === "--brand") result.brand = args[++index];
+    else if (arg.startsWith("--brand=")) result.brand = arg.slice("--brand=".length);
+    else if (arg === "--out") result.out = args[++index];
+    else if (arg.startsWith("--out=")) result.out = arg.slice("--out=".length);
+  }
+  return result;
+}
 
 function assertDistPath(target) {
   const resolved = path.resolve(target);
-  if (path.basename(resolved) !== "site_dist" || path.dirname(resolved) !== rootDir) {
+  const basename = path.basename(resolved);
+  const isImmediateRootChild = path.dirname(resolved) === rootDir;
+  const hasSafeName = /^site(?:_dist)?(?:_[a-z0-9-]+)?$/.test(basename);
+  if (!isImmediateRootChild || !hasSafeName) {
     throw new Error(`Refusing to clean unexpected output path: ${resolved}`);
   }
 }
@@ -57,12 +77,22 @@ function versionIndexAssets() {
   };
 
   const html = readFileSync(indexPath, "utf8");
-  const updated = html
+  let updated = html
     .replace(/href="vendor\/cesium\/Widgets\/widgets\.css(?:\?v=[^"]+)?"/, `href="vendor/cesium/Widgets/widgets.css?v=${versions.widgets}"`)
     .replace(/href="src\/styles\.css(?:\?v=[^"]+)?"/, `href="src/styles.css?v=${versions.styles}"`)
     .replace(/href="src\/map3d\.css(?:\?v=[^"]+)?"/, `href="src/map3d.css?v=${versions.mapStyles}"`)
     .replace(/src="vendor\/cesium\/Cesium\.js(?:\?v=[^"]+)?"/, `src="vendor/cesium/Cesium.js?v=${versions.cesium}"`)
     .replace(/src="src\/map3d-cesium\.js(?:\?v=[^"]+)?"/, `src="src/map3d-cesium.js?v=${versions.mapScript}"`);
+
+  if (citySlug || brand) {
+    const config = JSON.stringify({ singleCity: citySlug || null, brand: brand || null });
+    updated = updated
+      .replace("<title>3D-карта индекса качества городской среды</title>", "<title>Димитровград — 3D-карта индекса качества городской среды</title>")
+      .replace(
+        'window.CESIUM_BASE_URL = "./vendor/cesium/";',
+        `window.CESIUM_BASE_URL = "./vendor/cesium/";\n      window.LIFEINDEX_SITE_CONFIG = ${config};\n      document.documentElement.dataset.brand = ${JSON.stringify(brand)};`
+      );
+  }
 
   if (updated === html) {
     throw new Error("Unable to update asset versions in index.html");
@@ -98,6 +128,28 @@ function writeHeaders() {
   writeFileSync(path.join(distDir, "_headers"), headers, "utf8");
 }
 
+function copyData() {
+  const sourceDataDir = path.join(cesiumSiteDir, "data");
+  const targetDataDir = path.join(distDir, "data");
+  if (!citySlug) {
+    copyDir(sourceDataDir, targetDataDir);
+    return;
+  }
+
+  const manifestPath = path.join(sourceDataDir, "manifest.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const city = manifest.cities?.find((item) => item.slug === citySlug);
+  if (!city) throw new Error(`City "${citySlug}" was not found in data/manifest.json`);
+
+  mkdirSync(targetDataDir, { recursive: true });
+  writeFileSync(
+    path.join(targetDataDir, "manifest.json"),
+    `${JSON.stringify({ ...manifest, singleCity: citySlug, cities: [city] }, null, 2)}\n`,
+    "utf8"
+  );
+  copyDir(path.join(sourceDataDir, citySlug), path.join(targetDataDir, citySlug));
+}
+
 assertDistPath(distDir);
 rmSync(distDir, { recursive: true, force: true });
 mkdirSync(distDir, { recursive: true });
@@ -105,9 +157,9 @@ mkdirSync(distDir, { recursive: true });
 cpSync(path.join(cesiumSiteDir, "index.html"), path.join(distDir, "index.html"));
 copyDir(path.join(cesiumSiteDir, "src"), path.join(distDir, "src"));
 copyDir(path.join(cesiumSiteDir, "public"), path.join(distDir, "public"));
-copyDir(path.join(cesiumSiteDir, "data"), path.join(distDir, "data"));
+copyData();
 copyDir(ensureCesiumVendor(), path.join(distDir, "vendor", "cesium"));
 writeHeaders();
 versionIndexAssets();
 
-console.log(`Built Cesium v2 site into ${distDir}`);
+console.log(`Built Cesium v2 site into ${distDir}${citySlug ? ` (city: ${citySlug})` : ""}`);

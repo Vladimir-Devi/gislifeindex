@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node scripts/build-tiles.mjs",
     "build:dist": "node scripts/build-dist.mjs",
+    "build:dimitrovgrad": "node scripts/build-dist.mjs --city dimitrovgrad --brand dimitrovgrad --out ../site_dimitrovgrad",
     "serve": "node scripts/serve.mjs"
   },
   "devDependencies": {
