@@ -74,6 +74,35 @@ const cities = [
       injured: ["injured", "Раненые"],
       dead: ["dead", "Погибшие"]
     }
+  },
+  {
+    slug: "dimitrovgrad",
+    sourceDir: "Dimitrovgrad",
+    summaryName: "\u0414\u0438\u043c\u0438\u0442\u0440\u043e\u0432\u0433\u0440\u0430\u0434",
+    displayName: "\u0414\u0438\u043c\u0438\u0442\u0440\u043e\u0432\u0433\u0440\u0430\u0434",
+    indexLayer: "kvartals_life_index_compare_site",
+    quarterPopulationFields: ["pop_sum"],
+    buildingsLayer: "buildings_all",
+    buildingSelect: ["area"],
+    buildingWhere: "area IS NULL OR area >= 21",
+    greenLayer: "green",
+    waterLayer: null,
+    railwayLayer: null,
+    boundaryLayer: "boundary",
+    roadLayer: "auto",
+    roadAllLayer: "all",
+    roadLabelLayer: "auto",
+    roadLabelSelect: ["name_ru", "name", "ref", "highway"],
+    mkdLayer: "mkd",
+    mkdFields: ["address", "floor_num", "pop"],
+    mkdWhere: "lon >= 48 AND lon <= 51 AND lat >= 53 AND lat <= 55",
+    stopLayers: ["bus_stop"],
+    dtpSourceGpkg: "transport.gpkg",
+    dtpLayer: "dtp24_25",
+    dtpAliases: {
+      injured: ["injured", "Раненые"],
+      dead: ["dead", "Погибшие"]
+    }
   }
 ];
 
@@ -89,6 +118,8 @@ const indicatorAliases = [
   ["Крупные работодатели: обеспеченность", ["zanyatost_obespech", "zanyatost_obespech_coef", "zanyatost_index_obespech", "zanyatost_index_obespech_coef"]],
   ["Крупные работодатели: плотность", ["zanyatost_density", "zanyatost_index_density"]],
   ["Зелёные зоны: доступность", ["green_zone_dostup"]],
+  ["Зелёные зоны: покрытие квартала зеленью", ["green_zone_coverage_pct", "green_coverage_pct", "green_coverage"]],
+  ["Зелёные зоны: температура поверхности", ["land_surface_temperature_c", "landsat_temperature_mean_c", "surface_temperature_mean_c"]],
   ["Экономика: активность ФНС", ["commerce_fns_activity_idx"]],
   ["Экономика: ККТ", ["commerce_fns_kkt_est"]],
   ["Экономика: медианный чек", ["commerce_fns_median_check_proxy"]]
@@ -133,6 +164,10 @@ function readJson(file) {
 function writeJson(file, data, pretty = false) {
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, JSON.stringify(data, null, pretty ? 2 : 0), "utf8");
+}
+
+function writeEmptyFeatureCollection(file) {
+  writeJson(file, { type: "FeatureCollection", features: [] });
 }
 
 function parseCsv(file) {
@@ -587,16 +622,24 @@ function exportCity(city) {
     input: path.join(sourceBase, "osnova.gpkg"),
     layer: city.greenLayer
   });
-  exportLayer({
-    output: path.join(rawBase, "water.geojson"),
-    input: path.join(sourceBase, "osnova.gpkg"),
-    layer: city.waterLayer
-  });
-  exportLayer({
-    output: path.join(rawBase, "railways.geojson"),
-    input: path.join(sourceBase, "osnova.gpkg"),
-    layer: city.railwayLayer
-  });
+  if (city.waterLayer) {
+    exportLayer({
+      output: path.join(rawBase, "water.geojson"),
+      input: path.join(sourceBase, "osnova.gpkg"),
+      layer: city.waterLayer
+    });
+  } else {
+    writeEmptyFeatureCollection(path.join(rawBase, "water.geojson"));
+  }
+  if (city.railwayLayer) {
+    exportLayer({
+      output: path.join(rawBase, "railways.geojson"),
+      input: path.join(sourceBase, "osnova.gpkg"),
+      layer: city.railwayLayer
+    });
+  } else {
+    writeEmptyFeatureCollection(path.join(rawBase, "railways.geojson"));
+  }
   exportLayer({
     output: path.join(rawBase, "boundary.geojson"),
     input: path.join(sourceBase, "osnova.gpkg"),
@@ -620,7 +663,7 @@ function exportCity(city) {
       select: city.roadLabelSelect ?? ["name_ru", "name", "ref", "highway", "q", "lenght"]
     });
   } else {
-    writeJson(path.join(rawBase, "road-labels.geojson"), { type: "FeatureCollection", features: [] });
+    writeEmptyFeatureCollection(path.join(rawBase, "road-labels.geojson"));
   }
   exportLayer({
     output: path.join(rawBase, "mkd.geojson"),

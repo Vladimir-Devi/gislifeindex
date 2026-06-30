@@ -1,8 +1,68 @@
 {
-  "generatedAt": "2026-05-24T12:29:53.326Z",
-  "sourceGeneratedAt": "2026-05-24T12:29:18.205Z",
+  "generatedAt": "2026-06-30T08:02:34.346Z",
+  "sourceGeneratedAt": "2026-06-30T08:01:52.427Z",
   "cesiumVersion": "1.141",
   "cities": [
+    {
+      "slug": "dimitrovgrad",
+      "name": "Димитровград",
+      "center": [
+        49.615140499999995,
+        54.238682999999995
+      ],
+      "bbox": [
+        49.534166,
+        54.184532,
+        49.696115,
+        54.292834
+      ],
+      "rank": 1,
+      "index": 54.33401086336444,
+      "population": 108972,
+      "lowShare": 0.01902323532650589,
+      "midShare": 0.9593290019454539,
+      "highShare": 0.02164776272804023,
+      "stats": {
+        "quartals": 137,
+        "buildings": 12390,
+        "mkdMatched": 826,
+        "mkdUnmatched": 30,
+        "stops": 189,
+        "dtp": 120,
+        "quarterPopulationSum": 108972,
+        "quarterPopulationSource": "layer",
+        "quarterPopulationField": "pop_sum"
+      },
+      "files": {
+        "meta": "data/dimitrovgrad/meta.json",
+        "quartals": "data/dimitrovgrad/quartals.json",
+        "surfaces": "data/dimitrovgrad/surfaces.json",
+        "roads": "data/dimitrovgrad/roads.json",
+        "roadsDetail": "data/dimitrovgrad/roads-detail.json",
+        "points": "data/dimitrovgrad/points.json",
+        "roadLabels": "data/dimitrovgrad/road-labels.json",
+        "trees": "data/dimitrovgrad/trees/manifest.json",
+        "treesTileset": "data/dimitrovgrad/trees-3d/tileset.json",
+        "terrainTileset": "data/dimitrovgrad/terrain/tileset.json",
+        "buildingsTileset": "data/dimitrovgrad/buildings/tileset.json",
+        "buildingsMobileTileset": "data/dimitrovgrad/buildings-mobile/tileset.json"
+      },
+      "cesium": {
+        "buildingTiles": 1,
+        "buildingBytes": 5670988,
+        "buildingGzipBytes": 723474,
+        "buildingBrotliBytes": 609672,
+        "buildingMobileTiles": 1,
+        "buildingMobileBytes": 505964,
+        "buildingMobileGzipBytes": 66715,
+        "buildingMobileBrotliBytes": 57532,
+        "treeTiles": 250,
+        "treeBytes": 1817960,
+        "treeGzipBytes": 693016,
+        "treeBrotliBytes": 651294,
+        "terrainBytes": 1476172
+      }
+    },
     {
       "slug": "orel",
       "name": "Орёл",
@@ -16,12 +76,12 @@
         36.180771,
         53.023258
       ],
-      "rank": 1,
-      "index": 49.34275795522442,
+      "rank": 2,
+      "index": 47.13513501360188,
       "population": 282314,
-      "lowShare": 0.12094595665202504,
-      "midShare": 0.6833377515738437,
-      "highShare": 0.19571629177413138,
+      "lowShare": 0.2462287337501096,
+      "midShare": 0.6828704370441459,
+      "highShare": 0.07090082920574466,
       "stats": {
         "quartals": 344,
         "buildings": 22422,
@@ -29,9 +89,9 @@
         "mkdUnmatched": 60,
         "stops": 391,
         "dtp": 528,
-        "quarterPopulationSum": 271866,
-        "quarterPopulationSource": "layer",
-        "quarterPopulationField": "pop_sum_2"
+        "quarterPopulationSum": 282465,
+        "quarterPopulationSource": "fallback",
+        "quarterPopulationField": "city_common_quartals.csv"
       },
       "files": {
         "meta": "data/orel/meta.json",
@@ -50,16 +110,16 @@
       "cesium": {
         "buildingTiles": 1,
         "buildingBytes": 11995052,
-        "buildingGzipBytes": 1567245,
-        "buildingBrotliBytes": 1314721,
+        "buildingGzipBytes": 1567766,
+        "buildingBrotliBytes": 1315569,
         "buildingMobileTiles": 1,
         "buildingMobileBytes": 7608284,
-        "buildingMobileGzipBytes": 987875,
-        "buildingMobileBrotliBytes": 828984,
+        "buildingMobileGzipBytes": 987489,
+        "buildingMobileBrotliBytes": 829134,
         "treeTiles": 306,
         "treeBytes": 2105928,
-        "treeGzipBytes": 785703,
-        "treeBrotliBytes": 751515,
+        "treeGzipBytes": 785644,
+        "treeBrotliBytes": 751720,
         "terrainBytes": 866564
       }
     },
@@ -76,12 +136,12 @@
         41.513438,
         52.791689
       ],
-      "rank": 2,
-      "index": 38.608667230406965,
+      "rank": 3,
+      "index": 36.47376921178592,
       "population": 248808,
-      "lowShare": 0.04793540851246952,
-      "midShare": 0.8660505338224144,
-      "highShare": 0.08601405766511609,
+      "lowShare": 0.11401053300272547,
+      "midShare": 0.8760835263017684,
+      "highShare": 0.009905940695506056,
       "stats": {
         "quartals": 391,
         "buildings": 50988,
@@ -110,17 +170,17 @@
       "cesium": {
         "buildingTiles": 1,
         "buildingBytes": 20043276,
-        "buildingGzipBytes": 2524433,
-        "buildingBrotliBytes": 2080659,
+        "buildingGzipBytes": 2523208,
+        "buildingBrotliBytes": 2078864,
         "buildingMobileTiles": 1,
         "buildingMobileBytes": 12748364,
-        "buildingMobileGzipBytes": 1590248,
-        "buildingMobileBrotliBytes": 1310361,
+        "buildingMobileGzipBytes": 1590509,
+        "buildingMobileBrotliBytes": 1310123,
         "treeTiles": 360,
         "treeBytes": 2387304,
-        "treeGzipBytes": 847386,
-        "treeBrotliBytes": 809488,
-        "terrainBytes": 854356
+        "treeGzipBytes": 847384,
+        "treeBrotliBytes": 809688,
+        "terrainBytes": 854364
       }
     }
   ]

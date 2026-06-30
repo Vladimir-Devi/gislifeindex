@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-24T12:29:05.186Z",
+  "generatedAt": "2026-06-29T23:38:07.320Z",
   "source": "C:/institute/magic/Diser",
   "methodology": {
     "baseQuarterFormula": "mean(idx_housing, idx_infra, idx_transport, idx_work, idx_green, idx_commerce)",
@@ -15,6 +15,56 @@
     "commerce"
   ],
   "cities": [
+    {
+      "slug": "dimitrovgrad",
+      "name": "Димитровград",
+      "summaryName": "Димитровград",
+      "bbox": [
+        49.534166,
+        54.184532,
+        49.696115,
+        54.292834
+      ],
+      "files": {
+        "quartals": "data/dimitrovgrad/quartals.geojson",
+        "buildings": "data/dimitrovgrad/buildings.geojson",
+        "green": "data/dimitrovgrad/green.geojson",
+        "water": "data/dimitrovgrad/water.geojson",
+        "railways": "data/dimitrovgrad/railways.geojson",
+        "roads": "data/dimitrovgrad/roads.geojson",
+        "roadsAll": "data/dimitrovgrad/roads-all.geojson",
+        "roadLabels": "data/dimitrovgrad/road-labels.geojson",
+        "stops": "data/dimitrovgrad/stops.geojson",
+        "dtp": "data/dimitrovgrad/dtp.geojson",
+        "mkdUnmatched": "data/dimitrovgrad/mkd-unmatched.geojson"
+      },
+      "stats": {
+        "quartals": 137,
+        "buildings": 12390,
+        "mkdMatched": 826,
+        "mkdUnmatched": 30,
+        "stops": 189,
+        "dtp": 120,
+        "quarterPopulationSum": 108972,
+        "quarterPopulationSource": "layer",
+        "quarterPopulationField": "pop_sum"
+      },
+      "rank": 1,
+      "index": 54.33401086336444,
+      "indexNoWork": 65.45602608698447,
+      "population": 108972,
+      "areaHa": 1485.2067118896484,
+      "lowShare": 0.01902323532650589,
+      "midShare": 0.9593290019454539,
+      "highShare": 0.02164776272804023,
+      "blocks": {
+        "housing": 58.19041764948247,
+        "infra": 64.6307092296486,
+        "transport": 82.09059048843257,
+        "work": 9.84594996888433,
+        "green": 56.91238698037421
+      }
+    },
     {
       "slug": "orel",
       "name": "Орёл",
@@ -45,24 +95,24 @@
         "mkdUnmatched": 60,
         "stops": 391,
         "dtp": 528,
-        "quarterPopulationSum": 271866,
-        "quarterPopulationSource": "layer",
-        "quarterPopulationField": "pop_sum_2"
+        "quarterPopulationSum": 282465,
+        "quarterPopulationSource": "fallback",
+        "quarterPopulationField": "city_common_quartals.csv"
       },
-      "rank": 1,
-      "index": 49.34275795522442,
-      "indexNoWork": 57.84098631409884,
+      "rank": 2,
+      "index": 47.13513501360188,
+      "indexNoWork": 54.70215632667468,
       "population": 282314,
       "areaHa": 3487.308598901367,
-      "lowShare": 0.12094595665202504,
-      "midShare": 0.6833377515738437,
-      "highShare": 0.19571629177413138,
+      "lowShare": 0.2462287337501096,
+      "midShare": 0.6828704370441459,
+      "highShare": 0.07090082920574466,
       "blocks": {
-        "housing": 63.10858043429378,
-        "infra": 57.26197048722166,
-        "transport": 67.00162124823585,
-        "work": 15.349844519726728,
-        "green": 43.991773086644045
+        "housing": 60.6998386214477,
+        "infra": 57.47482942186527,
+        "transport": 66.83877798411748,
+        "work": 16.867049761310692,
+        "green": 33.79517927926828
       }
     },
     {
@@ -99,20 +149,20 @@
         "quarterPopulationSource": "layer",
         "quarterPopulationField": "pop_sum"
       },
-      "rank": 2,
-      "index": 38.608667230406965,
-      "indexNoWork": 45.83242075608585,
+      "rank": 3,
+      "index": 36.47376921178592,
+      "indexNoWork": 42.77178439537798,
       "population": 248808,
       "areaHa": 3027.338913256836,
-      "lowShare": 0.04793540851246952,
-      "midShare": 0.8660505338224144,
-      "highShare": 0.08601405766511609,
+      "lowShare": 0.11401053300272547,
+      "midShare": 0.8760835263017684,
+      "highShare": 0.009905940695506056,
       "blocks": {
-        "housing": 38.88805230915884,
-        "infra": 61.667572720579535,
-        "transport": 29.286954108703075,
-        "work": 9.713653127691387,
-        "green": 53.487103885901966
+        "housing": 37.062686483871495,
+        "infra": 61.69519000088337,
+        "transport": 29.202621457600443,
+        "work": 11.281708477417688,
+        "green": 43.12663963915662
       }
     }
   ]

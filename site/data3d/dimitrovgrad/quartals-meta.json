@@ -1,0 +1,57 @@
+{
+  "city": "dimitrovgrad",
+  "count": 137,
+  "populationSum": 108972,
+  "populationField": "pop_sum",
+  "populationSource": "layer",
+  "samples": [
+    {
+      "id": "1",
+      "population": 127
+    },
+    {
+      "id": "2",
+      "population": 33
+    },
+    {
+      "id": "3",
+      "population": 749
+    },
+    {
+      "id": "12",
+      "population": 3352
+    },
+    {
+      "id": "20",
+      "population": 509
+    },
+    {
+      "id": "22",
+      "population": 125
+    },
+    {
+      "id": "23",
+      "population": 113
+    },
+    {
+      "id": "24",
+      "population": 240
+    },
+    {
+      "id": "39",
+      "population": 439
+    },
+    {
+      "id": "40",
+      "population": 351
+    },
+    {
+      "id": "43",
+      "population": 1677
+    },
+    {
+      "id": "50",
+      "population": 5005
+    }
+  ]
+}

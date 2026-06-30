@@ -22,10 +22,12 @@ const MESH_HEADER_BYTES = 32;
 const PACKED_VERTEX_BYTES = 8;
 const MESH_XY_SCALE = 0.25;
 const MESH_Z_SCALE = 0.1;
-const sourceDirs = { orel: "Orel", tambov: "Tambov" };
+const sourceDirs = { orel: "Orel", tambov: "Tambov", dimitrovgrad: "Dimitrovgrad" };
 const gdalBinDirs = [
   process.env.GDAL_BIN,
   "C:/MyProgram/GIS/QGIS/bin",
+  "C:/MyProgram/GIS/QGIS4/bin",
+  "C:/MyProgram/GIS/QGIS3/bin",
   "C:/MyProgram/GIS/Python310/Lib/site-packages/osgeo",
   "C:/Program Files/PostgreSQL/16/bin"
 ].filter(Boolean);
@@ -55,12 +57,29 @@ function gdalTool(name) {
 }
 
 function runGdal(name, args) {
-  const qgisProj = "C:/MyProgram/GIS/QGIS/share/proj";
-  const qgisGdal = "C:/MyProgram/GIS/QGIS/share/gdal";
+  const tool = gdalTool(name);
+  const runtimeRoot = path.dirname(path.dirname(tool));
+  const qgisProj = [
+    path.join(runtimeRoot, "share", "proj"),
+    process.env.PROJ_LIB,
+    "C:/MyProgram/GIS/QGIS/share/proj"
+  ].find((candidate) => candidate && existsSync(candidate));
+  const qgisGdal = [
+    process.env.GDAL_DATA,
+    path.join(runtimeRoot, "apps", "gdal", "share", "gdal"),
+    path.join(runtimeRoot, "share", "gdal"),
+    "C:/MyProgram/GIS/QGIS/share/gdal"
+  ].find((candidate) => candidate && existsSync(candidate));
   const env = { ...process.env };
-  if (existsSync(qgisProj)) env.PROJ_LIB = qgisProj;
-  if (existsSync(qgisGdal)) env.GDAL_DATA = qgisGdal;
-  const result = spawnSync(gdalTool(name), args, { cwd: rootDir, env, encoding: "utf8" });
+  if (qgisProj) {
+    env.PROJ_LIB = qgisProj;
+    env.PROJ_DATA = qgisProj;
+  }
+  if (qgisGdal) env.GDAL_DATA = qgisGdal;
+  const result = spawnSync(tool, args, { cwd: rootDir, env, encoding: "utf8" });
+  if (result.error) {
+    throw new Error(`${name} failed to start: ${result.error.message}`);
+  }
   if (result.status !== 0) {
     throw new Error(`${name} failed:\n${result.stderr || result.stdout}`);
   }
