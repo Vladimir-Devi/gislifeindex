@@ -1,38 +1,70 @@
+const SITE_CONFIG = window.LIFEINDEX_SITE_CONFIG || {};
+const SITE_BRAND = SITE_CONFIG.brand || "";
+const SINGLE_CITY_SLUG = SITE_CONFIG.singleCity || "";
+const SINGLE_CITY_MODE = Boolean(SINGLE_CITY_SLUG);
+const BRAND_BLOCK_COLORS = {
+  dimitrovgrad: {
+    housing: "#3960b7",
+    infra: "#8ca7f4",
+    transport: "#428ebd",
+    work: "#b494f9",
+    green: "#4f8a57",
+    commerce: "#f261a1"
+  }
+};
+const BRAND_SCORE_STOPS = {
+  dimitrovgrad: [
+    [0, [190, 58, 88]],
+    [32, [218, 105, 76]],
+    [52, [225, 180, 92]],
+    [72, [122, 168, 108]],
+    [100, [48, 132, 121]]
+  ]
+};
+
+function brandBlockColor(key, fallback) {
+  return BRAND_BLOCK_COLORS[SITE_BRAND]?.[key] || fallback;
+}
+
+function brandScoreStops(fallback) {
+  return BRAND_SCORE_STOPS[SITE_BRAND] || fallback;
+}
+
 const BLOCKS = [
   {
     key: "housing",
     label: "Жильё",
-    color: "#256d72",
+    color: brandBlockColor("housing", "#256d72"),
     help: "Показывает, насколько комфортна жилая среда квартала: плотность, обеспеченность жильём, состояние и этажность домов."
   },
   {
     key: "infra",
     label: "Коммерческая инфраструктура",
-    color: "#6f6c2d",
+    color: brandBlockColor("infra", "#6f6c2d"),
     help: "Оценивает, есть ли рядом с жителями повседневные места: магазины, услуги и другие городские функции."
   },
   {
     key: "transport",
     label: "Транспорт",
-    color: "#316a9c",
+    color: brandBlockColor("transport", "#316a9c"),
     help: "Показывает, насколько удобно жителям дойти до остановок общественного транспорта."
   },
   {
     key: "work",
     label: "Крупные работодатели",
-    color: "#7b5796",
+    color: brandBlockColor("work", "#7b5796"),
     help: "Показывает связь квартала с крупными местами занятости."
   },
   {
     key: "green",
     label: "Зелёные зоны",
-    color: "#477f5b",
+    color: brandBlockColor("green", "#477f5b"),
     help: "Оценивает доступность парков, скверов и других зелёных территорий."
   },
   {
     key: "commerce",
     label: "Экономика",
-    color: "#b88624",
+    color: brandBlockColor("commerce", "#b88624"),
     help: "Показывает деловую и потребительскую активность территории по косвенным признакам. Используется только во внутригородском сравнении."
   }
 ];
@@ -112,7 +144,7 @@ const SELECTED_Z_AMPLITUDE = 7;
 const LINE_STYLE_EPS = 0.035;
 const SHOW_TERRAIN_SURFACE = false;
 const QUARTAL_COLOR_ANIMATION_MS = 650;
-const QUARTAL_ALPHA = 0.82;
+const QUARTAL_ALPHA = 0.86;
 const QUARTAL_Z_OFFSET = -2.82;
 const QUARTAL_LINE_Z_OFFSET = 1.08;
 const SURFACE_POLYGON_Z_OFFSET = -0.92;
@@ -129,8 +161,10 @@ const PICK_EDGE_TOLERANCE = 7;
 const ACCIDENT_CLUSTER_SMOOTHING = 0.2;
 const ACCIDENT_CLUSTER_SIGNATURE_EPS = 14;
 const ACCIDENT_CLUSTER_UPDATE_INTERVAL_MS = 90;
-const CAMERA_MIN_ZOOM_DISTANCE = 25;
+const CAMERA_MIN_ZOOM_DISTANCE = 55;
 const CAMERA_MAX_ZOOM_DISTANCE = 42000;
+const CAMERA_WHEEL_ZOOM_RATE = 0.00135;
+const CAMERA_WHEEL_MAX_DELTA = 220;
 const CAMERA_MIN_PITCH_DEG = -87;
 const CAMERA_MAX_PITCH_DEG = -2;
 const CAMERA_ZOOM_METRIC_PITCH_FACTOR = 0.829;
@@ -224,6 +258,61 @@ const MAP_THEMES = {
     roadLabelHalo: "rgba(12, 17, 19, 0.55)"
   }
 };
+
+const BRAND_MAP_THEME_OVERRIDES = {
+  dimitrovgrad: {
+    light: {
+      mapBg: "#e7f0ff",
+      waterFill: "rgba(66, 142, 189, 0.42)",
+      waterStroke: "rgba(57, 96, 183, 0.28)",
+      greenFill: "rgba(74, 112, 69, 0.62)",
+      greenStroke: "rgba(42, 78, 48, 0.34)",
+      quarterStroke: "rgba(21, 28, 36, 0.4)",
+      roadMain: "rgb(128, 145, 180)",
+      roadMainFar: "rgb(175, 189, 224)",
+      railway: "rgba(255, 255, 255, 0.82)",
+      railwayDash: "rgba(45, 75, 143, 0.72)",
+      selectedFill: "rgba(226, 214, 148, 0.18)",
+      selectedOuter: "rgba(45, 75, 143, 0.44)",
+      selectedInner: "#2d4b8f",
+      accident: "#eb136b",
+      accidentCluster: "#b80f55",
+      accidentText: "#ffffff",
+      bus: "#3960b7",
+      tram: "#f261a1",
+      roadLabel: "rgba(13, 18, 41, 0.74)",
+      roadLabelHalo: "rgba(255, 255, 255, 0.64)"
+    },
+    dark: {
+      mapBg: "#0d1229",
+      waterFill: "rgba(66, 142, 189, 0.32)",
+      waterStroke: "rgba(140, 167, 244, 0.22)",
+      greenFill: "rgba(31, 62, 38, 0.68)",
+      greenStroke: "rgba(91, 126, 77, 0.24)",
+      quarterStroke: "rgba(217, 222, 210, 0.26)",
+      roadMain: "rgb(64, 77, 111)",
+      roadMainFar: "rgb(39, 49, 79)",
+      railway: "rgba(103, 119, 158, 0.76)",
+      railwayDash: "rgba(255, 255, 255, 0.72)",
+      selectedFill: "rgba(226, 214, 148, 0.12)",
+      selectedOuter: "rgba(195, 209, 249, 0.34)",
+      selectedInner: "#dbf48c",
+      accident: "#f261a1",
+      accidentCluster: "#eb136b",
+      bus: "#8ca7f4",
+      tram: "#f261a1",
+      roadLabel: "rgba(238, 242, 255, 0.78)",
+      roadLabelHalo: "rgba(13, 18, 41, 0.62)"
+    }
+  }
+};
+
+function mapThemePalette(theme = state.theme) {
+  return {
+    ...(MAP_THEMES[theme] || MAP_THEMES.light),
+    ...(BRAND_MAP_THEME_OVERRIDES[SITE_BRAND]?.[theme] || {})
+  };
+}
 
 const state = {
   manifest: null,
@@ -380,13 +469,14 @@ function applyTheme(theme) {
 
 function renderCityMenu() {
   const cities = [...state.manifest.cities].sort((a, b) => a.rank - b.rank);
+  els.cityMenu.classList.toggle("singleCityMenu", SINGLE_CITY_MODE);
   els.cityMenu.innerHTML = cities.map((city) => `
     <article class="cityCard pkmn-card pkmn-card--rare" data-city="${escapeAttr(city.slug)}">
       <div class="cityCardTop">
         <h2 class="cityName">${escapeHtml(city.name)}</h2>
         <div class="cityRating"><strong>${formatNumber(city.index, 2)}</strong><span>место ${formatInt(city.rank)}</span></div>
       </div>
-      <div class="crestSlot"><img src="public/herb_${escapeAttr(city.slug)}.png" alt="Герб ${escapeAttr(city.name)}" loading="lazy"></div>
+      <div class="crestSlot"><img src="${escapeAttr(cityCrestSrc(city))}" alt="Герб ${escapeAttr(city.name)}" loading="lazy"></div>
       <dl class="cityFacts">
         <div><dt>Жители</dt><dd>${formatInt(city.population)}</dd></div>
         <div><dt>Кварталы</dt><dd>${formatInt(city.stats?.quartals)}</dd></div>
@@ -438,12 +528,18 @@ function renderCityMenu() {
   }
 }
 
+function cityCrestSrc(city) {
+  if (city?.crest) return city.crest;
+  if (city?.slug === "dimitrovgrad") return "public/herb_dimitrovgrad.jpg";
+  return `public/herb_${city.slug}.png`;
+}
+
 async function applyRoute(push) {
   if (!state.manifest) return;
   const params = new URLSearchParams(location.search);
   const routeTheme = params.get("theme");
   if (routeTheme) applyTheme(routeTheme);
-  const slug = params.get("city");
+  const slug = params.get("city") || SINGLE_CITY_SLUG;
   if (!slug) {
     closeCity(false);
     return;
@@ -478,8 +574,9 @@ async function openCity(slug, pushUrl, route = {}) {
   state.accidentPopupCameraSignature = null;
   els.cityMenu.classList.add("hidden");
   els.mapShell.classList.remove("hidden");
-  els.backButton.classList.remove("hidden");
+  els.backButton.classList.toggle("hidden", SINGLE_CITY_MODE);
   els.pageTitle.textContent = city.name;
+  document.title = SINGLE_CITY_MODE ? `${city.name} — 3D-карта индекса качества городской среды` : "3D-карта индекса качества городской среды";
   initViewer();
   clearScene();
   renderControls();
@@ -600,6 +697,10 @@ function rerenderVisiblePointLayers() {
 }
 
 function closeCity(pushUrl) {
+  if (SINGLE_CITY_MODE && state.manifest) {
+    void openCity(SINGLE_CITY_SLUG, false);
+    return;
+  }
   state.activeCity = null;
   state.data = null;
   state.selectedFeature = null;
@@ -643,7 +744,7 @@ function initViewer() {
   viewer.scene.screenSpaceCameraController.translateEventTypes = [];
   viewer.scene.screenSpaceCameraController.rotateEventTypes = [];
   viewer.scene.screenSpaceCameraController.tiltEventTypes = [];
-  viewer.scene.screenSpaceCameraController.zoomEventTypes = [Cesium.CameraEventType.WHEEL, Cesium.CameraEventType.PINCH];
+  viewer.scene.screenSpaceCameraController.zoomEventTypes = [Cesium.CameraEventType.PINCH];
   viewer.scene.screenSpaceCameraController.lookEventTypes = [];
   viewer.scene.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
   if (viewer.scene.postProcessStages?.fxaa) viewer.scene.postProcessStages.fxaa.enabled = true;
@@ -768,7 +869,28 @@ function installCameraPointerControls(viewer) {
   };
   canvas.addEventListener("pointerup", stopDrag);
   canvas.addEventListener("pointercancel", stopDrag);
-  canvas.addEventListener("wheel", () => cancelCameraInertia(), { passive: true });
+  canvas.addEventListener("wheel", handleCameraWheel, { passive: false });
+}
+
+function handleCameraWheel(event) {
+  if (!state.viewer || !state.activeCity) return;
+  cancelCameraInertia();
+  const wheelDelta = clamp(event.deltaY, -CAMERA_WHEEL_MAX_DELTA, CAMERA_WHEEL_MAX_DELTA);
+  if (!Number.isFinite(wheelDelta) || Math.abs(wheelDelta) < 0.01) return;
+  const position = canvasPointerPosition(event);
+  const { target, range } = currentCameraOrbit(position);
+  const zoomFactor = Math.exp(wheelDelta * CAMERA_WHEEL_ZOOM_RATE);
+  const nextRange = clamp(range * zoomFactor, CAMERA_MIN_ZOOM_DISTANCE, CAMERA_MAX_ZOOM_DISTANCE);
+  const camera = state.viewer.camera;
+  const pitch = clamp(
+    camera.pitch,
+    Cesium.Math.toRadians(CAMERA_MIN_PITCH_DEG),
+    Cesium.Math.toRadians(CAMERA_MAX_PITCH_DEG)
+  );
+  camera.lookAt(target, new Cesium.HeadingPitchRange(camera.heading, pitch, nextRange));
+  camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+  requestSceneRender();
+  event.preventDefault();
 }
 
 function startCameraInertia(nextInertia) {
@@ -1081,14 +1203,16 @@ function applyBuildingTheme() {
   try {
     if (state.theme === "dark") {
       tileset.colorBlendMode = Cesium.Cesium3DTileColorBlendMode.MIX;
-      tileset.colorBlendAmount = 0.12;
+      tileset.colorBlendAmount = 0.42;
       tileset.style = new Cesium.Cesium3DTileStyle({
-        color: "color('#151b1c')"
+        color: "color('#596265')"
       });
     } else {
-      tileset.style = undefined;
-      tileset.colorBlendMode = Cesium.Cesium3DTileColorBlendMode.HIGHLIGHT;
-      tileset.colorBlendAmount = 0.5;
+      tileset.colorBlendMode = Cesium.Cesium3DTileColorBlendMode.MIX;
+      tileset.colorBlendAmount = 0.38;
+      tileset.style = new Cesium.Cesium3DTileStyle({
+        color: "color('#e0dac9')"
+      });
     }
   } catch (error) {
     console.warn("Unable to apply building theme", error);
@@ -1362,6 +1486,7 @@ function renderPolygons(key, features, fill) {
   const zOffset = key === "green" ? GREEN_POLYGON_Z_OFFSET : SURFACE_POLYGON_Z_OFFSET;
   for (const feature of features || []) {
     for (const polygon of feature.polygons || []) {
+      if (key === "green" && greenPolygonInsideQuartal(polygon)) continue;
       const geometry = polygonGeometryFromPolygon(polygon, zOffset);
       if (!geometry) continue;
       instances.push(new Cesium.GeometryInstance({
@@ -1378,6 +1503,21 @@ function renderPolygons(key, features, fill) {
   });
   applyMapLayerOrder();
   requestSceneRender();
+}
+
+function greenPolygonInsideQuartal(polygon) {
+  if (!state.data?.quartals?.length) return false;
+  const bbox = polygonProjectedBbox(polygon);
+  const point = polygonRepresentativePoint(polygon);
+  if (!bbox || !point) return false;
+  return state.data.quartals.some((feature) => {
+    for (const quarterPolygon of feature.polygons || []) {
+      const quarterBbox = polygonProjectedBbox(quarterPolygon) || feature.bbox;
+      if (!bboxContainsBbox(quarterBbox, bbox, 0.00002)) continue;
+      if (pointInProjectedPolygon(point, quarterPolygon)) return true;
+    }
+    return false;
+  });
 }
 
 function renderDetailedRoads() {
@@ -2159,7 +2299,7 @@ function detailRoadWidth(progress) {
 }
 
 function roadDetailColor(alpha) {
-  const palette = MAP_THEMES[state.theme] || MAP_THEMES.light;
+  const palette = mapThemePalette();
   return typeof palette.roadDetail === "function" ? palette.roadDetail(alpha) : `rgba(91, 96, 96, ${alpha})`;
 }
 
@@ -3385,7 +3525,7 @@ function renderInfo() {
           const block = blockForGroup(group.name);
           return `
             <article class="indicatorGroup">
-              <button class="indicatorGroupTitle methodTrigger ${state.methodCardKey === `block:${block?.key || ""}` ? "active" : ""}" type="button" data-method-card="block:${block?.key || ""}" data-tooltip="${escapeAttr(block?.help || "")}" style="--method-color:${block?.color || "#256d72"}">${escapeHtml(group.name)}</button>
+              <button class="indicatorGroupTitle methodTrigger ${state.methodCardKey === `block:${block?.key || ""}` ? "active" : ""}" type="button" data-method-card="block:${block?.key || ""}" data-tooltip="${escapeAttr(block?.help || "")}" style="--method-color:${block?.color || brandBlockColor("housing", "#256d72")}">${escapeHtml(group.name)}</button>
               ${group.items.map((item) => indicatorRow(group.name, item)).join("")}
               ${renderMethodCardSlot("indicator", group.name)}
             </article>`;
@@ -3471,8 +3611,13 @@ function metric(key, label, value, digits) {
   const startValue = Number.isFinite(start) ? start : Number(value);
   const display = Number.isFinite(start) ? (digits === 0 ? formatInt(start) : formatNumber(start, digits)) : formatted;
   const active = state.methodCardKey === `metric:${key}` ? " active" : "";
-  const colors = { scenario: "#256d72", base: "#b88624", rank: "#7b5796", population: "#477f5b" };
-  return `<button class="metric methodTrigger${active}" type="button" data-method-card="metric:${key}" data-metric-key="${key}" style="--method-color:${colors[key] || "#256d72"}"><strong data-animate-number data-current-value="${Number(value)}" data-start-value="${startValue}" data-target-value="${Number(value)}" data-digits="${digits}">${display}</strong><span>${escapeHtml(label)}</span></button>`;
+  const colors = {
+    scenario: brandBlockColor("housing", "#256d72"),
+    base: brandBlockColor("commerce", "#b88624"),
+    rank: brandBlockColor("work", "#7b5796"),
+    population: brandBlockColor("green", "#477f5b")
+  };
+  return `<button class="metric methodTrigger${active}" type="button" data-method-card="metric:${key}" data-metric-key="${key}" style="--method-color:${colors[key] || brandBlockColor("housing", "#256d72")}"><strong data-animate-number data-current-value="${Number(value)}" data-start-value="${startValue}" data-target-value="${Number(value)}" data-digits="${digits}">${display}</strong><span>${escapeHtml(label)}</span></button>`;
 }
 
 function blockBar(block, value, disabled = false) {
@@ -3567,7 +3712,7 @@ function indicatorRow(group, item) {
   const active = state.methodCardKey === key ? " active" : "";
   const block = blockForGroup(group);
   return `
-    <button class="indicator methodTrigger${active}" type="button" data-method-card="${escapeAttr(key)}" data-tooltip="${escapeAttr(indicatorHelp(group, name))}" style="--method-color:${block?.color || "#256d72"}">
+    <button class="indicator methodTrigger${active}" type="button" data-method-card="${escapeAttr(key)}" data-tooltip="${escapeAttr(indicatorHelp(group, name))}" style="--method-color:${block?.color || brandBlockColor("housing", "#256d72")}">
       <span>${escapeHtml(name)}</span>
       <em>${escapeHtml(unit)}</em>
       <strong>${formatNumber(item.value, 2)}</strong>
@@ -3653,7 +3798,7 @@ function methodCardData(key) {
       text: indicatorMethodText(group, name),
       visual: "indicator",
       asset: indicatorVisualAssetByDescription(group, name),
-      color: block?.color || "#256d72",
+      color: block?.color || brandBlockColor("housing", "#256d72"),
       bullets: indicatorMethodNotes(group, name)
     };
   }
@@ -3847,10 +3992,10 @@ function indicatorMethodNotes(group, name) {
 }
 
 function methodVisualColor(type) {
-  if (type === "rank") return "#7b5796";
-  if (type === "population") return "#477f5b";
-  if (type === "base") return "#b88624";
-  return "#256d72";
+  if (type === "rank") return brandBlockColor("work", "#7b5796");
+  if (type === "population") return brandBlockColor("green", "#477f5b");
+  if (type === "base") return brandBlockColor("commerce", "#b88624");
+  return brandBlockColor("housing", "#256d72");
 }
 
 function metricBullets(id) {
@@ -4278,6 +4423,72 @@ function polygonRings(polygon) {
   return (polygon || []).filter((ring) => Array.isArray(ring) && ring.length >= 3);
 }
 
+function polygonProjectedBbox(polygon) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const ring of polygonRings(polygon)) {
+    for (const point of ring) {
+      const x = Number(point?.[0]);
+      const y = Number(point?.[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  return Number.isFinite(minX) ? [minX, minY, maxX, maxY] : null;
+}
+
+function bboxContainsBbox(container, inner, tolerance = 0) {
+  if (!container || !inner) return false;
+  return inner[0] >= container[0] - tolerance
+    && inner[1] >= container[1] - tolerance
+    && inner[2] <= container[2] + tolerance
+    && inner[3] <= container[3] + tolerance;
+}
+
+function polygonRepresentativePoint(polygon) {
+  const outer = polygonRings(polygon)[0] || [];
+  const points = outer.filter((point, index) => {
+    if (!Array.isArray(point) || !Number.isFinite(Number(point[0])) || !Number.isFinite(Number(point[1]))) return false;
+    if (index !== outer.length - 1) return true;
+    const first = outer[0];
+    return !first || point[0] !== first[0] || point[1] !== first[1];
+  });
+  if (!points.length) return null;
+  const centroid = points.reduce((sum, point) => [sum[0] + Number(point[0]), sum[1] + Number(point[1])], [0, 0]);
+  centroid[0] /= points.length;
+  centroid[1] /= points.length;
+  return pointInProjectedPolygon(centroid, polygon) ? centroid : [Number(points[0][0]), Number(points[0][1])];
+}
+
+function pointInProjectedPolygon(point, polygon) {
+  const rings = polygonRings(polygon);
+  if (!rings.length || !pointInProjectedRing(point, rings[0])) return false;
+  for (const ring of rings.slice(1)) {
+    if (pointInProjectedRing(point, ring)) return false;
+  }
+  return true;
+}
+
+function pointInProjectedRing(point, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+    const xi = Number(ring[i]?.[0]);
+    const yi = Number(ring[i]?.[1]);
+    const xj = Number(ring[j]?.[0]);
+    const yj = Number(ring[j]?.[1]);
+    if (![xi, yi, xj, yj].every(Number.isFinite)) continue;
+    if ((yi > point[1]) !== (yj > point[1]) && point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi || 1e-12) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
 function positionsFromLine(line) {
   const flat = [];
   for (const point of line) flat.push(point[0], point[1], point[2] || 0);
@@ -4293,7 +4504,7 @@ function positionsFromLineOffset(line, zOffset) {
 function updateUrl() {
   if (!state.activeCity || state.routeApplying) return;
   const params = new URLSearchParams();
-  params.set("city", state.activeCity.slug);
+  if (!SINGLE_CITY_MODE) params.set("city", state.activeCity.slug);
   if (state.debugMode) params.set("debug", state.debugMode);
   if (state.selectedFeature) params.set("quarter", state.selectedFeature.id);
   if (state.comparisonMode !== "city") params.set("cmp", state.comparisonMode);
@@ -4302,7 +4513,8 @@ function updateUrl() {
   if (!sameSet(blocks, DEFAULT_BLOCK_KEYS)) params.set("blocks", blocks.length ? blocks.join(",") : "none");
   const layers = [...state.visibleLayers];
   if (!sameSet(layers, DEFAULT_LAYER_KEYS)) params.set("layers", layers.length ? layers.join(",") : "none");
-  history.replaceState({}, "", `${location.pathname}?${params.toString()}`);
+  const query = params.toString();
+  history.replaceState({}, "", query ? `${location.pathname}?${query}` : location.pathname);
 }
 
 function sameSet(values, defaults) {
@@ -4420,18 +4632,18 @@ function showPointToast(text) {
 }
 
 function themeColor(key) {
-  const palette = MAP_THEMES[state.theme] || MAP_THEMES.light;
+  const palette = mapThemePalette();
   return palette[key];
 }
 
 function scoreColor(score, alpha = 1) {
-  const stops = [
+  const stops = brandScoreStops([
     [0, [168, 61, 75]],
     [35, [217, 120, 66]],
     [55, [223, 189, 84]],
     [72, [118, 173, 112]],
     [100, [45, 123, 120]]
-  ];
+  ]);
   const value = Math.max(0, Math.min(100, Number(score) || 0));
   let left = stops[0];
   let right = stops[stops.length - 1];

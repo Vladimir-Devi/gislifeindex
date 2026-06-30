@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-30T08:02:34.346Z",
-  "sourceGeneratedAt": "2026-06-30T08:01:52.427Z",
+  "generatedAt": "2026-06-30T21:33:59.308Z",
+  "sourceGeneratedAt": "2026-06-30T21:33:19.562Z",
   "cesiumVersion": "1.141",
   "cities": [
     {
@@ -49,18 +49,18 @@
       },
       "cesium": {
         "buildingTiles": 1,
-        "buildingBytes": 5670988,
-        "buildingGzipBytes": 723474,
-        "buildingBrotliBytes": 609672,
+        "buildingBytes": 5670996,
+        "buildingGzipBytes": 730878,
+        "buildingBrotliBytes": 607626,
         "buildingMobileTiles": 1,
         "buildingMobileBytes": 505964,
-        "buildingMobileGzipBytes": 66715,
-        "buildingMobileBrotliBytes": 57532,
+        "buildingMobileGzipBytes": 67748,
+        "buildingMobileBrotliBytes": 57494,
         "treeTiles": 250,
         "treeBytes": 1817960,
-        "treeGzipBytes": 693016,
-        "treeBrotliBytes": 651294,
-        "terrainBytes": 1476172
+        "treeGzipBytes": 674553,
+        "treeBrotliBytes": 642717,
+        "terrainBytes": 1037244
       }
     },
     {

@@ -14,6 +14,8 @@ const OVERVIEW_AREA_THRESHOLD = 700;
 const TERRAIN_GRID_WIDTH = 128;
 const TERRAIN_HEIGHT_SCALE = 10;
 const TERRAIN_NODATA = -32768;
+const TERRAIN_MIN_VALID_ELEVATION = -500;
+const TERRAIN_MAX_VALID_ELEVATION = 5000;
 const TERRAIN_VERTICAL_EXAGGERATION = 1.35;
 const SMALL_NON_RESIDENTIAL_AREA_THRESHOLD = 100;
 const NON_MKD_HEIGHT_FACTOR = 0.48;
@@ -61,14 +63,20 @@ function runGdal(name, args) {
   const runtimeRoot = path.dirname(path.dirname(tool));
   const qgisProj = [
     path.join(runtimeRoot, "share", "proj"),
-    process.env.PROJ_LIB,
-    "C:/MyProgram/GIS/QGIS/share/proj"
+    "C:/MyProgram/GIS/QGIS4/share/proj",
+    "C:/MyProgram/GIS/QGIS3/share/proj",
+    "C:/MyProgram/GIS/QGIS/share/proj",
+    process.env.PROJ_LIB
   ].find((candidate) => candidate && existsSync(candidate));
   const qgisGdal = [
-    process.env.GDAL_DATA,
     path.join(runtimeRoot, "apps", "gdal", "share", "gdal"),
     path.join(runtimeRoot, "share", "gdal"),
-    "C:/MyProgram/GIS/QGIS/share/gdal"
+    "C:/MyProgram/GIS/QGIS4/apps/gdal/share/gdal",
+    "C:/MyProgram/GIS/QGIS4/share/gdal",
+    "C:/MyProgram/GIS/QGIS3/apps/gdal/share/gdal",
+    "C:/MyProgram/GIS/QGIS3/share/gdal",
+    "C:/MyProgram/GIS/QGIS/share/gdal",
+    process.env.GDAL_DATA
   ].find((candidate) => candidate && existsSync(candidate));
   const env = { ...process.env };
   if (qgisProj) {
@@ -76,6 +84,7 @@ function runGdal(name, args) {
     env.PROJ_DATA = qgisProj;
   }
   if (qgisGdal) env.GDAL_DATA = qgisGdal;
+  env.GTIFF_SRS_SOURCE = "EPSG";
   const result = spawnSync(tool, args, { cwd: rootDir, env, encoding: "utf8" });
   if (result.error) {
     throw new Error(`${name} failed to start: ${result.error.message}`);
@@ -747,13 +756,18 @@ function prepareTerrain(city, projection, cityDir) {
     "-overwrite",
     "-t_srs",
     "EPSG:4326",
+    "-te_srs",
+    "EPSG:4326",
+    "-te",
+    String(city.bbox[0]),
+    String(city.bbox[1]),
+    String(city.bbox[2]),
+    String(city.bbox[3]),
     "-ts",
     String(TERRAIN_GRID_WIDTH),
     "0",
     "-r",
     "bilinear",
-    "-srcnodata",
-    String(TERRAIN_NODATA),
     "-dstnodata",
     String(TERRAIN_NODATA),
     demPath,
@@ -804,7 +818,10 @@ function terrainFromXyz(filePath, projection) {
     for (const item of row) {
       const point = projection([item.lon, item.lat]);
       points.push(point);
-      const valid = Number.isFinite(item.elevation) && item.elevation !== TERRAIN_NODATA;
+      const valid = Number.isFinite(item.elevation)
+        && item.elevation !== TERRAIN_NODATA
+        && item.elevation > TERRAIN_MIN_VALID_ELEVATION
+        && item.elevation < TERRAIN_MAX_VALID_ELEVATION;
       values.push(valid ? item.elevation : null);
       if (valid) {
         minElevation = Math.min(minElevation, item.elevation);
