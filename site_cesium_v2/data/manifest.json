@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-30T21:33:59.308Z",
-  "sourceGeneratedAt": "2026-06-30T21:33:19.562Z",
+  "generatedAt": "2026-07-01T11:56:03.933Z",
+  "sourceGeneratedAt": "2026-07-01T11:55:12.698Z",
   "cesiumVersion": "1.141",
   "cities": [
     {
@@ -50,16 +50,16 @@
       "cesium": {
         "buildingTiles": 1,
         "buildingBytes": 5670996,
-        "buildingGzipBytes": 730878,
-        "buildingBrotliBytes": 607626,
+        "buildingGzipBytes": 730602,
+        "buildingBrotliBytes": 607028,
         "buildingMobileTiles": 1,
         "buildingMobileBytes": 505964,
-        "buildingMobileGzipBytes": 67748,
-        "buildingMobileBrotliBytes": 57494,
-        "treeTiles": 250,
-        "treeBytes": 1817960,
-        "treeGzipBytes": 674553,
-        "treeBrotliBytes": 642717,
+        "buildingMobileGzipBytes": 67807,
+        "buildingMobileBrotliBytes": 57514,
+        "treeTiles": 255,
+        "treeBytes": 1833796,
+        "treeGzipBytes": 677485,
+        "treeBrotliBytes": 646772,
         "terrainBytes": 1037244
       }
     },
@@ -110,17 +110,17 @@
       "cesium": {
         "buildingTiles": 1,
         "buildingBytes": 11995052,
-        "buildingGzipBytes": 1567766,
-        "buildingBrotliBytes": 1315569,
+        "buildingGzipBytes": 1567975,
+        "buildingBrotliBytes": 1315591,
         "buildingMobileTiles": 1,
         "buildingMobileBytes": 7608284,
-        "buildingMobileGzipBytes": 987489,
-        "buildingMobileBrotliBytes": 829134,
+        "buildingMobileGzipBytes": 987106,
+        "buildingMobileBrotliBytes": 829361,
         "treeTiles": 306,
         "treeBytes": 2105928,
-        "treeGzipBytes": 785644,
-        "treeBrotliBytes": 751720,
-        "terrainBytes": 866564
+        "treeGzipBytes": 774860,
+        "treeBrotliBytes": 740779,
+        "terrainBytes": 1000668
       }
     },
     {
@@ -170,17 +170,17 @@
       "cesium": {
         "buildingTiles": 1,
         "buildingBytes": 20043276,
-        "buildingGzipBytes": 2523208,
-        "buildingBrotliBytes": 2078864,
+        "buildingGzipBytes": 2523377,
+        "buildingBrotliBytes": 2079432,
         "buildingMobileTiles": 1,
-        "buildingMobileBytes": 12748364,
-        "buildingMobileGzipBytes": 1590509,
-        "buildingMobileBrotliBytes": 1310123,
+        "buildingMobileBytes": 12748372,
+        "buildingMobileGzipBytes": 1590533,
+        "buildingMobileBrotliBytes": 1310791,
         "treeTiles": 360,
         "treeBytes": 2387304,
-        "treeGzipBytes": 847384,
-        "treeBrotliBytes": 809688,
-        "terrainBytes": 854364
+        "treeGzipBytes": 845170,
+        "treeBrotliBytes": 807646,
+        "terrainBytes": 1207924
       }
     }
   ]

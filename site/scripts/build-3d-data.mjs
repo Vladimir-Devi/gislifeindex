@@ -948,6 +948,9 @@ for (const city of sourceManifest.cities) {
   const green = readJson(city.files.green).features
     .map((feature) => prepareGreen(feature, projection))
     .filter(Boolean);
+  const greenVisible = readJson(city.files.greenVisible || city.files.green).features
+    .map((feature) => prepareGreen(feature, projection))
+    .filter(Boolean);
   const water = readJson(city.files.water).features
     .map((feature) => prepareWater(feature, projection))
     .filter(Boolean);
@@ -956,6 +959,9 @@ for (const city of sourceManifest.cities) {
     .filter(Boolean);
   const roads = readJson(city.files.roads).features
     .flatMap((feature) => prepareMajorRoad(feature, projection));
+  const roadsMedium = city.files.roadsMedium
+    ? readJson(city.files.roadsMedium).features.flatMap((feature) => prepareMajorRoad(feature, projection))
+    : [];
   const roadLabelFeatures = city.files.roadLabels ? readJson(city.files.roadLabels).features : [];
   const roadLabels = roadLabelFeatures
     .map((feature) => prepareRoadLabel(feature, projection))
@@ -975,9 +981,10 @@ for (const city of sourceManifest.cities) {
 
   writeJson(path.join(cityDir, "quartals.json"), { features: quartals });
   writeJson(path.join(cityDir, "quartals-meta.json"), quarterMeta(quartals, city), true);
-  writeJson(path.join(cityDir, "green.json"), { features: green });
+  writeJson(path.join(cityDir, "green.json"), { features: green, visibleFeatures: greenVisible });
   writeJson(path.join(cityDir, "water.json"), { features: water });
   writeJson(path.join(cityDir, "roads.json"), { lines: roads });
+  writeJson(path.join(cityDir, "roads-medium.json"), { lines: roadsMedium });
   writeJson(path.join(cityDir, "road-labels.json"), { labels: roadLabels });
   writeJson(path.join(cityDir, "railways.json"), { lines: railways });
   writeJson(path.join(cityDir, "stops.json"), { items: stops });
@@ -994,6 +1001,7 @@ for (const city of sourceManifest.cities) {
       green: `data3d/${city.slug}/green.json`,
       water: `data3d/${city.slug}/water.json`,
       roads: `data3d/${city.slug}/roads.json`,
+      roadsMedium: `data3d/${city.slug}/roads-medium.json`,
       roadLabels: `data3d/${city.slug}/road-labels.json`,
       railways: `data3d/${city.slug}/railways.json`,
       stops: `data3d/${city.slug}/stops.json`,

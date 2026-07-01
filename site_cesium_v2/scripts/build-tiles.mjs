@@ -200,6 +200,8 @@ function buildCityLayers(city, cityOutDir) {
   const green = readJson(path.join(citySource, "green.json"));
   const water = readJson(path.join(citySource, "water.json"));
   const roads = readJson(path.join(citySource, "roads.json"));
+  const roadsMediumPath = path.join(citySource, "roads-medium.json");
+  const roadsMedium = existsSync(roadsMediumPath) ? readJson(roadsMediumPath) : { lines: [] };
   const roadsAll = readRoadAllSegments(citySource);
   const railways = readJson(path.join(citySource, "railways.json"));
   const stops = readJson(path.join(citySource, "stops.json"));
@@ -226,10 +228,12 @@ function buildCityLayers(city, cityOutDir) {
   });
   writeJson(path.join(cityOutDir, "surfaces.json"), {
     green: (green.features || []).map((feature) => convertPolygonFeature(city, terrain, feature, 1.2)),
+    greenVisible: (green.visibleFeatures || green.features || []).map((feature) => convertPolygonFeature(city, terrain, feature, 1.2)),
     water: (water.features || []).map((feature) => convertPolygonFeature(city, terrain, feature, 1.0))
   });
   writeJson(path.join(cityOutDir, "roads.json"), {
     roads: convertLineCollection(city, terrain, roads, 3.2),
+    roadsMedium: convertLineCollection(city, terrain, roadsMedium, 3.18),
     railways: convertLineCollection(city, terrain, railways, 3.4)
   });
   writeJson(path.join(cityOutDir, "roads-detail.json"), {

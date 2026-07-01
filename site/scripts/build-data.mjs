@@ -78,6 +78,8 @@ const cities = [
   {
     slug: "dimitrovgrad",
     sourceDir: "Dimitrovgrad",
+    osnovaSourceDir: "C:/ITP_Urbanika/Dimitrovgrad/GPKG/index",
+    roadSourceDir: "C:/ITP_Urbanika/Dimitrovgrad/GPKG/index",
     summaryName: "\u0414\u0438\u043c\u0438\u0442\u0440\u043e\u0432\u0433\u0440\u0430\u0434",
     displayName: "\u0414\u0438\u043c\u0438\u0442\u0440\u043e\u0432\u0433\u0440\u0430\u0434",
     indexLayer: "kvartals_life_index_compare_site",
@@ -86,12 +88,14 @@ const cities = [
     buildingSelect: ["area"],
     buildingWhere: "area IS NULL OR area >= 21",
     greenLayer: "green",
-    waterLayer: null,
-    railwayLayer: null,
+    greenClipAgainstQuartals: true,
+    waterLayer: "water",
+    railwayLayer: "railroad",
     boundaryLayer: "boundary",
-    roadLayer: "auto",
+    roadLayer: "auto_site",
+    roadMediumLayer: "auto_kvartals_site",
     roadAllLayer: "all",
-    roadLabelLayer: "auto",
+    roadLabelLayer: "auto_site",
     roadLabelSelect: ["name_ru", "name", "ref", "highway"],
     mkdLayer: "mkd",
     mkdFields: ["address", "floor_num", "pop"],
@@ -168,6 +172,21 @@ function writeJson(file, data, pretty = false) {
 
 function writeEmptyFeatureCollection(file) {
   writeJson(file, { type: "FeatureCollection", features: [] });
+}
+
+function buildGreenVisibleLayer(city, rawBase) {
+  const source = path.join(rawBase, "green.geojson");
+  const output = path.join(rawBase, "green-visible.geojson");
+  if (!city.greenClipAgainstQuartals) {
+    writeJson(output, readJson(source));
+    return;
+  }
+  run("python", [
+    path.join(siteDir, "scripts", "clip-green-visible.py"),
+    source,
+    path.join(rawBase, "quartals.geojson"),
+    output
+  ]);
 }
 
 function parseCsv(file) {
@@ -601,6 +620,8 @@ function summaryLookup(rows) {
 
 function exportCity(city) {
   const sourceBase = path.join(rootDir, city.sourceDir, "GPKG");
+  const osnovaBase = city.osnovaSourceDir ? path.resolve(city.osnovaSourceDir) : sourceBase;
+  const roadBase = city.roadSourceDir ? path.resolve(city.roadSourceDir) : sourceBase;
   const rawBase = path.join(rawDir, city.slug);
   mkdirSync(rawBase, { recursive: true });
 
@@ -612,20 +633,21 @@ function exportCity(city) {
   });
   exportLayer({
     output: path.join(rawBase, "buildings.geojson"),
-    input: path.join(sourceBase, "osnova.gpkg"),
+    input: path.join(osnovaBase, "osnova.gpkg"),
     layer: city.buildingsLayer,
     select: city.buildingSelect,
     where: city.buildingWhere
   });
   exportLayer({
     output: path.join(rawBase, "green.geojson"),
-    input: path.join(sourceBase, "osnova.gpkg"),
+    input: path.join(osnovaBase, "osnova.gpkg"),
     layer: city.greenLayer
   });
+  buildGreenVisibleLayer(city, rawBase);
   if (city.waterLayer) {
     exportLayer({
       output: path.join(rawBase, "water.geojson"),
-      input: path.join(sourceBase, "osnova.gpkg"),
+      input: path.join(osnovaBase, "osnova.gpkg"),
       layer: city.waterLayer
     });
   } else {
@@ -634,7 +656,7 @@ function exportCity(city) {
   if (city.railwayLayer) {
     exportLayer({
       output: path.join(rawBase, "railways.geojson"),
-      input: path.join(sourceBase, "osnova.gpkg"),
+      input: path.join(osnovaBase, "osnova.gpkg"),
       layer: city.railwayLayer
     });
   } else {
@@ -642,23 +664,32 @@ function exportCity(city) {
   }
   exportLayer({
     output: path.join(rawBase, "boundary.geojson"),
-    input: path.join(sourceBase, "osnova.gpkg"),
+    input: path.join(osnovaBase, "osnova.gpkg"),
     layer: city.boundaryLayer
   });
   exportLayer({
     output: path.join(rawBase, "roads.geojson"),
-    input: path.join(sourceBase, "road.gpkg"),
+    input: path.join(roadBase, "road.gpkg"),
     layer: city.roadLayer
   });
+  if (city.roadMediumLayer) {
+    exportLayer({
+      output: path.join(rawBase, "roads-medium.geojson"),
+      input: path.join(roadBase, "road.gpkg"),
+      layer: city.roadMediumLayer
+    });
+  } else {
+    writeEmptyFeatureCollection(path.join(rawBase, "roads-medium.geojson"));
+  }
   exportLayer({
     output: path.join(rawBase, "roads-all.geojson"),
-    input: path.join(sourceBase, "road.gpkg"),
+    input: path.join(roadBase, "road.gpkg"),
     layer: city.roadAllLayer
   });
   if (city.roadLabelLayer) {
     exportLayer({
       output: path.join(rawBase, "road-labels.geojson"),
-      input: path.join(sourceBase, "road.gpkg"),
+      input: path.join(roadBase, "road.gpkg"),
       layer: city.roadLabelLayer,
       select: city.roadLabelSelect ?? ["name_ru", "name", "ref", "highway", "q", "lenght"]
     });
@@ -667,7 +698,7 @@ function exportCity(city) {
   }
   exportLayer({
     output: path.join(rawBase, "mkd.geojson"),
-    input: path.join(sourceBase, "osnova.gpkg"),
+    input: path.join(osnovaBase, "osnova.gpkg"),
     layer: city.mkdLayer,
     select: city.mkdFields,
     where: city.mkdWhere
@@ -718,9 +749,11 @@ function prepareCity(city, populationRows) {
   writeJson(path.join(cityOut, "quartals.geojson"), { type: "FeatureCollection", features: quartals });
   writeJson(path.join(cityOut, "buildings.geojson"), { type: "FeatureCollection", features: buildings });
   writeJson(path.join(cityOut, "green.geojson"), readJson(path.join(rawBase, "green.geojson")));
+  writeJson(path.join(cityOut, "green-visible.geojson"), readJson(path.join(rawBase, "green-visible.geojson")));
   writeJson(path.join(cityOut, "water.geojson"), readJson(path.join(rawBase, "water.geojson")));
   writeJson(path.join(cityOut, "railways.geojson"), readJson(path.join(rawBase, "railways.geojson")));
   writeJson(path.join(cityOut, "roads.geojson"), readJson(path.join(rawBase, "roads.geojson")));
+  writeJson(path.join(cityOut, "roads-medium.geojson"), readJson(path.join(rawBase, "roads-medium.geojson")));
   writeJson(path.join(cityOut, "roads-all.geojson"), readJson(path.join(rawBase, "roads-all.geojson")));
   writeJson(path.join(cityOut, "road-labels.geojson"), readJson(path.join(rawBase, "road-labels.geojson")));
   writeJson(path.join(cityOut, "stops.geojson"), stops);
@@ -738,9 +771,11 @@ function prepareCity(city, populationRows) {
       quartals: `data/${city.slug}/quartals.geojson`,
       buildings: `data/${city.slug}/buildings.geojson`,
       green: `data/${city.slug}/green.geojson`,
+      greenVisible: `data/${city.slug}/green-visible.geojson`,
       water: `data/${city.slug}/water.geojson`,
       railways: `data/${city.slug}/railways.geojson`,
       roads: `data/${city.slug}/roads.geojson`,
+      roadsMedium: `data/${city.slug}/roads-medium.geojson`,
       roadsAll: `data/${city.slug}/roads-all.geojson`,
       roadLabels: `data/${city.slug}/road-labels.geojson`,
       stops: `data/${city.slug}/stops.geojson`,

@@ -14,11 +14,11 @@ const BRAND_BLOCK_COLORS = {
 };
 const BRAND_SCORE_STOPS = {
   dimitrovgrad: [
-    [0, [190, 58, 88]],
-    [32, [218, 105, 76]],
-    [52, [225, 180, 92]],
-    [72, [122, 168, 108]],
-    [100, [48, 132, 121]]
+    [0, [235, 19, 107]],
+    [28, [242, 97, 161]],
+    [52, [195, 209, 249]],
+    [76, [140, 167, 244]],
+    [100, [192, 236, 52]]
   ]
 };
 
@@ -213,6 +213,7 @@ const MAP_THEMES = {
     greenStroke: "rgba(61, 92, 58, 0.2)",
     quarterStroke: "rgba(64, 66, 62, 0.42)",
     roadDetail: (alpha) => `rgba(91, 96, 96, ${alpha})`,
+    roadMedium: "rgba(126, 136, 132, 0.42)",
     roadMain: "rgb(126, 136, 132)",
     roadMainFar: "rgb(158, 166, 162)",
     railway: "rgba(244, 238, 226, 0.76)",
@@ -239,6 +240,7 @@ const MAP_THEMES = {
     greenStroke: "rgba(111, 158, 99, 0.2)",
     quarterStroke: "rgba(214, 218, 206, 0.24)",
     roadDetail: (alpha) => `rgba(50, 59, 58, ${Math.min(0.36, alpha + 0.08)})`,
+    roadMedium: "rgba(55, 64, 63, 0.46)",
     roadMain: "rgb(67, 78, 77)",
     roadMainFar: "rgb(42, 50, 50)",
     railway: "rgba(84, 88, 82, 0.82)",
@@ -262,14 +264,15 @@ const MAP_THEMES = {
 const BRAND_MAP_THEME_OVERRIDES = {
   dimitrovgrad: {
     light: {
-      mapBg: "#e7f0ff",
+      mapBg: "#fbfcff",
       waterFill: "rgba(66, 142, 189, 0.42)",
       waterStroke: "rgba(57, 96, 183, 0.28)",
       greenFill: "rgba(74, 112, 69, 0.62)",
       greenStroke: "rgba(42, 78, 48, 0.34)",
       quarterStroke: "rgba(21, 28, 36, 0.4)",
-      roadMain: "rgb(128, 145, 180)",
-      roadMainFar: "rgb(175, 189, 224)",
+      roadMain: "rgb(126, 136, 158)",
+      roadMainFar: "rgb(190, 197, 212)",
+      roadMedium: "rgba(151, 162, 183, 0.58)",
       railway: "rgba(255, 255, 255, 0.82)",
       railwayDash: "rgba(45, 75, 143, 0.72)",
       selectedFill: "rgba(226, 214, 148, 0.18)",
@@ -290,8 +293,9 @@ const BRAND_MAP_THEME_OVERRIDES = {
       greenFill: "rgba(31, 62, 38, 0.68)",
       greenStroke: "rgba(91, 126, 77, 0.24)",
       quarterStroke: "rgba(217, 222, 210, 0.26)",
-      roadMain: "rgb(64, 77, 111)",
-      roadMainFar: "rgb(39, 49, 79)",
+      roadMain: "rgb(70, 82, 108)",
+      roadMainFar: "rgb(44, 52, 72)",
+      roadMedium: "rgba(75, 87, 111, 0.52)",
       railway: "rgba(103, 119, 158, 0.76)",
       railwayDash: "rgba(255, 255, 255, 0.72)",
       selectedFill: "rgba(226, 214, 148, 0.12)",
@@ -547,7 +551,7 @@ async function applyRoute(push) {
   const city = state.manifest.cities.find((item) => item.slug === slug);
   if (!city) return;
   state.routeApplying = true;
-  state.comparisonMode = normalizeComparison(params.get("cmp") || params.get("compare"));
+  state.comparisonMode = SINGLE_CITY_MODE ? "city" : normalizeComparison(params.get("cmp") || params.get("compare"));
   state.activeBlocks = normalizeKeySet(params.get("blocks"), DEFAULT_BLOCK_KEYS, DEFAULT_BLOCK_KEYS);
   state.visibleLayers = normalizeKeySet(params.get("layers"), DEFAULT_LAYER_KEYS, ALL_LAYER_KEYS);
   state.debugMode = normalizeDebugMode(params.get("debug") || params.get("diag"));
@@ -614,6 +618,8 @@ async function loadCityData(city) {
       ...layers,
       stops: layers.stops || { items: [] },
       dtp: layers.dtp || { items: [] },
+      greenVisible: layers.greenVisible || null,
+      roadsMedium: layers.roadsMedium || { lines: [] },
       pointsLoaded: true,
       pointsPromise: null,
       roadsDetailLoaded: Boolean(layers.roadsAll?.lines?.length),
@@ -632,8 +638,10 @@ async function loadCityData(city) {
     ...meta,
     quartals: quartals.quartals || [],
     green: surfaces.green || [],
+    greenVisible: surfaces.greenVisible || null,
     water: surfaces.water || [],
     roads: roads.roads || { lines: [] },
+    roadsMedium: roads.roadsMedium || { lines: [] },
     roadsAll: roads.roadsAll || { lines: [] },
     roadsDetailLoaded: Boolean(roads.roadsAll?.lines?.length),
     roadsDetailPromise: null,
@@ -1203,16 +1211,14 @@ function applyBuildingTheme() {
   try {
     if (state.theme === "dark") {
       tileset.colorBlendMode = Cesium.Cesium3DTileColorBlendMode.MIX;
-      tileset.colorBlendAmount = 0.42;
+      tileset.colorBlendAmount = 0.12;
       tileset.style = new Cesium.Cesium3DTileStyle({
-        color: "color('#596265')"
+        color: "color('#151b1c')"
       });
     } else {
-      tileset.colorBlendMode = Cesium.Cesium3DTileColorBlendMode.MIX;
-      tileset.colorBlendAmount = 0.38;
-      tileset.style = new Cesium.Cesium3DTileStyle({
-        color: "color('#e0dac9')"
-      });
+      tileset.style = undefined;
+      tileset.colorBlendMode = Cesium.Cesium3DTileColorBlendMode.HIGHLIGHT;
+      tileset.colorBlendAmount = 0.5;
     }
   } catch (error) {
     console.warn("Unable to apply building theme", error);
@@ -1277,7 +1283,7 @@ function raisePrimitiveGroupToTop(key) {
 
 function applyMapLayerOrder() {
   if (!state.viewer) return;
-  for (const key of ["quartals", "green", "water", "roadsDetail", "roads", "railways"]) {
+  for (const key of ["quartals", "green", "water", "roadsDetail", "roadsMedium", "roads", "railways"]) {
     raisePrimitiveGroupToTop(key);
   }
   const trees = state.tilesets.get("trees");
@@ -1353,9 +1359,10 @@ function renderScenarioToggle(block) {
 }
 
 function renderBaseLayers() {
-  if (!debugSkipsBaseLayer("green")) renderPolygons("green", state.data.green, themeColor("greenFill"));
+  renderGreenLayer();
   if (!debugSkipsBaseLayer("water")) renderPolygons("water", state.data.water, themeColor("waterFill"));
   if (!debugSkipsBaseLayer("roadsDetail")) renderDetailedRoads();
+  if (!debugSkipsBaseLayer("roadsMedium")) renderLines("roadsMedium", state.data.roadsMedium?.lines || [], themeColor("roadMedium"), 2.35);
   if (!debugSkipsBaseLayer("roads")) renderLines("roads", state.data.roads.lines, themeColor("roadMain"), 4.2);
   if (!debugSkipsBaseLayer("railways")) renderRailways();
   if (!debugSkipsBaseLayer("roadLabels")) renderRoadLabels();
@@ -1365,9 +1372,23 @@ function renderBaseLayers() {
 
 function renderBaseLayerColors() {
   if (!state.data) return;
-  for (const key of ["green", "water", "roadsDetail", "roads", "railways", "roadLabels"]) clearEntities(key);
+  for (const key of ["green", "water", "roadsDetail", "roadsMedium", "roads", "railways", "roadLabels"]) clearEntities(key);
   renderBaseLayers();
   renderLegends();
+}
+
+function renderGreenLayer() {
+  if (debugSkipsBaseLayer("green")) {
+    clearEntities("green");
+    return;
+  }
+  renderPolygons("green", visibleGreenFeatures(), themeColor("greenFill"));
+}
+
+function visibleGreenFeatures() {
+  if (!state.data) return [];
+  if (state.visibleLayers.has("quartals") && Array.isArray(state.data.greenVisible)) return state.data.greenVisible;
+  return state.data.green || [];
 }
 
 function updateLayer(key) {
@@ -1381,6 +1402,7 @@ function updateLayer(key) {
     return;
   }
   clearEntities(key);
+  if (key === "quartals") renderGreenLayer();
   if (!state.visibleLayers.has(key)) return;
   if (key === "quartals") renderQuartals();
   if (key === "trees") updateTrees(true);
@@ -1484,9 +1506,10 @@ function renderPolygons(key, features, fill) {
   clearEntities(key);
   const instances = [];
   const zOffset = key === "green" ? GREEN_POLYGON_Z_OFFSET : SURFACE_POLYGON_Z_OFFSET;
+  const useGreenFallbackClip = key === "green" && state.visibleLayers.has("quartals") && !Array.isArray(state.data?.greenVisible);
   for (const feature of features || []) {
     for (const polygon of feature.polygons || []) {
-      if (key === "green" && greenPolygonInsideQuartal(polygon)) continue;
+      if (useGreenFallbackClip && greenPolygonInsideQuartal(polygon)) continue;
       const geometry = polygonGeometryFromPolygon(polygon, zOffset);
       if (!geometry) continue;
       instances.push(new Cesium.GeometryInstance({
@@ -3049,7 +3072,7 @@ function clearEntities(key) {
   }
   if (key === "roadLabels") state.lastRoadLabelVisible = null;
   if (key === "roadsDetail") state.lastRoadDetailSignature = null;
-  if (key === "roads" || key === "railways") state.lastLineStyleFactor = null;
+  if (key === "roads" || key === "roadsMedium" || key === "railways") state.lastLineStyleFactor = null;
   if (key === "trees") {
     state.lastTreeStyle = null;
     window.clearTimeout(state.treeRefreshTimer);
@@ -3572,6 +3595,7 @@ function renderInfo() {
 }
 
 function setComparisonMode(nextMode) {
+  if (SINGLE_CITY_MODE) return false;
   if (!state.data || !state.activeCity) return false;
   if (nextMode === state.comparisonMode) return false;
   state.comparisonTransition = `${state.comparisonMode}->${nextMode}`;
@@ -3590,6 +3614,7 @@ function setComparisonMode(nextMode) {
 }
 
 function renderComparisonSwitch() {
+  if (SINGLE_CITY_MODE) return "";
   const isAll = state.comparisonMode === "all";
   return `
     <button class="comparisonSwitch" type="button" data-comparison-toggle aria-pressed="${isAll}" aria-label="Переключить уровень сравнения">
@@ -4507,7 +4532,7 @@ function updateUrl() {
   if (!SINGLE_CITY_MODE) params.set("city", state.activeCity.slug);
   if (state.debugMode) params.set("debug", state.debugMode);
   if (state.selectedFeature) params.set("quarter", state.selectedFeature.id);
-  if (state.comparisonMode !== "city") params.set("cmp", state.comparisonMode);
+  if (!SINGLE_CITY_MODE && state.comparisonMode !== "city") params.set("cmp", state.comparisonMode);
   if (state.theme === "dark") params.set("theme", "dark");
   const blocks = [...state.activeBlocks];
   if (!sameSet(blocks, DEFAULT_BLOCK_KEYS)) params.set("blocks", blocks.length ? blocks.join(",") : "none");
